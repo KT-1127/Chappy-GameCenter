@@ -18,7 +18,8 @@
 "use strict";
 const me = document.currentScript;
 const GAME = me && me.dataset.game;
-const ROOT = new URL("../../", me ? me.src : location.href).href;
+// このファイルは <センター>/assets/bridge.js にあるので、1つ上がセンターのトップ
+const ROOT = me ? new URL("../", me.src).href : new URL("../../", location.href).href;
 const g = CGC.gameById(GAME);
 
 const CSS = `

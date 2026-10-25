@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<script src="../../assets/config.js"></script><script src="../../assets/cgc.js"></script><script src="../../assets/bridge.js" data-game="lab"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.png">
+<script>
+/* ===== お試し版：サーバーの代わり =====
+   生成AIは使いません。★は「きまりによる判定」（trial-judge.js）、
+   ペルソナのチャットは 質問ボタンへの決まった答え（trial-data.js の設定表）です。 */
+window.CHAPPY_TRIAL = true;
+try{ sessionStorage.setItem('chappy_student', JSON.stringify({ cls:'お試し版', name:'ゲスト' })); }catch(e){}
+(function(){
+  function J(x){ return Promise.resolve(new Response(JSON.stringify(x), { headers:{ 'Content-Type':'application/json' } })); }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(e){} }
+  function q(url, k){ var m = new RegExp('[?&]' + k + '=([^&]*)').exec(url); return m ? decodeURIComponent(m[1].replace(/\+/g, ' ')) : ''; }
+  var realFetch = window.fetch ? window.fetch.bind(window) : null;
+  window.fetch = function(u, o){
+    var url = String(u), b = {};
+    try{ b = JSON.parse((o && o.body) || '{}'); }catch(e){}
+    if(url.indexOf('/api/classes') === 0) return J({ classes:['お試し版'] });
+    if(url.indexOf('/api/login') === 0) return J({ ok:true, cls:'お試し版', name:'ゲスト' });
+    if(url.indexOf('/api/class_settings') === 0)
+      return J({ ok:true, honne:false, chat:true, pair:false, easy:true, hints:true, answers:true });
+    if(url.indexOf('/api/persona') === 0){
+      if(o && o.method === 'POST'){ if(b.persona) lsSet('trial_persona', JSON.stringify(b.persona)); return J({ ok:true }); }
+      var p = null; try{ p = JSON.parse(lsGet('trial_persona') || 'null'); }catch(e){}
+      return J({ ok:true, persona:p, source: p ? 'student' : null });
+    }
+    if(url.indexOf('/api/hint') === 0){
+      var h = (window.TRIAL_ANSWERS || {})[q(url, 'persona')];
+      return J(h && h.hints ? { ok:true, hints:h.hints } : { ok:false, msg:'このペルソナのヒントは まだありません' });
+    }
+    if(url.indexOf('/api/answer') === 0){
+      var a = (window.TRIAL_ANSWERS || {})[q(url, 'persona')];
+      return J(a ? { ok:true, ws:a.ws, desc:a.desc, points:a.points || [] } : { ok:false, msg:'このペルソナの答えは まだありません' });
+    }
+    if(url.indexOf('/api/chat') === 0){
+      if(o && o.method === 'POST') return J({ ok:true, reply: window.trialChatReply(b.persona, b.message), left:'—' });
+      return J({ ok:true, log:[], left:'—', hasReview:false });
+    }
+    if(url.indexOf('/api/review') === 0){
+      var per = null;
+      (window.PERSONAS_FOR_TRIAL || []).forEach(function(x){ if(x.name === (window.personaName || '')) per = x; });
+      if(!per) return J({ ok:false, msg:'まず「使う人」をえらんでね' });
+      return J(window.TrialJudge.review(b.program, per));
+    }
+    if(url.indexOf('/api/telemetry') === 0) return J({ ok:true, devices:[] });
+    if(url.indexOf('/deploy') === 0) return J({ ok:false, msg:'お試し版では チャッピーに送れません' });
+    return realFetch ? realFetch(u, o) : Promise.reject(new Error('no fetch'));
+  };
+})();
+</script>
+<style>
+  /* お試し版：使わない部分 */
+  #honneBtn, #honneHint, .chat-input, #chatLeft{ display:none !important; }
+  .trial-note{ font-size:12px; font-weight:700; color:#856404; background:#FFF3CD; border:1px solid #FECB52;
+    border-radius:10px; padding:6px 10px; margin-top:8px; line-height:1.6; }
+</style>
+
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>問題解決 | チャッピーラボ（お試し版）</title>
+<script src="https://unpkg.com/blockly@13.1.0/blockly_compressed.js"></script>
+<script src="https://unpkg.com/blockly@13.1.0/blocks_compressed.js"></script>
+<script src="https://unpkg.com/blockly@13.1.0/javascript_compressed.js"></script>
+<script src="https://unpkg.com/blockly@13.1.0/msg/ja.js"></script>
+<script src="chappy-blocks.js"></script>
+<script src="chappy-sim.js"></script>
+<script src="ui-modal.js"></script>
+<script src="trial-judge.js"></script>
+<script src="trial-data.js"></script>
+<style>
+  :root{
+    --bg:#EDF2F7; --surface:#FFFFFF; --ink:#1E2A38; --sub:#5B6B7E;
+    --line:#DCE4EE; --teal:#0FB5AA; --teal-soft:#E2F6F4;
+    --blue:#2F6FB0; --blue-deep:#24527F;
+    --coral:#E8604C; --face:#14181F; --eye:#FFFFFF;
+    --gold:#F5B301; --plum:#7A4FBF;
+    --ai-bg:#FAF6FF; --ai-border:#E4D8F6; --chip-bg:#F4F8FC; --up:#2FA95F;
+    --radius:14px; --shadow:0 2px 10px rgba(30,42,56,.07);
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); min-height:100vh;
+    font-family:"Hiragino Maru Gothic ProN","BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif; }
+
+  header{ background:linear-gradient(120deg,var(--blue-deep),var(--blue)); color:#fff;
+    padding:10px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:90; }
+  .brand{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:16px; }
+  .brand .logo{ width:28px; height:28px; border-radius:7px; background:var(--face); display:grid; place-items:center; }
+  .brand .logo::before{ content:""; width:13px; height:4px; border-radius:3px; background:var(--eye); box-shadow:0 0 5px var(--eye); }
+  .tabs{ display:flex; gap:6px; margin-left:auto; }
+  .tabs a{ background:transparent; color:#fff; border:1.5px solid rgba(255,255,255,.4);
+    border-radius:999px; padding:6px 14px; font-size:12.5px; font-weight:700; text-decoration:none; }
+  .tabs a.on{ background:#fff; color:var(--blue-deep); border-color:#fff; }
+
+  main{ max-width:1000px; margin:0 auto; padding:14px 16px 60px; }
+  .card{ background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow); padding:14px 16px; margin-bottom:12px; }
+  .card h2{ font-size:14px; margin:0 0 10px; display:flex; align-items:center; gap:6px; }
+  .sub{ font-size:13px; color:var(--sub); font-weight:700; margin:0; }
+
+  /* ログイン */
+  .login-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .login-row select, .login-row input{ padding:10px 12px; border:2px solid var(--line); border-radius:10px; font-size:15px; font-family:inherit; }
+  .login-row input{ width:110px; }
+  .btn{ padding:10px 18px; border:0; border-radius:10px; background:var(--teal); color:#fff; font-weight:800;
+    font-size:14px; cursor:pointer; font-family:inherit; }
+  .btn.quiet{ background:#E2E9F2; color:#3D4C5E; }
+  .msg{ font-size:13px; font-weight:800; margin-top:8px; min-height:16px; color:var(--coral); }
+
+  .top{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .top .who{ font-weight:800; font-size:16px; flex:1; }
+
+  /* ペルソナ */
+  .persona-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(175px,1fr)); gap:8px; }
+  .p-card{ display:flex; gap:8px; align-items:center; padding:8px 10px; border:2px solid var(--line);
+    border-radius:12px; cursor:pointer; background:var(--surface); transition:border-color .15s,transform .1s; }
+  .p-card:hover{ border-color:var(--teal); transform:translateY(-1px); }
+  .p-card.sel{ border-color:var(--blue); box-shadow:0 0 0 2px rgba(47,111,176,.2); }
+  .p-card svg{ flex-shrink:0; }
+  .p-card .p-name{ font-weight:800; font-size:13px; color:var(--blue); }
+  .p-card .p-age{ font-size:11px; color:var(--sub); }
+  /* チームで開発 */
+  .pair-card{ border:2px solid #F3C3C0; }
+  .pair-row{ display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap; }
+  .pair-face{ flex-shrink:0; text-align:center; font-size:12px; font-weight:800; }
+  .pair-req{ flex:1; min-width:220px; background:#FFF9F8; border-radius:12px; padding:10px 12px; font-size:13.5px; line-height:1.6; }
+  .pair-req b{ display:block; font-size:12px; color:#B5403C; margin-top:4px; }
+  .pair-req b:first-child{ margin-top:0; }
+  .pair-req span{ white-space:pre-wrap; font-weight:700; }
+  .pair-last{ margin-top:8px; font-size:13px; font-weight:700; }
+  .pair-last .ok{ color:#1F6E40; } .pair-last .fix{ color:#8A5200; }
+  .pair-btns{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+  .btn-gift{ padding:10px 18px; border:0; border-radius:10px; background:#D9534F; color:#fff; font-weight:800;
+    font-size:14px; cursor:pointer; font-family:inherit; }
+  .btn-gift:disabled{ opacity:.5; cursor:default; }
+  .pair-link{ font-size:13px; font-weight:800; color:#2F6FB0; }
+  .pair-msg{ font-size:13px; font-weight:700; margin-top:6px; min-height:18px; }
+  /* ペルソナチャット */
+  .chat-card h2{ display:flex; align-items:center; gap:6px; }
+  .chat-note{ font-size:12px; color:var(--sub); margin:-2px 0 8px; }
+  .chat-log{ max-height:340px; overflow-y:auto; display:flex; flex-direction:column; gap:8px;
+    padding:10px; background:#F7FAFD; border:1.5px solid var(--line); border-radius:12px; min-height:60px; }
+  .chat-empty{ font-size:12px; color:var(--sub); text-align:center; padding:10px; }
+  .chat-row{ display:flex; gap:8px; align-items:flex-end; }
+  .chat-row.me{ justify-content:flex-end; }
+  .chat-face{ flex-shrink:0; width:30px; height:30px; }
+  .chat-bubble{ max-width:78%; padding:8px 12px; border-radius:14px; font-size:13.5px; font-weight:700;
+    line-height:1.6; white-space:pre-wrap; word-break:break-word; }
+  .chat-row.persona .chat-bubble{ background:#fff; border:1.5px solid var(--line); border-bottom-left-radius:4px; }
+  .chat-row.me .chat-bubble{ background:#E6F4FF; border:1.5px solid #BBD8F5; border-bottom-right-radius:4px; }
+  .chat-bubble.wait{ color:var(--sub); }
+  .chat-quick{ display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .chat-quick button{ padding:5px 10px; border:1.5px solid var(--line); border-radius:999px; background:#fff;
+    font-family:inherit; font-size:12px; font-weight:700; color:var(--teal-d, #2b6f8a); cursor:pointer; }
+  .chat-quick button:hover{ border-color:var(--teal, #3aa0b5); }
+  .chat-quick button.unsolved{ border-color:#F0A3A0; background:#FFF6F5; }
+  .chat-input{ display:flex; gap:8px; margin-top:8px; }
+  .chat-input input{ flex:1; padding:9px 12px; border:2px solid var(--line); border-radius:10px;
+    font-family:inherit; font-size:14px; }
+  .chat-left{ font-size:11px; color:var(--sub); margin-top:4px; text-align:right; }
+  .chat-msg{ font-size:12px; font-weight:700; color:#C62828; margin-top:4px; }
+  .btn-ask{ margin-top:10px; padding:7px 14px; border:2px solid #3aa0b5; border-radius:999px; background:#fff;
+    color:#2b6f8a; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; }
+  .persona-detail{ margin-top:12px; padding:12px 14px; background:var(--chip-bg); border:1.5px solid var(--line);
+    border-radius:12px; font-size:12.5px; line-height:1.8; display:none; }
+  .persona-detail.show{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  .persona-detail .pd-body{ flex:1; min-width:200px; }
+  .persona-detail b{ color:var(--coral); font-weight:800; }
+  .concern{ display:inline-block; background:#FFF3CD; border:1px solid #FFE69C; border-radius:8px;
+    padding:3px 8px; font-size:11.5px; font-weight:700; margin:2px 3px 2px 0; color:#856404; }
+
+  /* Blockly */
+  .blockly-wrap{ border:2px solid var(--line); border-radius:10px; overflow:hidden;
+    height:75vh; min-height:500px; position:relative; }
+  @media(min-width:600px){ .blockly-wrap{ height:80vh; min-height:600px; } }
+  #blocklyDiv{ position:absolute; inset:0; }
+  /* ブロック画面の右上に浮かぶボタン（もどす・やりなおす・ぜんぶ消す） */
+  .blk-float{ position:absolute; top:10px; right:12px; display:flex; gap:6px; z-index:20; }
+  .blk-float button{ padding:7px 12px; border:1.5px solid var(--line); border-radius:9px;
+    background:rgba(255,255,255,.95); color:var(--ink); font-size:12.5px; font-weight:800;
+    font-family:inherit; cursor:pointer; box-shadow:0 2px 6px rgba(30,42,56,.12); }
+  .blk-float button:hover{ border-color:var(--teal); background:#fff; }
+  .blk-float button:active{ transform:scale(.96); }
+  .blk-float button.danger{ color:var(--coral); }
+  .blk-bar{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .blk-btn{ padding:6px 12px; border:1.5px solid var(--line); border-radius:8px; background:var(--surface);
+    font-size:11.5px; font-weight:700; cursor:pointer; font-family:inherit; color:var(--ink); }
+  .blk-btn:hover{ border-color:var(--teal); background:var(--chip-bg); }
+
+  .dev-info{ margin-top:8px; font-size:12px; font-weight:700; color:var(--sub); line-height:1.6; word-break:break-all; }
+  .conflict-warn{ margin-top:8px; padding:8px 12px; background:#FFF3CD; border:2px solid #FFE69C; border-radius:10px;
+    font-size:12.5px; font-weight:800; color:#7A5A00; line-height:1.6; }
+
+  /* ためしてみる（シミュレータ） */
+  .sim-wrap{ display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+  .sim-left{ flex:0 0 auto; width:min(240px,100%); }
+  #simFace{ width:100%; background:#F4F8FC; border:2px solid var(--line); border-radius:14px; }
+  .sim-ind{ display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-top:6px; min-height:24px; }
+  .sim-ind span{ font-size:12px; font-weight:800; padding:3px 10px; border-radius:999px; }
+  .sim-ind .ledon{ background:#FFF3C4; color:#8A6D00; }
+  .sim-ind .fanon{ background:#DDF3FF; color:#0A6E9E; }
+  .sim-ind .camon{ background:#E8E4FF; color:#4B3A9E; }
+  .sim-right{ flex:1; min-width:260px; }
+  .sim-top{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px; }
+  .sim-top label{ font-size:12px; font-weight:800; color:var(--sub); display:flex; align-items:center; gap:6px; }
+  .sim-top select{ padding:6px 8px; border:2px solid var(--line); border-radius:8px; font-family:inherit; font-weight:800; }
+  .sim-note{ font-size:11.5px; color:var(--sub); font-weight:700; margin:0 0 8px; }
+  .sim-sliders{ display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:6px; }
+  .sim-sl{ background:#F4F8FC; border-radius:10px; padding:6px 10px; }
+  .sim-sl label{ font-size:12px; font-weight:800; color:var(--sub); display:flex; justify-content:space-between; }
+  .sim-sl input{ width:100%; }
+  .sim-hold{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .sim-hold button{ padding:9px 14px; border:2px solid var(--teal); background:#fff; color:#0B8A81; border-radius:10px;
+    font-weight:800; font-size:13px; cursor:pointer; font-family:inherit; user-select:none; touch-action:none; }
+  .sim-hold button.pressed{ background:var(--teal); color:#fff; }
+
+  /* プログラムプレビュー */
+  .prog-toggle{ font-size:12px; font-weight:800; color:var(--sub); cursor:pointer; user-select:none; margin-bottom:4px; padding:4px 0; }
+  .prog-toggle:hover{ color:var(--blue); }
+  .prog-preview{ padding:10px 12px; background:var(--chip-bg); border:1.5px solid var(--line); border-radius:10px;
+    font-size:12.5px; font-weight:700; line-height:1.7; white-space:pre-wrap; min-height:36px; color:var(--sub); }
+  .prog-preview.has{ color:var(--ink); }
+
+  /* 入力フィールド */
+  .field label{ font-size:12px; font-weight:800; color:var(--sub); display:block; margin-bottom:4px; }
+  .field textarea{ width:100%; border:2px solid var(--line); border-radius:10px; padding:9px 11px;
+    font-size:13px; font-family:inherit; resize:vertical; background:transparent; color:var(--ink); line-height:1.6; }
+  .field textarea:focus{ border-color:var(--teal); outline:none; }
+  .field+.field{ margin-top:10px; }
+
+  /* レビューボタン */
+  .review-bar{ display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .btn-rv{ padding:10px 20px; border:0; border-radius:10px; background:linear-gradient(135deg,var(--gold),#E29A00);
+    color:#fff; font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; transition:transform .1s; }
+  .btn-rv:hover{ transform:translateY(-1px); }
+  .btn-rv:active{ transform:scale(.97); }
+  .btn-rv:disabled{ opacity:.5; cursor:default; transform:none; }
+  .rv-msg{ font-size:12px; font-weight:700; color:var(--sub); }
+  .rv-msg.err{ color:var(--coral); }
+  .rv-msg.ok{ color:var(--up); }
+
+  /* 実機送信 */
+  .deploy-bar{ display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap; }
+  .btn-deploy{ padding:10px 20px; border:0; border-radius:10px; background:#E8604C; color:#fff;
+    font-weight:800; font-size:14px; cursor:pointer; font-family:inherit; box-shadow:0 3px 10px rgba(232,96,76,.35); transition:transform .1s; }
+  .btn-deploy:hover{ transform:translateY(-1px); }
+  .btn-deploy:active{ transform:scale(.97); }
+  .btn-deploy:disabled{ opacity:.5; cursor:default; transform:none; }
+  .device-sel{ padding:8px 10px; border:2px solid var(--line); border-radius:10px;
+    font-size:14px; font-weight:800; font-family:inherit; color:var(--ink); background:#fff; cursor:pointer; }
+  .device-sel option.online{ color:#2FA95F; }
+  .device-sel option.offline{ color:#B0B8C4; }
+  .deploy-status{ font-size:13px; font-weight:800; }
+  .deploy-status.ok{ color:var(--teal); }
+  .deploy-status.err{ color:var(--coral); }
+  .deploy-status.warn{ color:#B07A00; }
+  .spinner{ display:inline-block; width:18px; height:18px; border:3px solid rgba(255,255,255,.4);
+    border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* 結果カード */
+  .result-card{ margin-top:12px; border:2px solid var(--gold); border-radius:var(--radius); padding:14px 16px;
+    background:var(--surface); display:none; }
+  .result-card.show{ display:block; animation:fadeUp .35s ease-out; }
+  @keyframes fadeUp{ from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .result-head{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .result-face{ flex-shrink:0; }
+  .result-stars{ font-size:32px; letter-spacing:3px; color:var(--gold); line-height:1; }
+  .result-stars .off{ color:var(--line); }
+  .result-stars span{ display:inline-block; }
+  @keyframes pop{ 0%{transform:scale(0);opacity:0} 60%{transform:scale(1.25)} 100%{transform:scale(1);opacity:1} }
+  .result-stars span.anim{ animation:pop .28s ease-out both; }
+  .result-improve{ font-size:12px; font-weight:800; color:var(--up); display:none; }
+  .result-improve.show{ display:inline-block; margin-left:8px; }
+  .btn-honne{ background:#6C5CE7 !important; border-color:#6C5CE7 !important; }
+  .btn-honne:hover{ filter:brightness(1.07); }
+  .honne-hint{ margin-top:5px; font-size:11px; font-weight:700; color:#7A6FB0; }
+  /* 本音モードは むらさき。ふつうのレビュー（金色）と ひと目で見分ける */
+  .result-card.honne{ border-color:#6C5CE7; background:#FBFAFF; }
+  .result-card.honne .result-stars{ color:#6C5CE7; }
+  .result-card.honne .result-comment{ background:#F6F3FF; border-color:#C7BDF5; }
+  .result-card.honne .result-comment .who{ color:#5B4BC4; }
+  .honne-banner{ display:none; margin:-14px -16px 12px; padding:8px 16px;
+    background:linear-gradient(90deg,#6C5CE7,#A29BFE); color:#fff;
+    border-radius:var(--radius) var(--radius) 0 0; font-size:13px; font-weight:800; }
+  .result-card.honne .honne-banner{ display:block; }
+  .honne-banner small{ display:block; font-size:11px; font-weight:700; opacity:.9; margin-top:1px; }
+  .capped-note{ display:none; margin-top:8px; padding:7px 10px; border-radius:10px;
+    background:#FFF3E0; border:2px solid #FFCC80; color:#9A5B00;
+    font-size:12px; font-weight:800; }
+  .result-card.honne .capped-note.show{ display:block; }
+  .result-comment{ margin-top:10px; background:var(--ai-bg); border:2px solid var(--ai-border); border-radius:12px;
+    padding:10px 14px; font-size:13px; font-weight:700; line-height:1.7; white-space:pre-wrap; }
+  .result-comment .who{ font-size:11px; font-weight:800; color:var(--plum); display:block; margin-bottom:3px; }
+  .result-cov{ margin-top:10px; background:#F3F8FF; border:2px solid #BBD8F5;
+    border-radius:12px; padding:9px 11px; }
+  .result-cov .cov-label{ font-size:11px; font-weight:800; color:#1565C0; display:block; margin-bottom:5px; }
+  .result-cov .cov-row{ display:flex; gap:7px; align-items:flex-start; font-size:13px;
+    font-weight:700; padding:3px 0; border-top:1px dashed #D5E6F8; }
+  .result-cov .cov-row:first-of-type{ border-top:none; }
+  .result-cov .cov-ng{ color:#C62828; }
+  .result-cov .cov-ok{ color:#2E7D32; }
+  .result-cov .cov-why{ color:#777; font-weight:600; font-size:12px; }
+  .result-honne{ margin-top:10px; background:#F6F3FF; border:2px solid #C7BDF5;
+    border-radius:12px; padding:9px 11px; }
+  .result-honne .h-label{ font-size:11px; font-weight:800; color:#5B4BC4; display:block; margin-bottom:5px; }
+  .result-honne .h-row{ font-size:12.5px; font-weight:700; color:#43397F;
+    padding:4px 0; border-top:1px dashed #D8D0F3; }
+  .result-honne .h-row:first-of-type{ border-top:none; }
+  .result-honne .h-head{ color:#C62828; }
+  .result-match{ margin-top:10px; background:#fff8e1; border:2px solid #ffc107; border-radius:12px;
+    padding:10px 14px; font-size:13px; font-weight:700; line-height:1.7; white-space:pre-wrap; }
+  .result-match .match-label{ font-size:11px; font-weight:800; color:#e65100; display:block; margin-bottom:3px; }
+
+  /* ★の推移 */
+  .trend{ display:flex; align-items:flex-end; gap:6px; height:110px; padding:6px 2px 0; overflow-x:auto; }
+  .bar-wrap{ display:flex; flex-direction:column; align-items:center; justify-content:flex-end; flex:0 0 34px; height:100%; }
+  .bar{ width:24px; border-radius:6px 6px 0 0; background:linear-gradient(180deg,var(--gold),#E29A00); min-height:4px; }
+  .bar-wrap .n{ font-size:11px; font-weight:800; color:var(--sub); margin-top:3px; }
+  .bar-wrap .v{ font-size:11px; font-weight:800; color:#B07A00; margin-bottom:2px; }
+  .summary{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  .chip{ background:var(--chip-bg); border:1px solid var(--line); border-radius:12px; padding:6px 11px;
+    font-size:12px; font-weight:800; color:var(--sub); }
+  .chip b{ display:block; font-size:18px; color:var(--ink); line-height:1.2; }
+  .chip.up b{ color:var(--up); }
+
+  /* タイムライン */
+  .timeline{ position:relative; padding-left:26px; }
+  .timeline::before{ content:""; position:absolute; left:9px; top:8px; bottom:8px; width:3px; background:#D5DEEA; border-radius:2px; }
+  .tl-entry{ position:relative; background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+    padding:12px 16px; margin-bottom:12px; }
+  .tl-entry::before{ content:""; position:absolute; left:-24px; top:18px; width:13px; height:13px; border-radius:50%;
+    background:var(--gold); border:3px solid var(--bg); }
+  .tl-entry .head{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .tl-entry .stars{ font-size:22px; letter-spacing:2px; color:var(--gold); line-height:1; }
+  .tl-entry .stars .off{ color:var(--line); }
+  .tl-entry .time{ font-size:11px; font-weight:800; color:var(--sub); margin-left:auto; }
+  .tl-entry .elabel{ font-size:11px; font-weight:800; color:var(--sub); margin-top:6px; }
+  .tl-entry .desc{ font-size:12.5px; font-weight:700; line-height:1.6; white-space:pre-wrap; }
+  .tl-entry .ai{ margin-top:8px; background:var(--ai-bg); border:2px solid var(--ai-border); border-radius:12px;
+    padding:8px 12px; font-size:12.5px; font-weight:700; line-height:1.6; white-space:pre-wrap; }
+  .tl-entry .ai .who2{ font-size:11px; font-weight:800; color:var(--plum); display:block; margin-bottom:2px; }
+  .empty-log{ text-align:center; color:var(--sub); font-weight:700; padding:28px 10px; font-size:13px; }
+  /* ヒント・答え */
+  .help-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+  .help-btn{ padding:8px 16px; border:2px solid #E8B13A; background:#FFF8E1; color:#7A5B00; border-radius:999px; font-weight:800;
+    font-size:14px; cursor:pointer; font-family:inherit; }
+  .help-btn.ans{ border-color:#5B8DD8; background:#EEF4FD; color:#24527F; }
+  .hint-box{ margin-top:10px; background:#FFFBEA; border:2px dashed #E8B13A; border-radius:12px; padding:10px 14px; }
+  .hint-box .hint{ font-size:14px; font-weight:700; line-height:1.7; margin:4px 0; }
+  .hint-box .hint b{ color:#9A6A00; }
+  .hint-box button{ margin-top:6px; }
+  .ans-modal{ position:fixed; inset:0; background:rgba(20,30,50,.5); z-index:200; display:flex; align-items:center; justify-content:center; padding:12px; }
+  .ans-box{ background:#fff; border-radius:16px; width:min(980px,96vw); max-height:94vh; overflow-y:auto; padding:18px 20px; }
+  .ans-box h3{ margin:0 0 8px; }
+  .ans-desc{ font-size:14px; font-weight:700; line-height:1.7; background:#F4F8FD; border-radius:10px; padding:10px 12px; }
+  .ans-points{ margin:8px 0; padding-left:20px; font-size:13.5px; line-height:1.7; font-weight:700; color:#24527F; }
+  .ans-blocks{ height:min(460px,55vh); border:2px solid #DCE4EE; border-radius:12px; overflow:hidden; background:#FBFDFF; }
+  .ans-btns{ display:flex; gap:10px; justify-content:flex-end; margin-top:10px; flex-wrap:wrap; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="logo"></span>チャッピーラボ</div>
+  <div class="tabs">
+    <a href="index.html">🏠</a>
+    <a href="editor.html">① つくる</a>
+    <a href="dashboard.html">② みる</a>
+    <a href="learn.html">③ まなぶ</a>
+    <a class="on" href="solve.html">④ 問題解決</a>
+    <span id="tab5" style="display:none"></span>
+  </div>
+</header>
+
+<main>
+  <!-- ログイン -->
+  <div class="card" id="loginCard" style="display:none">
+    <h2>④ 問題解決</h2>
+    <p class="sub">ログインして、つくったプログラムを「使う人」に見てもらおう！</p>
+    <div class="login-row">
+      <select id="cls"></select>
+      <input id="pass" inputmode="numeric" maxlength="4" placeholder="4けた" autocomplete="off">
+      <button class="btn" id="loginBtn">ログイン</button>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <!-- メインエリア -->
+  <div id="mainArea" style="display:none">
+    <div class="card">
+      <div class="top">
+        <div class="who">④ 問題解決（お試し版）<span id="whoLabel" style="display:none"></span></div>
+      </div>
+    </div>
+
+    <!-- ペルソナ選択 -->
+    <div class="card" id="personaCard">
+      <h2>👤 使う人（ペルソナ）をえらぶ</h2>
+      <div class="persona-grid" id="personaGrid"></div>
+      <div class="persona-detail" id="personaDetail"></div>
+      <div class="help-row" id="helpRow" style="display:none">
+        <button type="button" class="help-btn" id="hintBtn" style="display:none">💡 ヒントを見る</button>
+        <button type="button" class="help-btn ans" id="answerBtn" style="display:none">📘 答え（お手本）を見る</button>
+      </div>
+      <div class="hint-box" id="hintBox" style="display:none"></div>
+    </div>
+
+    <!-- 答え（お手本） -->
+    <div class="ans-modal" id="ansModal" style="display:none">
+      <div class="ans-box">
+        <h3 id="ansTitle">📘 答え（お手本）</h3>
+        <div class="ans-desc" id="ansDesc"></div>
+        <ul class="ans-points" id="ansPoints"></ul>
+        <div class="ans-blocks" id="ansBlocks"></div>
+        <div class="ans-btns">
+          <button type="button" class="help-btn" id="ansLoad">🧩 このブロックを 自分の画面に読みこむ</button>
+          <button type="button" class="help-btn ans" id="ansClose">とじる</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ペルソナチャット（先生がONにしたクラスだけ出る） -->
+    <div class="card chat-card" id="chatCard" style="display:none">
+      <h2>💬 <span id="chatWho">使う人</span>に 聞いてみよう</h2>
+      <div class="chat-note">下のボタンで、くらしのことや 困っていることを聞けます。作り方は教えてくれないので、聞いたことをもとに自分で考えよう！
+        <br>（お試し版は、ペルソナの設定表から 決まった答えを返します。生成AIは使っていません）</div>
+      <div class="chat-log" id="chatLog"></div>
+      <div class="chat-quick" id="chatQuick"></div>
+      <div class="chat-input">
+        <input id="chatInput" maxlength="200" placeholder="れい：薬は何時に飲みますか？" autocomplete="off">
+        <button class="btn" id="chatSend">送る</button>
+      </div>
+      <div class="chat-msg" id="chatMsg"></div>
+      <div class="chat-left" id="chatLeft"></div>
+    </div>
+
+    <!-- Blocklyエディタ -->
+    <div class="card">
+      <h2>🧩 ブロックでプログラムをつくる</h2>
+      <div class="blockly-wrap" id="blocklyWrap">
+        <div id="blocklyDiv"></div>
+        <!-- ブロック画面の中に浮かせる（下までスクロールしなくても いつでも押せる） -->
+        <div class="blk-float">
+          <button type="button" id="undoBtn" title="ひとつ前にもどす（Ctrl+Z）">↩ もどす</button>
+          <button type="button" id="redoBtn" title="もどしたのを やりなおす（Ctrl+Y）">↪ やりなおす</button>
+          <button type="button" id="clearBtn" class="danger" title="ぜんぶ消す">🗑️ ぜんぶ消す</button>
+        </div>
+      </div>
+      <div class="conflict-warn" id="conflictWarn" style="display:none"></div>
+    </div>
+
+    <!-- ためしてみる（画面の中のチャッピー） -->
+    <div class="card">
+      <h2>🎮 ためしてみる（画面の中のチャッピー）</h2>
+      <div class="sim-wrap">
+        <div class="sim-left">
+          <svg id="simFace" viewBox="0 0 220 220"></svg>
+          <div class="sim-ind" id="simInd"></div>
+        </div>
+        <div class="sim-right">
+          <div class="sim-top">
+            <button class="btn" id="simRun">▶ ためす</button>
+            <label>待つ時間
+              <select id="simSpeed">
+                <option value="1">そのまま</option>
+                <option value="10" selected>10倍はやく</option>
+                <option value="100">100倍はやく</option>
+                <option value="1000">1000倍はやく</option>
+              </select>
+            </label>
+            <span class="rv-msg" id="simMsg"></span>
+          </div>
+          <p class="sim-note">下のスライダーやボタンで、センサーの値を自分で変えながら試せるよ。実機に送る前の動作チェックに使おう。</p>
+          <div class="sim-sliders">
+            <div class="sim-sl"><label>📏 きょり <b id="simV_distance">30</b> cm</label><input type="range" min="0" max="50" value="30" data-k="distance"></div>
+            <div class="sim-sl"><label>💡 明るさ <b id="simV_light">300</b></label><input type="range" min="0" max="500" value="300" data-k="light"></div>
+            <div class="sim-sl"><label>🌡️ 温度 <b id="simV_temp">25</b> ℃</label><input type="range" min="0" max="45" value="25" data-k="temp"></div>
+            <div class="sim-sl"><label>🕐 いまの時 <b id="simV_hour">12</b> 時</label><input type="range" min="0" max="23" value="12" data-k="hour"></div>
+            <div class="sim-sl"><label>🕐 いまの分 <b id="simV_minute">0</b> 分</label><input type="range" min="0" max="59" value="0" data-k="minute"></div>
+          </div>
+          <div class="sim-hold">
+            <button id="simBtnRed" data-k="button_red">🔴 赤ボタン（おしてる間）</button>
+            <button id="simBtnBlue" data-k="button_blue">🔵 青ボタン（おしてる間）</button>
+            <button id="simBtnBoth" data-k="both">🔴🔵 赤と青を同時に（おしてる間）</button>
+            <button id="simPir" data-k="pir" data-toggle="1">👤 人がいる（おすと切りかえ）</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- レビュー送信 -->
+    <div class="card">
+      <h2>📨 使う人にレビューしてもらう</h2>
+      <div class="prog-toggle" id="progToggle">▶ ブロックから生成されたプログラム内容を見る</div>
+      <div class="prog-preview" id="progPreview" style="display:none">ブロックを組むと、ここに手順が表示されます</div>
+      <div class="field">
+        <label>✏️ 使う人に伝えるロボットの説明（どんな動きをして、どう役に立つか）</label>
+        <textarea id="descInput" rows="3" placeholder="れい：ボタンをおすと名前をよんで声で話しかけてくれます。さみしいとき、話し相手になってくれるロボットです。"></textarea>
+      </div>
+      <div class="review-bar">
+        <button class="btn-rv" id="rvBtn">⭐ 使う人にレビューしてもらう</button>
+        <button class="btn-rv btn-honne" id="honneBtn">🫢 本音で レビューしてもらう</button>
+        <span class="rv-msg" id="rvMsg"></span>
+      </div>
+      <div class="honne-hint" id="honneHint">🫢 本音は きびしいチャレンジ。まず ⭐ ふつうで★5をとってから 挑戦しよう（実機で動かした結果をもとに、えんりょなしで評価します）</div>
+      <div class="trial-note">お試し版のレビューは 生成AIを使わず、授業版と同じ「実機の点検」と「困りごとのチェック」のきまりで ★を決めます。
+        授業版では、ここで ペルソナ（AI）が 自分のことばで感想を話します。</div>
+      <div class="result-card" id="resultCard">
+        <div class="honne-banner" id="honneBanner">🫢 本音モードの こたえ
+          <small>いつもは えんりょして言わないことまで、正直に話してもらっています</small>
+        </div>
+        <div class="result-head">
+          <div class="result-face" id="resultFace"></div>
+          <div>
+            <div class="result-stars" id="resultStars"></div>
+            <span class="result-improve" id="resultImprove"></span>
+          </div>
+        </div>
+        <div class="result-comment" id="resultComment"></div>
+        <div class="result-match" id="resultMatch" style="display:none"></div>
+        <div class="capped-note" id="cappedNote"></div>
+        <div class="result-cov" id="resultCov" style="display:none"></div>
+        <div class="result-honne" id="resultHonne" style="display:none"></div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🚀 実機に送る</h2>
+      <div class="deploy-bar">
+        <select id="deviceSel" class="device-sel" title="どのチャッピーに送るか">
+          <option value="stackchan-01">1号機</option>
+          <option value="stackchan-02">2号機</option>
+          <option value="stackchan-03">3号機</option>
+          <option value="stackchan-04">4号機</option>
+          <option value="stackchan-05">5号機</option>
+          <option value="stackchan-06">6号機</option>
+          <option value="stackchan-07">7号機</option>
+          <option value="stackchan-08">8号機</option>
+        </select>
+        <button class="btn-deploy" id="deployBtn">🚀 チャッピーに おくる</button>
+        <span class="deploy-status" id="deployStatus"></span>
+      </div>
+      <div class="dev-info" id="devInfo"></div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const STU_KEY = 'chappy_student';
+const $ = id => document.getElementById(id);
+const toHalf = s => s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+let student = null;
+let personaName = '';
+let lastStars = 0;
+
+try { student = JSON.parse(sessionStorage.getItem(STU_KEY) || 'null'); } catch(e){ student = null; }
+
+/* ========== Blockly カスタムブロック定義 ========== */
+ChappyBlocks.defineBlocks();
+
+/* ========== Blockly ワークスペース ========== */
+const toolbox = ChappyBlocks.toolbox;
+
+const theme = Blockly.Theme.defineTheme('sclabSolve', {
+  base: Blockly.Themes.Classic,
+  componentStyles: {
+    workspaceBackgroundColour:'#FBFDFF',
+    toolboxBackgroundColour:'#EFF4FA',
+    flyoutBackgroundColour:'#E7EEF6',
+    flyoutOpacity:0.96,
+    scrollbarColour:'#C3D0DE',
+  },
+  fontStyle:{ family:'"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif', size:12 },
+});
+
+let workspace = null;
+
+// ブロックを「左のツールボックス」や「ゴミ箱」の上で離したら確実に消す保険。
+// （Blockly標準の削除が効かない環境でも、ここで必ず消す）
+function enableReliableDelete(ws){
+  let px = 0, py = 0;
+  const track = e => {
+    const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+    if(t && typeof t.clientX === 'number'){ px = t.clientX; py = t.clientY; }
+  };
+  document.addEventListener('pointermove', track, true);
+  document.addEventListener('pointerup', track, true);
+  document.addEventListener('touchmove', track, true);
+  document.addEventListener('touchend', track, true);
+  ws.addChangeListener(e => {
+    if(e.type !== Blockly.Events.BLOCK_DRAG || e.isStart) return;
+    const blk = ws.getBlockById(e.blockId);
+    if(!blk || !blk.isDeletable()) return;
+    const div = ws.getInjectionDiv ? ws.getInjectionDiv() : null;
+    if(!div) return;
+    let delRight = 0, trash = null;
+    try {
+      const tb = div.querySelector('.blocklyToolboxDiv');
+      if(tb){ const r = tb.getBoundingClientRect(); if(r.width>0) delRight = Math.max(delRight, r.right); }
+      const fl = div.querySelector('.blocklyFlyout');
+      if(fl){ const r = fl.getBoundingClientRect(); if(r.width>2 && fl.style.display!=='none') delRight = Math.max(delRight, r.right); }
+      const tc = div.querySelector('.blocklyTrash');
+      if(tc){ trash = tc.getBoundingClientRect(); }
+    } catch(_){}
+    const overToolbox = delRight > 0 && px <= delRight;
+    const overTrash = trash && px >= trash.left-12 && px <= trash.right+12 && py >= trash.top-12 && py <= trash.bottom+12;
+    if(overToolbox || overTrash){
+      const id = e.blockId;
+      setTimeout(() => { try { const b = ws.getBlockById(id); if(b) b.dispose(false); } catch(_){} }, 0);
+    }
+  });
+}
+
+function initBlockly(){
+  if(workspace) return;
+  workspace = Blockly.inject('blocklyDiv', {
+    toolbox, theme,
+    media:'https://unpkg.com/blockly@13.1.0/media/',
+    renderer:'zelos',
+    grid:{ spacing:24, length:3, colour:'#E3EAF2', snap:true },
+    zoom:{ controls:false, wheel:true, startScale:0.85, maxScale:2.5, minScale:0.4 },
+    move:{ scrollbars:true, drag:true, wheel:true },
+    trashcan:true,
+  });
+  setTimeout(() => Blockly.svgResize(workspace), 100);
+  window.addEventListener('resize', () => Blockly.svgResize(workspace));
+  workspace.addChangeListener(e => { if(!e.isUiEvent) updatePreview(); });
+  enableReliableDelete(workspace);
+  try {
+    const editWs = sessionStorage.getItem('devlog_edit_ws');
+    if(editWs){
+      sessionStorage.removeItem('devlog_edit_ws');
+      const data = JSON.parse(editWs);
+      if(data && data.blocks){
+        Blockly.serialization.workspaces.load(data, workspace);
+        updatePreview();
+      }
+    }
+    // そのときの説明も 入力欄にもどす（ブロックだけ戻っても、書き直すのは大変なので）
+    const editDesc = sessionStorage.getItem('devlog_edit_desc');
+    if(editDesc !== null){
+      sessionStorage.removeItem('devlog_edit_desc');
+      const di = $('descInput');
+      if(di) di.value = editDesc;
+    }
+  } catch(e){}
+}
+$('clearBtn').addEventListener('click', () => {
+  if(workspace && confirm('ぜんぶ消しますか？')) workspace.clear();
+});
+$('undoBtn').addEventListener('click', () => { if(workspace) workspace.undo(false); });
+$('redoBtn').addEventListener('click', () => { if(workspace) workspace.undo(true); });
+
+/* ========== ためしてみる（シミュレータ） ========== */
+const simSensors = { distance:30, light:300, temp:25, hour:12, minute:0, pir:false, button_red:false, button_blue:false };
+const simFaceEl = $('simFace');
+simFaceEl.innerHTML = ChappySim.FACE_SVG;
+function simPaint(st){
+  ChappySim.drawFace(simFaceEl, st);
+  let h = '';
+  if(st.led) h += '<span class="ledon">💡 LED ON</span>';
+  if(st.fan) h += '<span class="fanon">🌀 ファン ON</span>';
+  if(st.camera) h += '<span class="camon">📷 カメラ ON</span>';
+  $('simInd').innerHTML = h;
+}
+const simRunner = ChappySim.createRunner({
+  // 「赤と青を同時におした」は、赤と青の両方がおされているかで決まる
+  sensors: () => Object.assign({}, simSensors,
+                 { button_both: simSensors.button_red && simSensors.button_blue }),
+  paint: simPaint,
+  speed: () => Number($('simSpeed').value) || 1,
+  onEnd: () => simSetRunning(false),
+});
+function simSetRunning(on){
+  $('simRun').textContent = on ? '⏹ とめる' : '▶ ためす';
+  if(!on) $('simMsg').textContent = '';
+}
+simRunner.reset();
+document.querySelectorAll('.sim-sl input').forEach(r => {
+  r.addEventListener('input', () => {
+    simSensors[r.dataset.k] = Number(r.value);
+    $('simV_' + r.dataset.k).textContent = r.value;
+  });
+});
+document.querySelectorAll('.sim-hold button').forEach(b => {
+  const k = b.dataset.k;
+  if(b.dataset.toggle){
+    b.addEventListener('click', () => { simSensors[k] = !simSensors[k]; b.classList.toggle('pressed', simSensors[k]); });
+  } else {
+    // 「both」は 赤と青の2つを いっしょに おす
+    const keys = (k === 'both') ? ['button_red','button_blue'] : [k];
+    const mark = on => {
+      keys.forEach(x => { simSensors[x] = on; });
+      b.classList.toggle('pressed', on);
+      // 赤・青の単体ボタンの見た目も合わせる
+      document.querySelectorAll('.sim-hold button').forEach(o => {
+        const ok = o.dataset.k;
+        if(ok === 'button_red' || ok === 'button_blue') o.classList.toggle('pressed', !!simSensors[ok]);
+      });
+    };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); mark(true); });
+    ['pointerup','pointerleave','pointercancel'].forEach(ev => b.addEventListener(ev, () => mark(false)));
+  }
+});
+$('simRun').addEventListener('click', () => {
+  if(simRunner.isRunning()){ simRunner.stop(); simSetRunning(false); return; }
+  const prog = buildProgram();
+  if(!progHasBlocks(prog)){ $('simMsg').textContent = 'ブロックを置いてから おしてね'; return; }
+  simSetRunning(true);
+  const th = (prog.threads || []).length;
+  $('simMsg').textContent = th ? '🔀 ' + th + 'つのずっとを 同時に動かしています' : '';
+  simRunner.start(prog);
+});
+
+/* ========== buildProgram（editorと同じロジック） ========== */
+
+function buildProgram(){ return ChappyBlocks.buildProgram(workspace); }
+
+/* ========== プログラムJSON → 日本語テキスト ========== */
+const SENSOR_JA = { distance:'距離(cm)', light:'明るさ', temp:'温度(℃)', pir:'人感', button_red:'赤ボタン', button_blue:'青ボタン', button_both:'赤と青の同時おし', hour:'いまの時', minute:'いまの分' };
+const FACE_JA = { neutral:'ふつう', happy:'笑顔', sad:'悲しい', angry:'怒り', sleepy:'眠い', doubt:'困り' };
+
+function condJa(c){
+  if(!c) return '（条件なし）';
+  // 「かつ」「または」でつないだ条件
+  if(c.type==='and' || Array.isArray(c.all)){
+    const ps = c.type==='and' ? [c.left,c.right] : c.all;
+    return '（' + ps.filter(Boolean).map(condJa).join(' かつ ') + '）';
+  }
+  if(c.type==='or' || Array.isArray(c.any)){
+    const ps = c.type==='or' ? [c.left,c.right] : c.any;
+    return '（' + ps.filter(Boolean).map(condJa).join(' または ') + '）';
+  }
+  if(c.sensor==='pir') return c.value ? '人がいる' : '人がいない';
+  const s = SENSOR_JA[c.sensor] || String(c.sensor);
+  if(c.sensor==='button_both') return c.value ? '赤と青を同時に押した' : '赤と青を同時に押していない';
+  if(c.sensor==='button_red'||c.sensor==='button_blue') return s+(c.value?'が押された':'が押されていない');
+  return s+' '+(c.op||'')+' '+(c.value!=null?c.value:'');
+}
+function outline(actions, depth){
+  depth = depth||0;
+  let lines = [], pad = '';
+  for(let i=0;i<depth;i++) pad+='  ';
+  if(!Array.isArray(actions)) return lines;
+  actions.forEach(a => {
+    if(!a) return;
+    const t = a.type;
+    if(t==='face')      lines.push(pad+'表情を「'+(FACE_JA[a.value]||a.value)+'」にする');
+    else if(t==='speak')lines.push(pad+'「'+(a.value||'')+'」としゃべる');
+    else if(t==='pan')  lines.push(pad+'首を左右 '+a.value+' 度にする');
+    else if(t==='tilt') lines.push(pad+'首を上下 '+a.value+' 度にする');
+    else if(t==='led')  lines.push(pad+'LEDを'+(a.value?'つける':'けす'));
+    else if(t==='fan')  lines.push(pad+'ファンを'+(a.value?'まわす':'とめる'));
+    else if(t==='color')lines.push(pad+'目と口の色を「'+(a.value||'')+'」にする');
+    else if(t==='wait') lines.push(pad+a.value+'秒まつ');
+    else if(t==='camera')lines.push(pad+'カメラを'+(a.value?'つける':'けす'));
+    else if(t==='ai')   lines.push(pad+'AIと会話する');
+    else if(t==='forever'){ lines.push(pad+'ずっとくりかえす：'); lines = lines.concat(outline(a.actions,depth+1)); }
+    else if(t==='repeat'){ lines.push(pad+(a.times||1)+'回くりかえす：'); lines = lines.concat(outline(a.actions,depth+1)); }
+    else if(t==='until'){ lines.push(pad+condJa(a.condition)+' になるまでくりかえす：'); lines = lines.concat(outline(a.actions,depth+1)); }
+    else if(t==='if'){
+      lines.push(pad+'もし '+condJa(a.condition)+' なら：');
+      lines = lines.concat(outline(a.then,depth+1));
+      if(a.else && a.else.length){ lines.push(pad+'そうでなければ：'); lines = lines.concat(outline(a.else,depth+1)); }
+    }
+  });
+  return lines;
+}
+function progHasBlocks(prog){
+  if(!prog) return false;
+  if(prog.actions && prog.actions.length) return true;
+  if(prog.threads && prog.threads.length) return true;
+  return false;
+}
+function programText(program){
+  const acts = program && program.actions ? program.actions : [];
+  const threads = program && program.threads ? program.threads : [];
+  const parts = [];
+  if(acts.length) parts.push(outline(acts).join('\n'));
+  threads.forEach((th,i)=>{
+    parts.push('【並列スレッド'+(i+1)+'】ずっとくりかえす：');
+    parts.push(outline(th.actions||[],1).join('\n') || '  （空）');
+  });
+  return parts.join('\n') || '（何もしないプログラム）';
+}
+
+/* ========== プレビュー更新 ========== */
+function updatePreview(){
+  const prog = buildProgram();
+  const text = programText(prog);
+  const el = $('progPreview');
+  el.textContent = text;
+  el.className = progHasBlocks(prog) ? 'prog-preview has' : 'prog-preview';
+  const cf = ChappySim.findConflicts(prog);
+  const cw = $('conflictWarn');
+  if(cw){
+    if(cf.length){
+      const n = (prog.threads || []).length;
+      cw.style.display = 'block';
+      cw.textContent =
+        '⚠ ' + n + 'つの「ずっと」が、どれも「' + cf.join('」「') + '」を変えています。'
+        + '同時に動くので おし合いになり、' + cf.join('・') + 'がチラチラしてしまいます。'
+        + '「' + cf[0] + '」を変えるのは 1つの「ずっと」にまとめて、その中で「もし〜そうでなければ」で分けよう。'
+        + '（「ずっと」を分けるのは、ファンとあいさつのように べつべつのものを担当させるときだけ）';
+    } else { cw.style.display = 'none'; }
+  }
+}
+$('progToggle').addEventListener('click', () => {
+  const el=$('progPreview'), tg=$('progToggle'), open=el.style.display!=='none';
+  el.style.display = open ? 'none' : 'block';
+  tg.textContent = (open?'▶':'▼')+' ブロックから生成されたプログラム内容を見る';
+});
+
+/* ========== ★表示ヘルパー ========== */
+function starsHTML(n, animate){
+  let h = '';
+  for(let i=1;i<=5;i++){
+    const cls = (i>n?' class="off"':'');
+    const anim = (animate && i<=n) ? ' class="anim" style="animation-delay:'+(i*0.1)+'s"' : cls;
+    h += '<span'+anim+'>★</span>';
+  }
+  return h;
+}
+function fmt(ts){
+  const d = new Date(ts*1000), p = n => String(n).padStart(2,'0');
+  return (d.getMonth()+1)+'/'+d.getDate()+' '+p(d.getHours())+':'+p(d.getMinutes());
+}
+
+/* ========== 顔SVG描画エンジン（シミュレーターから移植） ========== */
+const PF=(function(){
+  const C={sumi:"#3A3A3A",
+    skin:["#FCE0C7","#F6C9A0","#E8B080","#C98B5E","#8D5A38"],
+    hair:["#2B2B2B","#5A3A22","#8A6F54","#C99A3B","#B24B3A","#4A5B8C","#6B6B6B","#D98BB0","#B0B0B0","#D8D0C4","#EDE8E0"]};
+  function shade(h,a){const n=parseInt(h.slice(1),16);return"#"+((1<<24)+(Math.max(0,Math.min(255,(n>>16)+a))<<16)+(Math.max(0,Math.min(255,((n>>8)&255)+a))<<8)+Math.max(0,Math.min(255,(n&255)+a))).toString(16).slice(1)}
+  function bH(s,c){const sh=[null,'<path d="M40 100 C36 150 50 190 60 196 L140 196 C150 190 164 150 160 100 Z" fill="'+c+'"/>','<path d="M42 96 C36 140 46 172 54 182 L146 182 C154 172 164 140 158 96 Z" fill="'+c+'"/>',null,'<ellipse cx="100" cy="96" rx="70" ry="72" fill="'+c+'"/>','<ellipse cx="100" cy="86" rx="60" ry="56" fill="'+c+'"/>','<g fill="'+c+'"><ellipse cx="40" cy="150" rx="18" ry="40"/><ellipse cx="160" cy="150" rx="18" ry="40"/></g>','<path d="M38 104 C32 156 50 194 62 198 L138 198 C150 194 168 156 162 104 Z" fill="'+c+'"/>'];return sh[s]||""}
+  function fH(s,c){const S=C.sumi;switch(s){case 0:return'<path d="M40 104 C36 60 62 34 100 34 C138 34 164 60 160 104 C150 78 150 66 130 60 C120 84 80 84 70 60 C50 66 50 78 40 104 Z" fill="'+c+'" stroke="'+S+'" stroke-width="2"/>';case 1:return'<path d="M40 108 C34 58 64 32 100 32 C136 32 166 58 160 108 L150 98 C150 66 128 52 100 52 C72 52 50 66 50 98 Z" fill="'+c+'" stroke="'+S+'" stroke-width="2"/><path d="M60 58 L142 58 L138 82 L64 82 Z" fill="'+c+'"/>';case 2:return'<path d="M38 106 C34 56 66 32 102 32 C138 32 162 62 160 100 C150 74 120 58 96 62 C84 64 70 74 62 96 C56 78 50 96 44 108 Z" fill="'+c+'" stroke="'+S+'" stroke-width="2"/>';case 3:return'<path d="M44 96 C42 62 66 42 100 42 C134 42 158 62 156 96 C150 74 132 62 100 62 C68 62 50 74 44 96 Z" fill="'+c+'" stroke="'+S+'" stroke-width="2" opacity="0.92"/>';case 4:var r='<g fill="'+c+'" stroke="'+S+'" stroke-width="1.5">';for(var i=0;i<9;i++)r+='<circle cx="'+(40+i*15)+'" cy="'+(54+(i%2)*8)+'" r="14"/>';return r+'</g>';case 5:return'<path d="M42 102 C38 60 66 36 100 36 C134 36 162 60 158 102 C150 76 128 62 100 62 C72 62 50 76 42 102 Z" fill="'+c+'" stroke="'+S+'" stroke-width="2"/><circle cx="100" cy="30" r="16" fill="'+c+'" stroke="'+S+'" stroke-width="2"/>';case 6:return'<path d="M42 104 C38 58 66 34 100 34 C134 34 162 58 158 104 C150 76 128 60 100 60 C72 60 50 76 42 104 Z" fill="'+c+'" stroke="'+S+'" stroke-width="2"/><ellipse cx="34" cy="130" rx="12" ry="26" fill="'+c+'" stroke="'+S+'" stroke-width="2"/><ellipse cx="166" cy="130" rx="12" ry="26" fill="'+c+'" stroke="'+S+'" stroke-width="2"/>';case 7:return'<path d="M38 110 C32 58 66 30 100 30 C134 30 168 58 162 110 C156 84 150 92 138 74 C130 92 118 78 108 66 C100 84 88 70 80 62 C70 82 58 76 50 92 C46 100 44 104 38 110 Z" fill="'+c+'" stroke="'+S+'" stroke-width="2"/>';}return""}
+  function ey(s){const L=74,R=126,y=108,S=C.sumi;function w(k){return'<g stroke="'+S+'" stroke-width="2.5" stroke-linecap="round">'+k+'</g>'}switch(s){case 0:return w('<circle cx="'+L+'" cy="'+y+'" r="10" fill="#fff"/><circle cx="'+R+'" cy="'+y+'" r="10" fill="#fff"/><circle cx="'+L+'" cy="'+y+'" r="4.5" fill="'+S+'"/><circle cx="'+R+'" cy="'+y+'" r="4.5" fill="'+S+'"/>');case 1:return w('<path d="M'+(L-10)+' '+y+' Q'+L+' '+(y-12)+' '+(L+10)+' '+y+'" fill="none"/><path d="M'+(R-10)+' '+y+' Q'+R+' '+(y-12)+' '+(R+10)+' '+y+'" fill="none"/>');case 2:return w('<ellipse cx="'+L+'" cy="'+y+'" rx="12" ry="6" fill="#fff"/><ellipse cx="'+R+'" cy="'+y+'" rx="12" ry="6" fill="#fff"/><circle cx="'+L+'" cy="'+y+'" r="3.5" fill="'+S+'"/><circle cx="'+R+'" cy="'+y+'" r="3.5" fill="'+S+'"/>');case 3:return w('<ellipse cx="'+L+'" cy="'+y+'" rx="11" ry="12" fill="#fff"/><ellipse cx="'+R+'" cy="'+y+'" rx="11" ry="12" fill="#fff"/><circle cx="'+L+'" cy="'+(y+1)+'" r="5.5" fill="'+S+'"/><circle cx="'+R+'" cy="'+(y+1)+'" r="5.5" fill="'+S+'"/>');case 4:return w('<path d="M'+(L-11)+' '+y+' L'+(L+11)+' '+y+'"/><path d="M'+(R-11)+' '+y+' L'+(R+11)+' '+y+'"/>');case 5:return w('<ellipse cx="'+L+'" cy="'+y+'" rx="9" ry="11" fill="#fff"/><ellipse cx="'+R+'" cy="'+y+'" rx="9" ry="11" fill="#fff"/><circle cx="'+(L+2)+'" cy="'+(y-2)+'" r="4.5" fill="'+S+'"/><circle cx="'+(R+2)+'" cy="'+(y-2)+'" r="4.5" fill="'+S+'"/>');case 6:return w('<circle cx="'+L+'" cy="'+y+'" r="13" fill="#fff"/><circle cx="'+R+'" cy="'+y+'" r="13" fill="#fff"/><circle cx="'+L+'" cy="'+y+'" r="4" fill="'+S+'"/><circle cx="'+R+'" cy="'+y+'" r="4" fill="'+S+'"/>');case 7:return w('<path d="M'+(L-11)+' '+(y+3)+' L'+(L+11)+' '+(y-4)+'"/><path d="M'+(R-11)+' '+(y-4)+' L'+(R+11)+' '+(y+3)+'"/><circle cx="'+(L+2)+'" cy="'+y+'" r="3.5" fill="'+S+'"/><circle cx="'+(R-2)+'" cy="'+y+'" r="3.5" fill="'+S+'"/>');}return""}
+  function br(s){const L=74,R=126,y=88,S=C.sumi;function w(k){return'<g stroke="'+S+'" stroke-width="3.5" stroke-linecap="round" fill="none">'+k+'</g>'}switch(s){case 0:return w('<path d="M'+(L-12)+' '+y+' Q'+L+' '+(y-5)+' '+(L+12)+' '+y+'"/><path d="M'+(R-12)+' '+y+' Q'+R+' '+(y-5)+' '+(R+12)+' '+y+'"/>');case 1:return w('<path d="M'+(L-12)+' '+y+' L'+(L+12)+' '+y+'"/><path d="M'+(R-12)+' '+y+' L'+(R+12)+' '+y+'"/>');case 2:return w('<path d="M'+(L-12)+' '+(y+4)+' L'+(L+12)+' '+(y-4)+'"/><path d="M'+(R-12)+' '+(y-4)+' L'+(R+12)+' '+(y+4)+'"/>');case 3:return w('<path d="M'+(L-12)+' '+(y-4)+' L'+(L+12)+' '+(y+4)+'"/><path d="M'+(R-12)+' '+(y+4)+' L'+(R+12)+' '+(y-4)+'"/>');case 4:return w('<path d="M'+(L-13)+' '+(y+2)+' Q'+L+' '+(y-8)+' '+(L+13)+' '+(y+2)+'" stroke-width="5"/><path d="M'+(R-13)+' '+(y+2)+' Q'+R+' '+(y-8)+' '+(R+13)+' '+(y+2)+'" stroke-width="5"/>');case 5:return w('<path d="M'+(L-10)+' '+y+' Q'+L+' '+(y-4)+' '+(L+10)+' '+y+'" stroke-width="2.5"/><path d="M'+(R-10)+' '+y+' Q'+R+' '+(y-4)+' '+(R+10)+' '+y+'" stroke-width="2.5"/>');}return""}
+  function no(s,sk){const x=100,y=124,sc=shade(sk,-22);switch(s){case 0:return'<path d="M'+x+' '+(y-8)+' L'+(x-5)+' '+(y+6)+' L'+(x+5)+' '+(y+6)+' Z" fill="none" stroke="'+sc+'" stroke-width="2" stroke-linejoin="round"/>';case 1:return'<path d="M'+x+' '+(y-6)+' Q'+(x-6)+' '+(y+8)+' '+x+' '+(y+8)+'" fill="none" stroke="'+sc+'" stroke-width="2.5" stroke-linecap="round"/>';case 2:return'<ellipse cx="'+x+'" cy="'+(y+4)+'" rx="5" ry="4" fill="'+sc+'" opacity="0.5"/>';case 3:return'<g stroke="'+sc+'" stroke-width="2" stroke-linecap="round"><path d="M'+(x-4)+' '+(y+6)+' q-2 -2 0 -4"/><path d="M'+(x+4)+' '+(y+6)+' q2 -2 0 -4"/></g>';case 4:return'<line x1="'+x+'" y1="'+(y-4)+'" x2="'+x+'" y2="'+(y+6)+'" stroke="'+sc+'" stroke-width="2" stroke-linecap="round"/>';}return""}
+  function mo(s){const x=100,y=146,S=C.sumi;const st='stroke="'+S+'" stroke-width="2.5" fill="none" stroke-linecap="round"';switch(s){case 0:return'<path d="M'+(x-12)+' '+y+' Q'+x+' '+(y+8)+' '+(x+12)+' '+y+'" '+st+'/>';case 1:return'<path d="M'+(x-8)+' '+(y-2)+' Q'+x+' '+(y+12)+' '+(x+8)+' '+(y-2)+'" '+st+'/>';case 2:return'<path d="M'+(x-14)+' '+y+' L'+(x+14)+' '+y+'" '+st+'/>';case 3:return'<path d="M'+(x-11)+' '+(y+4)+' Q'+x+' '+(y-6)+' '+(x+11)+' '+(y+4)+'" '+st+'/>';case 4:return'<ellipse cx="'+x+'" cy="'+(y+1)+'" rx="5" ry="6" fill="#B5453B" stroke="'+S+'" stroke-width="2"/>';case 5:return'<g '+st+'><path d="M'+(x-12)+' '+y+' Q'+x+' '+(y+8)+' '+(x+12)+' '+y+'"/><path d="M'+(x-12)+' '+y+' L'+(x+12)+' '+y+'"/></g>';}return""}
+  return{svg(f,sz){f=f||{};const fc={hairStyle:f.hairStyle||0,eyes:f.eyes||0,brows:f.brows||0,nose:f.nose||0,mouth:f.mouth||0,face:f.face||0,skin:f.skin==null?1:f.skin,hair:f.hair||0};const sk=C.skin[fc.skin]||C.skin[1],hr=C.hair[fc.hair]||C.hair[0];sz=sz||200;const fs=['<ellipse cx="100" cy="108" rx="62" ry="70"/>','<rect x="42" y="46" width="116" height="132" rx="46"/>','<path d="M100 40 C150 40 158 92 152 126 C146 168 122 182 100 182 C78 182 54 168 48 126 C42 92 50 40 100 40 Z"/>'];return'<svg viewBox="0 0 200 210" width="'+sz+'" height="'+(sz*1.05)+'" xmlns="http://www.w3.org/2000/svg">'+bH(fc.hairStyle,hr)+'<rect x="86" y="150" width="28" height="34" rx="12" fill="'+sk+'"/><g fill="'+sk+'" stroke="'+C.sumi+'" stroke-width="2.5">'+fs[fc.face]+'</g><ellipse cx="42" cy="112" rx="9" ry="13" fill="'+sk+'" stroke="'+C.sumi+'" stroke-width="2"/><ellipse cx="158" cy="112" rx="9" ry="13" fill="'+sk+'" stroke="'+C.sumi+'" stroke-width="2"/>'+br(fc.brows)+ey(fc.eyes)+no(fc.nose,sk)+mo(fc.mouth)+fH(fc.hairStyle,hr)+'</svg>'}};
+})();
+
+/* ========== ペルソナデータ ========== */
+const PERSONAS = [
+  {name:'田中 ハル',age:'70代',face:{hair:9,nose:4,skin:0,mouth:1,face:0,eyes:7,brows:0,hairStyle:3},
+   concerns:['さみしい（話し相手がほしい）'],
+   detail:'朝起きても「おはよう」を言う相手がいない。さみしいときは写真を見たり、ラジオを聞いたりしている。近所の人が通ると、つい話しかけてしまう。',
+   coping:'写真やラジオで気を紛らわせている',notWorried:'物忘れや防犯は心配していない'},
+  {name:'佐藤 マサル',age:'80代',face:{hair:9,skin:1,hairStyle:3,brows:2,nose:1,mouth:0,face:1,eyes:6},
+   concerns:['薬の飲み忘れ（飲んだか分からなくなる）'],
+   detail:'薬を飲んだかどうか分からなくなる。二重に飲みそうになったことも。娘に聞かれるのが情けない。カレンダーに丸をつけているが、その丸をつけるのも忘れる。',
+   coping:'カレンダーに丸をつけている（が忘れる）',notWorried:'さみしさや防犯は心配していない（娘が近くにいる）'},
+  {name:'山口 キヨ',age:'70代',face:{mouth:1,face:0,brows:0,hair:8,nose:4,hairStyle:3,eyes:2,skin:1},
+   concerns:['防犯が心配（外出中に家を確認したい）'],
+   detail:'家に勝手に侵入されたくない。外出中に家の中を確認したい。今は鍵をしっかりかけて外出している。',
+   coping:'鍵をしっかりかけて外出している',notWorried:'さみしさや物忘れは心配していない（友だちが多い）'},
+  {name:'鈴木 トメ',age:'80代',face:{brows:2,skin:1,hair:10,hairStyle:4,face:1,eyes:7,mouth:5,nose:3},
+   concerns:['夏の暑さが心配（熱中症・エアコン苦手）'],
+   detail:'暑くても気づかないうちにふらっとすることがある。エアコンは体が冷えて苦手。昔熱中症になったことがある。',
+   coping:'暑いと思ったら扇風機をつけている',notWorried:'さみしさや物忘れは心配していない（畑仕事の仲間がいる、几帳面）'},
+  {name:'中村 スミ',age:'70代',face:{eyes:1,hairStyle:7,nose:3,hair:8,brows:3,face:2,skin:2,mouth:2},
+   concerns:['さみしい（日中ほとんど誰とも話さない）','薬の飲み忘れ（確認してくれる人がいない）'],
+   detail:'一人暮らしで日中は誰とも話さない。夕方になると急に心細くなる。薬を飲んだか忘れるが、確認してくれる人がいない。',
+   coping:'さみしいときはテレビ、薬はカレンダーで確認（どちらも心もとない）',notWorried:'防犯や暑さはそんなに気にならない'},
+  {name:'小林 タケ',age:'80代',face:{mouth:0,hairStyle:2,skin:2,hair:8,brows:4,face:1,nose:4,eyes:7},
+   concerns:['防犯（外出中に家を守りたい・確認したい）','夏の暑さ（エアコン苦手・気づかずぐったり）'],
+   detail:'外出しているときに家を守ってほしい、中を確認したい。夏は暑さに気づかずぐったりすることがある。エアコンは苦手。',
+   coping:'戸締まりを何度も確認、うちわであおいでいる（心配は消えない）',notWorried:'さみしさや物忘れは心配していない'},
+  {name:'渡辺 ノブ',age:'80代',face:{mouth:1,hairStyle:0,brows:5,skin:4,nose:4,eyes:6,hair:9,face:2},
+   concerns:['さみしい（一人暮らしが長い）','防犯（外出先で家が気になる）','暑さ（熱中症になりかけた・一人だと誰も気づかない）'],
+   detail:'日中は静かすぎてさみしい。外出先で家のことが気になる。去年は部屋の中で熱中症になりかけた。一人だと誰も気づいてくれないのが一番怖い。',
+   coping:'さみしさはラジオ、防犯は戸締まり確認、暑さは窓開け（一人だと限界がある）',notWorried:'物忘れはそんなにない'},
+  {name:'高橋 フミ',age:'80代',face:{nose:2,hair:8,hairStyle:0,eyes:6,skin:0,brows:0,face:1,mouth:0},
+   concerns:['さみしい（一日中誰とも話さない日がある）','薬の飲み忘れ（たくさんあって分からなくなる）','防犯（家に入られたくない）','暑さ（ふらっとする）'],
+   detail:'一日中誰とも話さない日もある。薬がたくさんあり飲んだか分からなくなる。外出中に家を確認したい。夏はふらっとする。一人だと何かあっても誰も気づかない。',
+   coping:'できることは全部やっているが、一人で全部はもう大変（だれかそばにいてほしい）',notWorried:''},
+];
+
+let curPersona = null;
+window.PERSONAS_FOR_TRIAL = PERSONAS;
+
+/* ========== ペルソナグリッド構築 ========== */
+function buildPersonaGrid(){
+  const g = $('personaGrid');
+  g.innerHTML = '';
+  PERSONAS.forEach((p, i) => {
+    const c = document.createElement('div');
+    c.className = 'p-card';
+    c.dataset.idx = i;
+    c.innerHTML = PF.svg(p.face, 44) + '<div><div class="p-name">'+p.name+'</div><div class="p-age">'+p.age+'</div></div>';
+    c.addEventListener('click', () => selectPersona(i));
+    g.appendChild(c);
+  });
+}
+
+/* ========== ヒント・答え（先生の設定で出す） ========== */
+let hintsOn = false, answersOn = false, hintShown = 0, ansWs = null;
+function drawHelpRow(){
+  const has = !!curPersona;
+  $('hintBtn').style.display = (hintsOn && has) ? '' : 'none';
+  $('answerBtn').style.display = (answersOn && has) ? '' : 'none';
+  $('helpRow').style.display = ((hintsOn || answersOn) && has) ? '' : 'none';
+  if(!hintsOn){ $('hintBox').style.display = 'none'; }
+}
+async function showHint(){
+  if(!curPersona || !student) return;
+  try{
+    const j = await (await fetch('/api/hint?cls=' + encodeURIComponent(student.cls) + '&name=' + encodeURIComponent(student.name) +
+      '&persona=' + encodeURIComponent(curPersona.name))).json();
+    const box = $('hintBox'); box.style.display = '';
+    if(!j.ok){ box.innerHTML = '<div class="hint">' + (j.msg || 'ヒントを読めませんでした') + '</div>'; return; }
+    hintShown = Math.min(j.hints.length, hintShown + 1);
+    box.innerHTML = j.hints.slice(0, hintShown).map((h, i) => '<div class="hint"><b>ヒント' + (i + 1) + '：</b>' +
+      String(h).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) + '</div>').join('') +
+      (hintShown < j.hints.length ? '<button type="button" class="help-btn" id="hintMore">💡 つぎのヒント（' + (hintShown + 1) + '/' + j.hints.length + '）</button>'
+                                  : '<div class="hint" style="color:#7A8899;font-size:12.5px">ヒントは ここまで。あとは自分で考えてみよう！</div>');
+    if($('hintMore')) $('hintMore').onclick = showHint;
+  }catch(e){}
+}
+$('hintBtn').addEventListener('click', showHint);
+let ansData = null;
+async function showAnswer(){
+  if(!curPersona || !student) return;
+  try{
+    const j = await (await fetch('/api/answer?cls=' + encodeURIComponent(student.cls) + '&name=' + encodeURIComponent(student.name) +
+      '&persona=' + encodeURIComponent(curPersona.name))).json();
+    if(!j.ok){ await uiTell(j.msg || '答えを読めませんでした'); return; }
+    ansData = j;
+    const esc = t => String(t || '').replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
+    $('ansTitle').textContent = '📘 ' + curPersona.name + 'さんの 答え（お手本）';
+    $('ansDesc').innerHTML = '<b>説明：</b>' + esc(j.desc);
+    $('ansPoints').innerHTML = (j.points || []).map(x => '<li>' + esc(x) + '</li>').join('');
+    $('ansModal').style.display = 'flex';
+    const box = $('ansBlocks'); box.innerHTML = ''; void box.offsetHeight;
+    if(ansWs){ try{ ansWs.dispose(); }catch(e){} ansWs = null; }
+    ansWs = Blockly.inject(box, { readOnly:true, renderer:'zelos', media:'https://unpkg.com/blockly@13.1.0/media/', scrollbars:true,
+      zoom:{ controls:true, wheel:true, startScale:0.6, maxScale:2, minScale:0.2 } });
+    Blockly.serialization.workspaces.load(j.ws, ansWs);
+    Blockly.svgResize(ansWs); if(ansWs.zoomToFit) ansWs.zoomToFit();
+    if(ansWs.getScale() > 0.8) ansWs.setScale(0.8);
+    ansWs.scrollCenter();
+  }catch(e){ await uiTell('答えを表示できませんでした'); }
+}
+$('answerBtn').addEventListener('click', showAnswer);
+$('ansClose').addEventListener('click', () => { $('ansModal').style.display = 'none'; if(ansWs){ try{ ansWs.dispose(); }catch(e){} ansWs = null; } });
+$('ansLoad').addEventListener('click', async () => {
+  if(!ansData || !workspace) return;
+  const has = workspace.getAllBlocks(false).length > 0;
+  if(!await uiAsk('お手本のブロックを 自分の画面に読みこみます。' + (has ? '\nいまのブロックは置きかわります。' : '') + '\n説明の欄にも お手本の説明を入れます。', '読みこむ')) return;
+  workspace.clear();
+  Blockly.serialization.workspaces.load(ansData.ws, workspace);
+  $('descInput').value = ansData.desc || '';
+  updatePreview();
+  $('ansClose').click();
+});
+
+async function selectPersona(i){
+  curPersona = PERSONAS[i];
+  hintShown = 0; $('hintBox').style.display = 'none'; $('hintBox').innerHTML = '';
+  setTimeout(drawHelpRow, 0);
+  personaName = curPersona.name;
+  window.personaName = personaName;
+  document.querySelectorAll('.p-card').forEach((c, j) => c.classList.toggle('sel', j===i));
+  const d = $('personaDetail');
+  let html = PF.svg(curPersona.face, 60) + '<div class="pd-body"><strong>'+curPersona.name+'</strong>（'+curPersona.age+'）<br>';
+  html += '<b>困りごと：</b>';
+  curPersona.concerns.forEach(c => { html += '<span class="concern">'+c+'</span> '; });
+  html += '<br><span style="font-size:12px;color:var(--sub)">'+curPersona.detail+'</span>';
+  html += '<br><span style="font-size:12px;color:var(--sub)">今の対処：'+curPersona.coping+'</span>';
+  if(curPersona.notWorried) html += '<br><span style="font-size:11px;color:var(--sub)">'+curPersona.notWorried+'</span>';
+  html += '</div>';
+  d.innerHTML = html;
+  d.classList.add('show');
+  updateChatVisibility();
+  if(chatEnabled){ chatStars = null; loadChat(); }
+
+  try {
+    await fetch('/api/persona', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        cls: student.cls, name: student.name,
+        persona: {
+          name: curPersona.name,
+          age: curPersona.age,
+          life: curPersona.detail,
+          trouble: curPersona.concerns.join('、'),
+          tone: ''
+        }
+      })
+    });
+  } catch(e){}
+}
+
+async function loadPersona(){
+  // 開発ログの「④で編集する→」で来たときは、そこで選んだペルソナを優先して切り替える
+  try {
+    const editPersona = sessionStorage.getItem('devlog_edit_persona');
+    if(editPersona){
+      sessionStorage.removeItem('devlog_edit_persona');
+      const idx = PERSONAS.findIndex(p => p.name === editPersona);
+      if(idx >= 0){ selectPersona(idx); return; }
+    }
+  } catch(e){}
+  try {
+    const res = await fetch('/api/persona?cls='+encodeURIComponent(student.cls)+'&name='+encodeURIComponent(student.name));
+    const j = await res.json();
+    if(j.ok && j.persona && j.persona.name){
+      const savedName = j.persona.name;
+      const idx = PERSONAS.findIndex(p => p.name === savedName);
+      if(idx >= 0){
+        selectPersona(idx);
+        return;
+      }
+      personaName = savedName;
+    }
+  } catch(e){}
+}
+
+/* ========== レビュー送信 ========== */
+$('rvBtn').addEventListener('click', () => sendReview('normal'));
+$('honneBtn').addEventListener('click', () => sendReview('honne'));
+
+// 先生が本音ボタンを出すか決める（クラスごと）。授業中に切りかえても反映されるよう、ときどき見直す。
+async function applyHonneSetting(){
+  if(!student || !student.cls) return;
+  try{
+    const j = await (await fetch('/api/class_settings?cls=' + encodeURIComponent(student.cls))).json();
+    const on = !(j && j.ok && j.honne === false);
+    $('honneBtn').style.display = on ? '' : 'none';
+    $('honneHint').style.display = on ? '' : 'none';
+    // ペルソナチャット（先生がONにしたときだけ）
+    const was = chatEnabled;
+    chatEnabled = !!(j && j.ok && j.chat);
+    updateChatVisibility();
+    if(chatEnabled && !was) loadChat();
+    // ⑤ チームで開発（先生がONにしたときだけ、タブを出す）
+    $('tab5').style.display = (j && j.ok && j.pair) ? '' : 'none';
+    // ヒント・答え（先生が表示中にしたときだけ）
+    hintsOn = !!(j && j.ok && j.hints); answersOn = !!(j && j.ok && j.answers);
+    drawHelpRow();
+  }catch(e){}
+}
+
+/* ========== ペルソナチャット ========== */
+let chatEnabled = false;
+let chatBusy = false;
+let chatStars = null;        // その人からもらった いちばん新しい★
+let chatTroubles = [];       // いちばん新しいレビューで「まだ解決していない」困りごと
+
+function updateChatVisibility(){
+  const show = chatEnabled && !!curPersona;
+  $('chatCard').style.display = show ? '' : 'none';
+}
+
+function chatBubble(role, text, wait){
+  const row = document.createElement('div');
+  row.className = 'chat-row ' + (role === 'student' ? 'me' : 'persona');
+  if(role !== 'student'){
+    const f = document.createElement('div'); f.className = 'chat-face';
+    if(curPersona && curPersona.face) f.innerHTML = PF.svg(curPersona.face, 30);
+    row.appendChild(f);
+  }
+  const b = document.createElement('div');
+  b.className = 'chat-bubble' + (wait ? ' wait' : '');
+  b.textContent = text;
+  row.appendChild(b);
+  $('chatLog').appendChild(row);
+  $('chatLog').scrollTop = $('chatLog').scrollHeight;
+  return b;
+}
+
+function drawChatQuick(){
+  const q = $('chatQuick'); q.innerHTML = '';
+  // ペルソナの困りごとを ぜんぶボタンにする（困りごとが4つなら4つ）。
+  // レビューで まだ解決していないと言われたものを 先に、印をつけて並べる。
+  const key = t => String(t || '').split(/[（(]/)[0].trim().slice(0, 4);
+  const concerns = (curPersona && Array.isArray(curPersona.concerns) && curPersona.concerns.length)
+    ? curPersona.concerns
+    : String((curPersona && curPersona.trouble) || '').split('、').filter(x => x.trim());
+  const unsolvedKeys = chatTroubles.map(key);
+  const isUnsolved = c => unsolvedKeys.some(k => k && (key(c).indexOf(k.slice(0, 2)) === 0 || k.indexOf(key(c).slice(0, 2)) === 0));
+  const ordered = concerns.filter(isUnsolved).concat(concerns.filter(c => !isUnsolved(c)));
+  const items = ordered.map(c => ({ text: '「' + c + '」のこと、もっとくわしく教えてください', unsolved: isUnsolved(c) }));
+  items.push({ text: '1日の生活を教えてください' }, { text: 'いちばん困るのは どんなときですか？' });
+  items.forEach(it => {
+    const b = document.createElement('button'); b.textContent = it.text;
+    if(it.unsolved){ b.className = 'unsolved'; b.title = 'レビューで まだ解決していないと言われた困りごと'; }
+    b.addEventListener('click', () => sendChat(it.text));
+    q.appendChild(b);
+  });
+}
+
+async function loadChat(){
+  if(!chatEnabled || !curPersona || !student) return;
+  $('chatWho').textContent = curPersona.name + 'さん';
+  $('chatLog').innerHTML = ''; $('chatMsg').textContent = '';
+  try{
+    const j = await (await fetch('/api/chat?cls=' + encodeURIComponent(student.cls) + '&name=' +
+      encodeURIComponent(student.name) + '&persona=' + encodeURIComponent(curPersona.name))).json();
+    if(!j.ok){ $('chatMsg').textContent = j.msg || ''; return; }
+    chatStars = j.hasReview ? j.stars : null;
+    (j.log || []).forEach(m => chatBubble(m.role, m.text));
+    if(!(j.log || []).length){
+      const e = document.createElement('div'); e.className = 'chat-empty';
+      e.textContent = curPersona.name + 'さんに、生活のことを聞いてみよう';
+      $('chatLog').appendChild(e);
+    }
+    $('chatLeft').textContent = '今日あと ' + j.left + ' 回 聞けます';
+    drawChatQuick();
+  }catch(e){ $('chatMsg').textContent = 'サーバーにつながりません'; }
+}
+
+async function sendChat(text){
+  text = (text || '').trim();
+  if(!text || chatBusy || !curPersona) return;
+  chatBusy = true; $('chatSend').disabled = true; $('chatMsg').textContent = '';
+  const empty = $('chatLog').querySelector('.chat-empty'); if(empty) empty.remove();
+  chatBubble('student', text);
+  const w = chatBubble('persona', '…考えています', true);
+  $('chatInput').value = '';
+  try{
+    const r = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ cls:student.cls, name:student.name, persona:curPersona.name, message:text }) });
+    const j = await r.json();
+    if(j.ok){
+      w.textContent = j.reply; w.classList.remove('wait');
+      $('chatLeft').textContent = '今日あと ' + j.left + ' 回 聞けます';
+    } else {
+      w.parentElement.remove();
+      $('chatMsg').textContent = j.msg || 'お話しできませんでした';
+      if(j.left === 0) $('chatLeft').textContent = '今日あと 0 回 聞けます';
+    }
+  }catch(e){
+    w.parentElement.remove();
+    $('chatMsg').textContent = 'サーバーにつながりません';
+  }finally{
+    chatBusy = false; $('chatSend').disabled = false;
+  }
+}
+
+$('chatSend').addEventListener('click', () => sendChat($('chatInput').value));
+$('chatInput').addEventListener('keydown', e => { if(e.key === 'Enter' && !e.isComposing) sendChat($('chatInput').value); });
+setInterval(applyHonneSetting, 20000);
+
+async function sendReview(mode){
+  const honne = (mode === 'honne');
+  if(!curPersona){ $('rvMsg').textContent = 'まず「使う人」をえらんでね'; $('rvMsg').className = 'rv-msg err'; return; }
+  const desc = $('descInput').value.trim();
+  if(!desc){ $('rvMsg').textContent = '説明を書いてね'; $('rvMsg').className = 'rv-msg err'; return; }
+  const program = buildProgram();
+  if(!progHasBlocks(program)){ $('rvMsg').textContent = 'ブロックが ありません'; $('rvMsg').className = 'rv-msg err'; return; }
+
+  const btn = honne ? $('honneBtn') : $('rvBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>' + (honne ? '本音を聞いています…' : 'レビュー中…');
+  $('rvMsg').textContent = '';
+  $('rvMsg').className = 'rv-msg';
+  $('resultCard').className = 'result-card';
+
+  try {
+    const res = await fetch('/api/review', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ cls:student.cls, name:student.name, program, description:desc, mode,
+        workspace: workspace ? Blockly.serialization.workspaces.save(workspace) : null })
+    });
+    const j = await res.json();
+    if(!j.ok){
+      $('rvMsg').textContent = j.msg || 'レビューできませんでした';
+      $('rvMsg').className = 'rv-msg err';
+      return;
+    }
+
+    const faceEl = $('resultFace');
+    if(curPersona && curPersona.face){
+      faceEl.innerHTML = PF.svg(curPersona.face, 56);
+    } else { faceEl.innerHTML = ''; }
+
+    $('resultStars').innerHTML = starsHTML(j.stars, true);
+    const improve = $('resultImprove');
+    if(lastStars > 0 && j.stars > lastStars){
+      improve.textContent = '↑ '+lastStars+'→'+j.stars+' UP!';
+      improve.className = 'result-improve show';
+    } else {
+      improve.className = 'result-improve';
+    }
+    lastStars = j.stars;
+    chatStars = j.stars;
+    chatTroubles = (Array.isArray(j.coverage) ? j.coverage : []).filter(x => x && !x.done && x.trouble).map(x => String(x.trouble).slice(0, 30));
+    if(chatEnabled) drawChatQuick();
+
+    const commentEl = $('resultComment');
+    commentEl.innerHTML = '';
+    const w = document.createElement('span'); w.className = 'who';
+    w.textContent = (honne ? '🫢 ' : '💬 ') + (j.persona || personaName || 'AI')
+    + (honne ? ' の 本音' : ' からの ことば');
+    commentEl.appendChild(w);
+    commentEl.appendChild(document.createTextNode(j.comment));
+
+    const matchEl = $('resultMatch');
+    if(j.match){
+      matchEl.style.display = 'block';
+      matchEl.innerHTML = '';
+      const ml = document.createElement('span'); ml.className = 'match-label';
+      ml.textContent = '🔍 説明とプログラムの整合性チェック';
+      matchEl.appendChild(ml);
+      matchEl.appendChild(document.createTextNode(j.match));
+    } else { matchEl.style.display = 'none'; }
+
+    // 困りごとごとに、こたえられたか
+    const covEl = $('resultCov');
+    const cov = Array.isArray(j.coverage) ? j.coverage : [];
+    if(cov.length){
+      covEl.style.display = 'block';
+      covEl.innerHTML = '';
+      const cl = document.createElement('span'); cl.className = 'cov-label';
+      cl.textContent = '📋 こまりごとは、いくつ解決できた？ （' +
+        cov.filter(c => c.done).length + ' / ' + cov.length + '）';
+      covEl.appendChild(cl);
+      cov.forEach(c => {
+        const row = document.createElement('div'); row.className = 'cov-row';
+        const m = document.createElement('span');
+        m.className = c.done ? 'cov-ok' : 'cov-ng';
+        m.textContent = c.done ? '✅' : '❌';
+        const t = document.createElement('span'); t.textContent = c.trouble || '';
+        row.appendChild(m); row.appendChild(t);
+        if(c.why){ const wy = document.createElement('span'); wy.className = 'cov-why';
+          wy.textContent = '… ' + c.why; row.appendChild(wy); }
+        covEl.appendChild(row);
+      });
+    } else { covEl.style.display = 'none'; }
+
+    // 本音モードのときだけ、実機の点検結果を見せる
+    const hEl = $('resultHonne');
+    const fs = Array.isArray(j.findings) ? j.findings : [];
+    if(honne || window.CHAPPY_TRIAL){
+      hEl.style.display = 'block';
+      hEl.innerHTML = '';
+      const hl = document.createElement('span'); hl.className = 'h-label';
+      hl.textContent = fs.length
+        ? '🔧 プログラムを点検して 気づいたこと（' + fs.length + '件）'
+        : '🔧 プログラムを点検して 気づいたこと';
+      hEl.appendChild(hl);
+      if(!fs.length){
+        // 点検は「動きの不具合」だけを見ている。
+        // こまりごとが解決できていないなら、ここで褒めてはいけない。
+        const ng = cov.filter(c => !c.done).length;
+        const r = document.createElement('div'); r.className = 'h-row';
+        r.textContent = ng
+          ? 'うごき方に 困るところはありませんでした。ただし、上の「こまりごと」が '
+            + ng + 'つ のこっています。'
+          : 'うごき方に 困るところは 見つかりませんでした。';
+        hEl.appendChild(r);
+      }
+      fs.forEach(f => {
+        const r = document.createElement('div'); r.className = 'h-row';
+        const h = document.createElement('span'); h.className = 'h-head';
+        h.textContent = '【' + f.head + '】';
+        r.appendChild(h); r.appendChild(document.createTextNode(f.msg));
+        hEl.appendChild(r);
+      });
+    } else { hEl.style.display = 'none'; }
+
+    $('resultCard').className = 'result-card show' + (honne ? ' honne' : '');
+    updateChatVisibility();
+
+    const cap = $('cappedNote');
+    if(honne && j.capped){
+      cap.className = 'capped-note show';
+      cap.textContent = (j.capReason === 'coverage'
+          ? '⚠️ まだ解決していない こまりごとが あるので、★は ' + j.stars + ' までにしました。'
+          : '⚠️ ★は、実機で動かした結果をもとに 正直な数に直しました。')
+        + 'ふつうのレビューでもらった★は そのまま のこっています。';
+    } else { cap.className = 'capped-note'; cap.textContent = ''; }
+
+    $('resultCard').scrollIntoView({ behavior:'smooth', block:'center' });
+    $('rvMsg').textContent = honne
+      ? (j.capped ? '本音を聞きました（★は正直な数に直されています）' : '本音を聞きました')
+      : (window.CHAPPY_TRIAL ? 'レビュー完了！（お試し版：きまりで判定）' : 'レビュー完了！');
+    $('rvMsg').className = 'rv-msg ok';
+  } catch(e){
+    $('rvMsg').textContent = 'サーバーにつながりません';
+    $('rvMsg').className = 'rv-msg err';
+  } finally {
+    $('rvBtn').disabled = false;
+    $('rvBtn').textContent = '⭐ 使う人にレビューしてもらう';
+    $('honneBtn').disabled = false;
+    $('honneBtn').textContent = '🫢 本音で レビューしてもらう';
+  }
+}
+
+/* ========== 実機デプロイ ========== */
+let activeDevices = [];
+function showDevInfo(sel, j){
+  const el = $('devInfo'); if(!el) return;
+  const l = (j && j.device === sel && j.latest) ? j.latest : null;
+  if(!l || !activeDevices.includes(sel)){ el.textContent = ''; return; }
+  const parts = [];
+  parts.push(l.fw ? 'プログラム版 ' + l.fw : 'プログラム版 古い（並列・〜になるまで・時刻は未対応）');
+  if(l.synced === 1) parts.push('🕐 時計 ' + String(l.hour).padStart(2,'0') + ':' + String(l.minute).padStart(2,'0') + ' ✓');
+  else if(l.fw) parts.push('🕐 時計 まだ合っていません');
+  if(l.psram !== undefined) parts.push('メモリ ' + (l.psram ? (l.psram/1048576).toFixed(0) + 'MB' : '★なし（カメラ・AIが動きません）'));
+  if(l.ev) parts.push('直前: ' + l.ev);
+  el.textContent = '🔧 実機の状態： ' + parts.join(' ｜ ');
+}
+async function refreshDevices(){
+  const selVal = $('deviceSel') ? $('deviceSel').value : '';
+  let tj = null;
+  try{
+    tj = await (await fetch('/api/telemetry' + (selVal ? '?device=' + encodeURIComponent(selVal) : ''))).json();
+    activeDevices = tj.devices || [];
+  }catch(e){ activeDevices = []; }
+  showDevInfo(selVal, tj);
+  const sel = $('deviceSel');
+  if(sel){
+    const cur = sel.value;
+    Array.from(sel.options).forEach(opt => {
+      const on = activeDevices.includes(opt.value);
+      opt.textContent = opt.value.replace('stackchan-0','') + '号機' + (on ? ' ● 接続中' : ' ○ 未接続');
+      opt.className = on ? 'online' : 'offline';
+    });
+    sel.value = cur;
+  }
+}
+refreshDevices();
+setInterval(refreshDevices, 5000);
+
+$('deployBtn').addEventListener('click', async () => {
+  const program = buildProgram();
+  if(!progHasBlocks(program)){
+    $('deployStatus').className = 'deploy-status err';
+    $('deployStatus').textContent = 'ブロックがありません';
+    return;
+  }
+  const targetDevice = $('deviceSel').value;
+  $('deployBtn').disabled = true;
+  $('deployStatus').className = 'deploy-status';
+  $('deployStatus').textContent = '送っています…（声を作っています）';
+  try{
+    const r = await fetch('/deploy', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ device:targetDevice, program })
+    });
+    const j = await r.json();
+    if(j.ok){
+      const no = targetDevice.replace('stackchan-0','') + '号機';
+      const par = j.threads ? '（🔀 ずっと' + j.threads + '本を同時に動かすよ）' : '';
+      const conflicts = ChappySim.findConflicts(program);
+      const cfText = conflicts.length
+        ? ' ⚠ ' + conflicts.join('・') + 'を ' + ((program.threads||[]).length) + 'つのずっとが同時に変えるので、実機でもチラチラします'
+        : '';
+      const fw = await ChappySim.deviceFw(targetDevice);
+      if(fw === null){
+        $('deployStatus').className = 'deploy-status warn';
+        $('deployStatus').textContent = '⚠ サーバーには送れたけど、実機が未接続です' + par;
+      } else if(fw < 2 && ChappySim.needsNewFirmware(program)){
+        $('deployStatus').className = 'deploy-status err';
+        $('deployStatus').textContent = ChappySim.FW_WARN;
+      } else {
+        $('deployStatus').className = cfText ? 'deploy-status warn' : 'deploy-status ok';
+        $('deployStatus').textContent = '✓ ' + no + 'に おくれた！' + par + cfText;
+        // 実機が本当に受け取ったか（取りに来るまで最大8秒まつ）
+        let got = false;
+        for(let i = 0; i < 8 && !got; i++){
+          await new Promise(r => setTimeout(r, 1000));
+          try {
+            const t = await (await fetch('/api/telemetry?device=' + encodeURIComponent(targetDevice))).json();
+            got = !!(t.program && t.program.fetchedVersion === j.version);
+          } catch(e){}
+        }
+        if(got){
+          $('deployStatus').textContent = '✓ ' + no + 'が うけとったよ！' + par + cfText;
+        } else {
+          $('deployStatus').className = 'deploy-status warn';
+          $('deployStatus').textContent = '⚠ ' + no + 'に おくったけど、まだ うけとっていないみたい。実機のWiFiや、長い「まつ」の最中でないか見てね' + cfText;
+        }
+      }
+    } else throw new Error();
+  }catch(e){
+    $('deployStatus').className = 'deploy-status err';
+    $('deployStatus').textContent = '✗ 送れませんでした';
+  }finally{
+    $('deployBtn').disabled = false;
+  }
+});
+
+/* お試し版：実機に送る欄は使わない */
+try{ $('deployBtn').closest('.card').style.display = 'none'; }catch(e){}
+
+/* ========== ログイン ========== */
+function show(){
+  const logged = !!(student && student.cls && student.name);
+  if(logged) applyHonneSetting();
+  $('loginCard').style.display = logged ? 'none' : 'block';
+  $('mainArea').style.display = logged ? 'block' : 'none';
+  if(logged){
+    $('whoLabel').textContent = student.cls+' '+student.name;
+    buildPersonaGrid();
+    initBlockly();
+    loadPersona();
+  } else {
+    fetch('/api/classes').then(r=>r.json()).then(j=>{
+      const sel = $('cls'); sel.innerHTML = '';
+      (j.classes||[]).forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+    }).catch(()=>{});
+  }
+}
+
+$('pass').addEventListener('input', e => { e.target.value = toHalf(e.target.value).replace(/[^0-9]/g,'').slice(0,4); });
+$('pass').addEventListener('keydown', e => { if(e.key==='Enter') $('loginBtn').click(); });
+$('loginBtn').addEventListener('click', async () => {
+  const cls = $('cls').value, pass = toHalf($('pass').value.trim());
+  if(!cls || !/^\d{4}$/.test(pass)){ $('loginMsg').textContent = 'クラスと4けたの数字を入れてね'; return; }
+  try {
+    const j = await (await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({cls,pass}) })).json();
+    if(!j.ok){ $('loginMsg').textContent = j.msg||'ログインできませんでした'; return; }
+    student = {cls: (j.cls||cls), name:j.name};
+    if(j.notice) alert(j.notice);
+    try { sessionStorage.setItem(STU_KEY, JSON.stringify(student)); } catch(e){}
+    $('pass').value = ''; $('loginMsg').textContent = '';
+    show();
+  } catch(e){ $('loginMsg').textContent = 'サーバーにつながりません'; }
+});
+show();
+</script>
+</body>
+</html>

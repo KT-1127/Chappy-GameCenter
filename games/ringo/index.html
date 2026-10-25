@@ -37,13 +37,13 @@
 html,body{margin:0;height:100%;overflow:hidden;font-family:var(--font);color:var(--ink);
   overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation;
   background:radial-gradient(circle at 50% 0%,#86d8ff,#2b8fd6 75%)}
-#app{position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;width:100%;max-width:480px;overflow:hidden;background:#8ed26a;box-shadow:0 0 50px rgba(0,30,70,.3)}
+#app{position:fixed;top:0;bottom:0;left:0;right:0;margin:0 auto;width:100%;overflow:hidden;background:#8ed26a}
 #game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #safe{position:absolute;top:0;left:0;width:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none}
 button{font-family:inherit}
 
 /* HUD */
-#hud{position:absolute;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 6px) 10px 0;display:flex;align-items:center;gap:8px;z-index:5;pointer-events:none}
+#hud{position:absolute;left:0;right:0;top:0;max-width:640px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 6px) 10px 0;display:flex;align-items:center;gap:8px;z-index:5;pointer-events:none}
 #hud>*{pointer-events:auto}
 .ib{flex:none;width:40px;height:40px;border:none;border-radius:14px;background:#fff;color:#2a6fb0;cursor:pointer;display:grid;place-items:center;
   box-shadow:0 3px 0 #a9cbe2,0 6px 12px rgba(20,60,100,.18)}
@@ -546,6 +546,8 @@ function generate(n, seedOverride){
 const app = $('#app'), canvas = $('#game'), ctx = canvas.getContext('2d');
 const bg = document.createElement('canvas');
 let W = 360, H = 640, DPR = 1, T = 0;
+// PC の広い画面では、背景は画面いっぱい・遊ぶ部分は PW の幅でまん中（X0 から）
+let PW = 360, X0 = 0;
 const L = {};
 let G = null;
 
@@ -691,6 +693,7 @@ function drawTruck(c, t, x, y, ang, sc, seatVis, alpha, glow){
 function layout(){
   const r = app.getBoundingClientRect();
   W = r.width; H = r.height;
+  PW = Math.min(W, 640); X0 = Math.round((W - PW)/2);
   DPR = Math.min(3, window.devicePixelRatio || 1);
   canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
   const sp = getComputedStyle($('#safe'));
@@ -703,7 +706,7 @@ function layout(){
   const cols = G.cols, rows = G.rows, RF = .8;
   const avail = (L.bbarT - 10) - (L.qB + 6) - 22 - 12;
   L.dockS = .85;
-  L.cell = Math.max(18, Math.min((W-20)/(cols+2*RF), avail/(rows+2*RF+3*L.dockS*.95), 58));
+  L.cell = Math.max(18, Math.min((PW-20)/(cols+2*RF), avail/(rows+2*RF+3*L.dockS*.95), 58));
   const c = L.cell;
   L.dockT = L.qB + 6; L.dockH = (3-.16)*c*L.dockS + 22; L.dockB = L.dockT + L.dockH;
   const lotW = cols*c, lotH = rows*c, rw = RF*c;
@@ -712,7 +715,7 @@ function layout(){
   L.lotX = Math.round((W-lotW)/2); L.lotY = Math.round(regionT + rw + free*.35);
   L.lotW = lotW; L.lotH = lotH;
   L.ring = { l:L.lotX-rw/2, r:L.lotX+lotW+rw/2, t:L.lotY-rw/2, b:L.lotY+lotH+rw/2, w:rw };
-  L.chH = L.qH - 2; L.chW = L.chH/CH_RATIO; L.chX = 4; L.chY = L.qB - L.chH - 2;
+  L.chH = L.qH - 2; L.chW = L.chH/CH_RATIO; L.chX = X0 + 4; L.chY = L.qB - L.chH - 2;
   const gc = $('#gChappy'); gc.style.left = L.chX+'px'; gc.style.top = L.chY+'px'; gc.style.width = L.chW+'px'; gc.style.display = 'block';
   gameChappy();
   L.appleR = compact ? 11.5 : 13;
@@ -720,9 +723,9 @@ function layout(){
   drawBG();
 }
 function slotPos(i, len){
-  const n = G.slots, pad = 10, sw = (W-2*pad)/n;
+  const n = G.slots, pad = 10, sw = (PW-2*pad)/n;
   const tl = (len-.16)*L.cell*L.dockS;
-  return [pad + sw*(i+.5), L.dockT + 11 + tl/2];
+  return [X0 + pad + sw*(i+.5), L.dockT + 11 + tl/2];
 }
 function cellC(x, y){ return [L.lotX+(x+.5)*L.cell, L.lotY+(y+.5)*L.cell]; }
 function lotCenter(t){
@@ -759,9 +762,9 @@ function drawBG(){
   b.fillStyle = '#6b7380';
   b.fillRect(R.l-rw/2+rw*.3, L.dockB-6, R.r-R.l+rw-rw*.6, R.t-L.dockB+6);
   // おきば
-  b.fillStyle = '#c9d3de'; rrect(b, 4, L.dockT-3, W-8, L.dockH+6, 16); b.fill();
-  b.fillStyle = '#5c6571'; rrect(b, 8, L.dockT+1, W-16, L.dockH-2, 12); b.fill();
-  const n = G.slots, pad = 10, sw = (W-2*pad)/n;
+  b.fillStyle = '#c9d3de'; rrect(b, X0+4, L.dockT-3, PW-8, L.dockH+6, 16); b.fill();
+  b.fillStyle = '#5c6571'; rrect(b, X0+8, L.dockT+1, PW-16, L.dockH-2, 12); b.fill();
+  const n = G.slots, pad = X0 + 10, sw = (PW-20)/n;
   b.strokeStyle = 'rgba(255,255,255,.75)'; b.lineWidth = 2.5;
   for (let i=1;i<n;i++){ const x = pad+sw*i; b.beginPath(); b.moveTo(x, L.dockT+7); b.lineTo(x, L.dockB-8); b.stroke(); }
   b.fillStyle = 'rgba(255,255,255,.13)'; b.font = `900 ${Math.round(Math.min(sw*.5, L.dockH*.3))}px ${FONT}`; b.textAlign = 'center'; b.textBaseline = 'middle';
@@ -1048,7 +1051,7 @@ function update(dt){
       updateHUD();
     }
   }
-  const vis = Math.ceil((W - L.qx0)/L.qsp) + 3;
+  const vis = Math.ceil((X0 + PW - L.qx0)/L.qsp) + 3;
   for (let i=G.qHead;i<G.queue.length;i++){
     const a = G.queue[i], tx = L.qx0 + (i-G.qHead)*L.qsp;
     if (i < G.qHead+vis) a.x += (tx-a.x)*Math.min(1, dt*13); else a.x = tx;
@@ -1105,7 +1108,7 @@ function render(){
   ctx.drawImage(bg, 0, 0, W, H);
   const c = L.cell;
   // おきばの状態表示
-  const n = G.slots, pad = 10, sw = (W-2*pad)/n, fs = freeSlots();
+  const n = G.slots, pad = X0 + 10, sw = (PW-20)/n, fs = freeSlots();
   for (let i=0;i<n;i++){
     if (G.dock[i] !== null) continue;
     if (fs === 1 && G.state==='play'){
@@ -1113,7 +1116,7 @@ function render(){
       rrect(ctx, pad+sw*i+4, L.dockT+5, sw-8, L.dockH-10, 8); ctx.fill();
     }
   }
-  if (G.dockFlash > 0){ ctx.fillStyle = `rgba(255,60,60,${G.dockFlash*.4})`; rrect(ctx, 8, L.dockT+1, W-16, L.dockH-2, 12); ctx.fill(); }
+  if (G.dockFlash > 0){ ctx.fillStyle = `rgba(255,60,60,${G.dockFlash*.4})`; rrect(ctx, X0+8, L.dockT+1, PW-16, L.dockH-2, 12); ctx.fill(); }
 
   const hintId = G.hint && G.hint.until > T ? G.hint.id : -1;
   for (const t of G.trucks){
@@ -1168,7 +1171,7 @@ function drawPointer(x, y, s){
 }
 function drawQueue(){
   const r = L.appleR;
-  const vis = Math.ceil((W - L.qx0)/L.qsp) + 1, end = Math.min(G.queue.length, G.qHead+vis);
+  const vis = Math.ceil((X0 + PW - L.qx0)/L.qsp) + 1, end = Math.min(G.queue.length, G.qHead+vis);
   const front = G.queue[G.qHead];
   if (front && G.state==='play' && !findDockFor(front.c) && !G.flying.length){
     const C = COLORS[front.c], pr = r*1.55*(1+.08*Math.sin(T*7));
@@ -1185,7 +1188,7 @@ function drawQueue(){
 }
 function drawBubble(text, t0){
   const appear = clamp((T-t0)/.18, 0, 1), sc = .85 + .15*appear;
-  const fs = 13, lh = 17, bx = L.chX + L.chW + 6, maxW = W - bx - 8;
+  const fs = 13, lh = 17, bx = L.chX + L.chW + 6, maxW = X0 + PW - bx - 8;
   ctx.font = `800 ${fs}px ${FONT}`;
   const lines = [];
   for (const para of text.split('\n')){

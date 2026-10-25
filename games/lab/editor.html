@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link rel="icon" href="favicon.png">
+<script>
+/* ===== お試し版：サーバーの代わり（チャッピーには送れない） ===== */
+window.CHAPPY_TRIAL = true;
+(function(){
+  function J(x){ return Promise.resolve(new Response(JSON.stringify(x), { headers:{ 'Content-Type':'application/json' } })); }
+  var realFetch = window.fetch ? window.fetch.bind(window) : null;
+  window.fetch = function(u, o){
+    var url = String(u);
+    if(url.indexOf('/api/telemetry') === 0) return J({ ok:true, devices:[] });
+    if(url.indexOf('/deploy') === 0) return J({ ok:false, msg:'お試し版では チャッピーに送れません' });
+    return realFetch ? realFetch(u, o) : Promise.reject(new Error('no fetch'));
+  };
+})();
+</script>
+<style>
+  /* お試し版：チャッピーに送る部分は使わない */
+  #deployBtn, #deviceSel, #teacherPicker, #deployStatus{ display:none !important; }
+</style>
+
+<meta charset="utf-8">
+<script src="../../assets/config.js"></script><script src="../../assets/cgc.js"></script><script src="../../assets/bridge.js" data-game="lab"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>つくる | チャッピーラボ（お試し版）</title>
+<script src="https://unpkg.com/blockly@13.1.0/blockly_compressed.js"></script>
+<script src="https://unpkg.com/blockly@13.1.0/blocks_compressed.js"></script>
+<script src="https://unpkg.com/blockly@13.1.0/javascript_compressed.js"></script>
+<script src="https://unpkg.com/blockly@13.1.0/msg/ja.js"></script>
+<script src="chappy-blocks.js"></script>
+<style>
+  :root{
+    --bg:#EDF2F7; --surface:#FFFFFF; --ink:#1E2A38; --sub:#5B6B7E;
+    --line:#DCE4EE; --teal:#0FB5AA; --teal-soft:#E2F6F4;
+    --blue:#2F6FB0; --blue-deep:#24527F; --amber:#F5B301;
+    --coral:#E8604C; --face:#14181F; --eye:#FFFFFF;
+    --radius:16px; --shadow:0 2px 12px rgba(30,42,56,.08);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    display:flex; flex-direction:column; height:100vh; overflow:hidden;
+    font-family:"Hiragino Maru Gothic ProN","BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif;
+  }
+
+  /* ---------- ヘッダー ---------- */
+  header{
+    background:linear-gradient(120deg,var(--blue-deep),var(--blue));
+    color:#fff; padding:10px 18px;
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:17px; }
+  .brand .logo{
+    width:30px; height:30px; border-radius:8px; background:var(--face);
+    display:grid; place-items:center; flex:none;
+  }
+  .brand .logo::before{
+    content:""; width:14px; height:5px; border-radius:3px;
+    background:var(--eye); box-shadow:0 0 6px var(--eye);
+  }
+  nav{ display:flex; gap:8px; margin-left:auto; }
+  nav a{
+    color:#fff; text-decoration:none; font-size:13px; font-weight:700;
+    padding:7px 14px; border-radius:999px; border:1.5px solid rgba(255,255,255,.45);
+  }
+  nav a.here{ background:#fff; color:var(--blue-deep); border-color:#fff; }
+
+  /* ---------- レイアウト ---------- */
+  .wrap{
+    display:flex; gap:16px; padding:6px 16px 10px; align-items:stretch;
+    flex:1 1 auto; min-height:0;
+  }
+  @media (max-width:900px){ .wrap{ flex-direction:column; } }
+
+  #blocklyArea{
+    flex:1 1 480px; min-width:320px; position:relative;
+    height:100%; min-height:0;
+    background:var(--surface); border-radius:var(--radius); overflow:hidden;
+    box-shadow:var(--shadow);
+  }
+  #blocklyDiv{ position:absolute; inset:0; }
+  .undobar{ position:absolute; right:12px; top:12px; z-index:6; display:flex; gap:6px; }
+  .undobar button{ padding:7px 12px; border:none; border-radius:9px; background:var(--blue,#2F6FB0);
+    color:#fff; font-size:12.5px; font-weight:800; font-family:inherit; cursor:pointer;
+    box-shadow:0 2px 8px rgba(0,0,0,.18); line-height:1.2; }
+  .undobar button:hover{ filter:brightness(1.08); }
+  .undobar button:active{ transform:scale(.96); }
+  .zoombar{ position:absolute; right:12px; bottom:12px; z-index:5;
+    display:flex; flex-direction:column; gap:6px; }
+  .zoombar button{ width:40px; height:40px; border:none; border-radius:10px;
+    background:var(--blue,#2F6FB0); color:#fff; font-size:20px; font-weight:800;
+    cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,.18); line-height:1; }
+  .zoombar button:hover{ filter:brightness(1.08); }
+
+  .side{ flex:0 0 340px; display:flex; flex-direction:column; gap:6px; min-height:0; overflow-y:auto; }
+  @media (max-width: 1250px){ .side{ flex:0 0 300px; } }
+  @media (max-width: 1100px){ .side{ flex:0 0 280px; } }
+  /* Chromebook（縦短16:9・横1366px）向け */
+  @media (max-height: 800px){
+    .side{ flex:0 0 300px; }
+  }
+  @media (max-width: 1200px){
+    .side{ flex:0 0 300px; }
+  }
+  @media (max-width:900px){ .side{ flex:1 1 auto; } }
+
+  .card{
+    background:var(--surface); border-radius:var(--radius); padding:9px 12px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{
+    margin:0 0 5px; font-size:12px; letter-spacing:.06em;
+    color:var(--sub); font-weight:800;
+  }
+
+  /* ---------- チャッピー ステージ ---------- */
+  .stage{
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    background:radial-gradient(120% 90% at 50% 0%, #F7FAFE 0%, #EDF3FA 100%);
+  }
+  .bubble{ min-height:18px; display:flex; align-items:flex-end; }
+  .bubble .say{
+    position:relative; background:#fff; border:2px solid var(--line);
+    border-radius:14px; padding:7px 14px; font-size:15px; font-weight:700;
+    opacity:0; transform:translateY(4px);
+    transition:opacity .18s, transform .18s;
+    max-width:290px;
+  }
+  .bubble .say::after{
+    content:""; position:absolute; left:50%; bottom:-12px; margin-left:-6px;
+    border:6px solid transparent; border-top-color:#fff;
+  }
+  .bubble .say.on{ opacity:1; transform:none; }
+
+  #head{ transition:transform .35s cubic-bezier(.34,1.4,.5,1); will-change:transform; }
+
+  .meters{
+    width:100%; display:flex; gap:8px; margin-top:2px;
+  }
+  .meter{
+    flex:1; background:#F4F8FC; border:1px solid var(--line);
+    border-radius:12px; padding:6px 6px 8px; text-align:center;
+    display:flex; flex-direction:column; gap:4px; justify-content:center;
+  }
+  .meter .k{ font-size:11px; color:var(--sub); font-weight:700; white-space:nowrap; }
+  .meter .v{
+    font-size:18px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.1;
+  }
+  .led-lamp{
+    display:inline-block; width:15px; height:15px; border-radius:50%;
+    background:#CBD5E1; border:1px solid #A9B7C6; vertical-align:-2px;
+    transition:all .15s;
+  }
+  .fan-lamp{ font-size:18px; opacity:.28; display:inline-block; transition:opacity .2s; }
+  .fan-lamp.on{ opacity:1; animation:spin 0.9s linear infinite; }
+  @keyframes spin{ from{transform:rotate(0)} to{transform:rotate(360deg)} }
+  .led-lamp.on{
+    background:var(--amber); border-color:#D19900;
+    box-shadow:0 0 10px 2px rgba(245,179,1,.65);
+  }
+
+  /* ---------- センサーパネル ---------- */
+  .sensor{ margin-bottom:4px; }
+  .sensor .head{
+    display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px;
+  }
+  .sensor label{ font-size:13.5px; font-weight:800; }
+  .sensor label .ico{ margin-right:5px; }
+  .sensor .pill{
+    font-size:14px; font-weight:800; color:var(--teal);
+    background:var(--teal-soft); border-radius:999px; padding:2px 11px;
+    font-variant-numeric:tabular-nums;
+  }
+  input[type=range]{
+    width:100%; height:18px; accent-color:var(--teal); cursor:pointer;
+  }
+  .btn-row{ display:flex; gap:6px; margin-top:4px; }
+  .touch-btn{
+    flex:1; padding:9px 4px; margin-top:0;
+    border:2px solid var(--teal); background:#fff; color:var(--teal);
+    border-radius:12px; font-size:13px; font-weight:800; cursor:pointer;
+    font-family:inherit; transition:all .12s; white-space:nowrap;
+  }
+  .touch-btn.on{ background:var(--teal); color:#fff; }
+
+  /* ---------- ツールバー ---------- */
+  .toolbar{
+    display:flex; gap:10px; padding:8px 16px; flex-wrap:wrap; align-items:center;
+  }
+  .toolbar button{
+    padding:10px 18px; border:none; border-radius:12px; font-size:14px;
+    font-weight:800; cursor:pointer; font-family:inherit;
+  }
+  .btn-primary{ background:var(--blue); color:#fff; }
+  .btn-deploy{
+    background:var(--coral); color:#fff; font-size:15px; padding:11px 22px;
+    box-shadow:0 3px 10px rgba(232,96,76,.35);
+  }
+  .btn-deploy:disabled{ opacity:.6; cursor:wait; }
+  .btn-quiet{ background:#E2E9F2; color:#3D4C5E; }
+  .teacher-picker{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px;
+    background:#FFF5E9; border:1px solid #F0C89B; border-radius:12px; padding:8px 12px; margin-left:8px; }
+  .teacher-picker .tp-label{ font-size:13px; font-weight:800; color:#C4701A; }
+  .teacher-picker label{ font-size:15px; font-weight:700; color:var(--ink); cursor:pointer;
+    display:inline-flex; align-items:center; gap:3px; }
+  .teacher-picker .tp-all{ color:#C4701A; font-weight:800; border-right:1px solid #F0C89B; padding-right:10px; }
+  .teacher-picker input[type=checkbox]{ width:17px; height:17px; cursor:pointer; accent-color:var(--coral); }
+  .device-sel{
+    padding:10px 12px; border:2px solid var(--line); border-radius:12px;
+    font-size:14px; font-weight:800; font-family:inherit; color:var(--ink);
+    background:#fff; cursor:pointer;
+  }
+  .deploy-status{ font-size:13px; font-weight:800; }
+  .deploy-status.ok{ color:var(--teal); }
+  .deploy-status.err{ color:var(--coral); }
+  .deploy-status.warn{ color:#B07A00; }
+  .device-sel option.online{ color:var(--ok,#2FA95F); }
+  .device-sel option.offline{ color:#B0B8C4; }
+  .autosave{ font-size:12px; color:var(--sub); margin-left:auto; }
+
+
+  /* ---------- 裏がわビュー ---------- */
+
+
+  @media (prefers-reduced-motion: reduce){
+    #head, .bubble .say, .touch-btn, .led-lamp{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="logo"></span>チャッピーラボ</div>
+  <nav>
+    <a class="here" href="editor.html">① つくる</a>
+    <a href="dashboard.html">② みる</a>
+    <a href="learn.html">③ まなぶ</a>
+    <a href="solve.html">④ 問題解決</a>
+  </nav>
+</header>
+
+<div class="toolbar">
+  <button class="btn-deploy" id="deployBtn">🚀 チャッピーに おくる</button>
+  <select id="deviceSel" class="device-sel" title="どのチャッピーに送るか">
+    <option value="stackchan-01">1号機</option>
+    <option value="stackchan-02">2号機</option>
+    <option value="stackchan-03">3号機</option>
+    <option value="stackchan-04">4号機</option>
+    <option value="stackchan-05">5号機</option>
+    <option value="stackchan-06">6号機</option>
+    <option value="stackchan-07">7号機</option>
+    <option value="stackchan-08">8号機</option>
+  </select>
+  <div id="teacherPicker" class="teacher-picker" style="display:none"></div>
+  <span class="deploy-status" id="deployStatus"></span>
+  <button class="btn-quiet" id="clearBtn">ぜんぶ消す</button>
+  <span class="autosave" id="autosave">じどう保存：ON</span>
+</div>
+
+<div class="wrap">
+  <!-- ブロックのワークスペース -->
+  <div id="blocklyArea"><div id="blocklyDiv"></div>
+    <div class="undobar"><button type="button" id="zundo" title="ひとつ前にもどす（Ctrl+Z）">↩ もどす</button><button type="button" id="zredo" title="もどしたのを やりなおす（Ctrl+Y）">↪ やりなおす</button></div>
+    <div class="zoombar">
+      <button type="button" id="zin"  title="大きく">＋</button>
+      <button type="button" id="zout" title="小さく">－</button>
+      <button type="button" id="zrst" title="もとの大きさ">⟲</button>
+    </div>
+  </div>
+
+  <!-- 右パネル -->
+  <div class="side">
+    <div class="card stage">
+      <h2 style="align-self:flex-start">ためしてみる</h2>
+      <div class="bubble"><span class="say" id="say">こんにちは！</span></div>
+
+      <svg viewBox="0 0 220 190" width="120" height="104" aria-label="仮想チャッピー">
+        <rect x="80" y="158" width="60" height="14" rx="7" fill="#C7D2DE"/>
+        <rect x="102" y="146" width="16" height="16" rx="4" fill="#AEBDCB"/>
+        <g id="head">
+          <rect x="28" y="10" width="164" height="140" rx="22" fill="var(--face)"/>
+          <rect x="36" y="18" width="148" height="124" rx="16" fill="#0B0E13"/>
+          <circle id="eyeL" cx="76"  cy="72" r="15" fill="var(--eye)"/>
+          <circle id="eyeR" cx="144" cy="72" r="15" fill="var(--eye)"/>
+          <path id="browL" d="" stroke="var(--eye)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path id="browR" d="" stroke="var(--eye)" stroke-width="6" fill="none" stroke-linecap="round"/>
+          <path id="mouth" d="M 78 116 Q 110 116 142 116"
+                stroke="var(--eye)" stroke-width="7" fill="none" stroke-linecap="round"/>
+        </g>
+      </svg>
+
+      <div class="meters">
+        <div class="meter"><div class="k">左右/上下</div><div class="v"><span id="servoV">90/45</span></div></div>
+        <div class="meter"><div class="k">LED</div><div class="v"><span class="led-lamp" id="led"></span></div></div>
+        <div class="meter"><div class="k">ファン</div><div class="v"><span class="fan-lamp" id="fan">🌀</span></div></div>
+        <div class="meter"><div class="k">表情</div><div class="v" id="faceV" style="font-size:14px">ふつう</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>センサー（うごかして ためす）</h2>
+
+      <div class="sensor">
+        <div class="head"><label><span class="ico">📏</span>距離</label><span class="pill"><span id="distanceV">30</span> cm</span></div>
+        <input type="range" id="distance" min="0" max="50" value="30" step="1">
+      </div>
+      <div class="sensor">
+        <div class="head"><label><span class="ico">☀️</span>明るさ</label><span class="pill"><span id="lightV">300</span> lx</span></div>
+        <input type="range" id="light" min="0" max="1000" value="300" step="10">
+      </div>
+      <div class="sensor">
+        <div class="head"><label><span class="ico">🌡️</span>温度</label><span class="pill"><span id="tempV">25</span> ℃</span></div>
+        <input type="range" id="temp" min="0" max="45" value="25" step="1">
+      </div>
+
+      <div class="btn-row">
+        <button class="touch-btn" id="btnRedBtn">🔴 赤ボタン</button>
+        <button class="touch-btn" id="btnBlueBtn">🔵 青ボタン</button>
+        <button class="touch-btn" id="btnPirBtn">👤 人がいる</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<script>
+window.addEventListener('load', function () {
+  if (typeof Blockly === 'undefined' || !Blockly.JavaScript) {
+    document.body.insertAdjacentHTML('beforeend',
+      '<p style="padding:20px;color:#c00">Blocklyを読みこめませんでした。server.py から開いているか確認してください。</p>');
+    return;
+  }
+  const JS = Blockly.JavaScript;
+  const A = JS.ORDER_ATOMIC;
+
+  /* ========== ブロック定義 ========== */
+  ChappyBlocks.defineBlocks();
+  // お試し版：前のお試し版にあった『音(dB)』ブロック。
+  //   チャッピーには音センサーが無いので今は使わないが、前の作品が開けるように定義だけ残す。
+  if(!Blockly.Blocks['sc_sound']){
+    Blockly.defineBlocksWithJsonArray([{ type:'sc_sound', message0:'🎤 音(dB)（いまは使えません）',
+      output:'Number', colour:'#9AA5B1',
+      tooltip:'チャッピーには音センサーがありません。前のお試し版で作った作品を開けるように残しています。' }]);
+  }   // ④問題解決と同じブロック（共通ファイル）
+
+  JS.forBlock['sc_distance'] = () => ['sim.s.distance', A];
+  JS.forBlock['sc_light']    = () => ['sim.s.light', A];
+  JS.forBlock['sc_temp']     = () => ['sim.s.temp', A];
+  JS.forBlock['sc_pir']      = () => ['sim.s.pir', A];
+  JS.forBlock['sc_hour']     = () => ['(new Date().getHours())', A];
+  JS.forBlock['sc_minute']   = () => ['(new Date().getMinutes())', A];
+  JS.forBlock['sc_button_red']  = () => ['sim.s.button_red', A];
+  JS.forBlock['sc_button_blue'] = () => ['sim.s.button_blue', A];
+  JS.forBlock['sc_camera']   = b => 'sim.camera(' + (b.getFieldValue('STATE')==='on') + ');\n';
+  JS.forBlock['sc_sound']    = () => ['0', A];   // お試し版：前の作品用（いつも0）
+  JS.forBlock['sc_ai']       = b => 'sim.ai(' + JSON.stringify(b.getFieldValue('PROMPT')) + ');\n';
+  JS.forBlock['sc_forever']  = (b,g) => g.statementToCode(b, 'DO');  // プレビューは毎回評価なので中身を実行
+  JS.forBlock['sc_until']    = (b,g) => g.statementToCode(b, 'DO');  // プレビューでは中身を1回実行
+  JS.forBlock['sc_face']  = b => 'sim.face(' + JSON.stringify(b.getFieldValue('FACE')) + ');\n';
+  JS.forBlock['sc_speak'] = b => 'sim.speak(' + JSON.stringify(b.getFieldValue('TEXT')) + ');\n';
+  JS.forBlock['sc_pan']   = b => 'sim.pan(' + Number(b.getFieldValue('ANGLE')) + ');\n';
+  JS.forBlock['sc_tilt']  = b => 'sim.tilt(' + Number(b.getFieldValue('ANGLE')) + ');\n';
+  JS.forBlock['sc_led']   = b => 'sim.led(' + (b.getFieldValue('STATE')==='on') + ');\n';
+  JS.forBlock['sc_fan']   = b => 'sim.fan(' + (b.getFieldValue('STATE')==='on') + ');\n';
+  JS.forBlock['sc_color'] = b => 'sim.color(' + JSON.stringify(b.getFieldValue('COLOR')) + ');\n';
+  JS.forBlock['sc_wait']  = b => 'sim.wait(' + Number(b.getFieldValue('SEC')) + ');\n';
+
+  /* ========== ツールボックス ========== */
+  const toolbox = ChappyBlocks.toolbox;   // ④問題解決と同じ
+
+  const theme = Blockly.Theme.defineTheme('sclab', {
+    base: Blockly.Themes.Classic,
+    componentStyles: {
+      workspaceBackgroundColour:'#FBFDFF',
+      toolboxBackgroundColour:'#EFF4FA',
+      flyoutBackgroundColour:'#E7EEF6',
+      flyoutOpacity:0.96,
+      scrollbarColour:'#C3D0DE',
+    },
+    fontStyle:{ family:'"Hiragino Maru Gothic ProN","Yu Gothic UI",sans-serif', size:12 },
+  });
+
+  const workspace = Blockly.inject('blocklyDiv', {
+    toolbox, theme,
+    media:'https://unpkg.com/blockly@13.1.0/media/',
+    renderer:'zelos',
+    grid:{ spacing:24, length:3, colour:'#E3EAF2', snap:true },
+    zoom:{ controls:false, wheel:true, startScale:0.9, maxScale:2.5, minScale:0.4 },
+    move:{ scrollbars:true, drag:true, wheel:true },
+    trashcan:true,
+  });
+  // 画面サイズが変わったら Blockly を合わせ直す（フライアウトが切れない）
+  window.addEventListener('resize', ()=>Blockly.svgResize(workspace));
+  window.addEventListener('scroll', ()=>Blockly.svgResize(workspace), true);
+  setTimeout(()=>Blockly.svgResize(workspace), 100);
+  // ブロックを「左のツールボックス」や「ゴミ箱」の上で離したら確実に消す保険
+  (function(ws){
+    let px=0, py=0;
+    const track=e=>{ const t=(e.touches&&e.touches[0])||(e.changedTouches&&e.changedTouches[0])||e; if(t&&typeof t.clientX==='number'){px=t.clientX;py=t.clientY;} };
+    document.addEventListener('pointermove',track,true); document.addEventListener('pointerup',track,true);
+    document.addEventListener('touchmove',track,true); document.addEventListener('touchend',track,true);
+    ws.addChangeListener(e=>{
+      if(e.type!==Blockly.Events.BLOCK_DRAG || e.isStart) return;
+      const blk=ws.getBlockById(e.blockId); if(!blk||!blk.isDeletable()) return;
+      const div=ws.getInjectionDiv?ws.getInjectionDiv():null; if(!div) return;
+      let delRight=0, trash=null;
+      try{
+        const tb=div.querySelector('.blocklyToolboxDiv'); if(tb){const r=tb.getBoundingClientRect(); if(r.width>0) delRight=Math.max(delRight,r.right);}
+        const fl=div.querySelector('.blocklyFlyout'); if(fl){const r=fl.getBoundingClientRect(); if(r.width>2&&fl.style.display!=='none') delRight=Math.max(delRight,r.right);}
+        const tc=div.querySelector('.blocklyTrash'); if(tc) trash=tc.getBoundingClientRect();
+      }catch(_){}
+      const overTb=delRight>0&&px<=delRight;
+      const overTc=trash&&px>=trash.left-12&&px<=trash.right+12&&py>=trash.top-12&&py<=trash.bottom+12;
+      if(overTb||overTc){ const id=e.blockId; setTimeout(()=>{try{const b=ws.getBlockById(id); if(b)b.dispose(false);}catch(_){}},0); }
+    });
+  })(workspace);
+  const _zi=document.getElementById('zin'), _zo=document.getElementById('zout'), _zr=document.getElementById('zrst');
+  if(_zi) _zi.onclick=()=>workspace.zoomCenter(1);
+  if(_zo) _zo.onclick=()=>workspace.zoomCenter(-1);
+  if(_zr) _zr.onclick=()=>{ workspace.setScale(0.9); workspace.scrollCenter(); };
+  const _zu=document.getElementById('zundo'), _zd=document.getElementById('zredo');
+  if(_zu) _zu.onclick=()=>workspace.undo(false);
+  if(_zd) _zd.onclick=()=>workspace.undo(true);
+
+  /* ========== シミュレーター ========== */
+  const sim = {
+    s:{ distance:30, light:300, temp:25, pir:false, button_red:false, button_blue:false },
+    out:{ face:'neutral', speech:'', pan:90, tilt:45, led:false, color:'black', cameraActive:false },
+    face(f){ this.out.face=f; }, speak(t){ this.out.speech=String(t); },
+    pan(a){ this.out.pan=Math.max(0,Math.min(180,a)); },
+    tilt(a){ this.out.tilt=Math.max(0,Math.min(30,a)); },
+    led(on){ this.out.led=!!on; },
+    fan(on){ this.out.fan=!!on; },
+    color(c){ this.out.color=c; },
+    ai(p){ this.out.speech='(AIとおはなし中…)'; },
+    camera(on){ this.out.cameraActive = (on!==false); },
+    wait(s){ /* プレビューでは待ち時間は省略（実機だけで効く） */ },
+  };
+  let program = function(){};
+
+  const $ = id => document.getElementById(id);
+  const eyeL=$('eyeL'), eyeR=$('eyeR'), mouth=$('mouth'),
+        browL=$('browL'), browR=$('browR'), head=$('head'),
+        say=$('say'), servoV=$('servoV'), led=$('led'), faceV=$('faceV');
+  const FACE_JA = { neutral:'ふつう', happy:'笑顔', sad:'悲しい',
+                    angry:'怒り', sleepy:'眠い', doubt:'困り' };
+
+  function rebuild(){
+    let code = '';
+    try {
+      code = JS.workspaceToCode(workspace);
+      program = new Function('sim', code);
+    } catch(e){ program = function(){}; }
+    { const _cv=document.getElementById('codeView'); if(_cv) _cv.textContent = code.trim() || '（ブロックを置くと、ここに表示されます）'; }
+    save();
+  }
+
+  function drawFace(f){
+    browL.setAttribute('d',''); browR.setAttribute('d','');
+    eyeL.setAttribute('r','15'); eyeR.setAttribute('r','15');
+    eyeL.setAttribute('cy','72'); eyeR.setAttribute('cy','72');
+    if (f==='happy'){
+      mouth.setAttribute('d','M 76 110 Q 110 140 144 110');
+      eyeL.setAttribute('cy','70'); eyeR.setAttribute('cy','70');
+    } else if (f==='sad'){
+      mouth.setAttribute('d','M 76 126 Q 110 102 144 126');
+      browL.setAttribute('d','M 62 52 L 88 60'); browR.setAttribute('d','M 158 52 L 132 60');
+    } else if (f==='angry'){
+      mouth.setAttribute('d','M 78 122 Q 110 108 142 122');
+      browL.setAttribute('d','M 62 58 L 88 48'); browR.setAttribute('d','M 158 58 L 132 48');
+    } else if (f==='sleepy'){
+      mouth.setAttribute('d','M 88 118 Q 110 124 132 118');
+      eyeL.setAttribute('r','5'); eyeR.setAttribute('r','5');
+    } else if (f==='doubt'){
+      mouth.setAttribute('d','M 80 120 Q 110 112 140 124');
+      browL.setAttribute('d','M 62 50 L 88 56'); browR.setAttribute('d','M 158 56 L 132 48');
+    } else {
+      mouth.setAttribute('d','M 78 116 Q 110 116 142 116');
+    }
+    faceV.textContent = FACE_JA[f] || 'ふつう';
+  }
+
+  const COLOR_HEX = { black:'#FFFFFF', red:'#FF5A5A', blue:'#39D6E8',
+    green:'#5AE07A', yellow:'#FFD23F', pink:'#FF7FB6', purple:'#B98CFF', white:'#FFFFFF' };
+  function tick(){
+    sim.out = { face:'neutral', speech:'', pan:90, tilt:45, led:false, fan:false, color:'black', cameraActive:false };
+    try { program(sim); } catch(e){}
+    drawFace(sim.out.face);
+    // 目と口の色
+    document.documentElement.style.setProperty('--eye', COLOR_HEX[sim.out.color] || COLOR_HEX.black);
+    // カメラ中は、専用の表示にする（後続のしゃべりで上書きしない）
+    if (sim.out.cameraActive){
+      say.textContent = '📷 カメラさつえい中';
+      say.classList.add('on');
+    } else if (sim.out.speech){ say.textContent = sim.out.speech; say.classList.add('on'); }
+    else { say.classList.remove('on'); }
+    servoV.textContent = Math.round(sim.out.pan) + '/' + Math.round(sim.out.tilt);
+    const rot = (sim.out.pan - 90) / 3;            // 左右＝首をかしげる
+    const dy  = -sim.out.tilt * 0.5;               // 上下＝うなずき（0=正面, 30=上）
+    head.setAttribute('transform',
+      'translate(0 ' + dy + ') rotate(' + rot + ' 110 88)');
+    led.classList.toggle('on', sim.out.led);
+    const fanEl=document.getElementById('fan'); if(fanEl) fanEl.classList.toggle('on', sim.out.fan);
+  }
+  setInterval(tick, 150);
+
+  /* まばたき（生きている感） */
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion){
+    setInterval(() => {
+      if (Number(eyeL.getAttribute('r')) < 8) return;   // 眠い顔のときは省略
+      const r = eyeL.getAttribute('r');
+      eyeL.setAttribute('r','2'); eyeR.setAttribute('r','2');
+      setTimeout(() => { eyeL.setAttribute('r', r); eyeR.setAttribute('r', r); }, 120);
+    }, 3800 + Math.random()*1500);
+  }
+
+  /* ========== センサー入力 ========== */
+  ['distance','light','temp'].forEach(key => {
+    const input = $(key);
+    input.addEventListener('input', () => {
+      sim.s[key] = Number(input.value);
+      $(key+'V').textContent = input.value;
+      tick();
+    });
+  });
+  const btnRedBtn = $('btnRedBtn');
+  btnRedBtn.addEventListener('click', () => {
+    sim.s.button_red = !sim.s.button_red;
+    btnRedBtn.textContent = (sim.s.button_red ? '🔴 ON' : '🔴 赤');
+    btnRedBtn.classList.toggle('on', sim.s.button_red);
+  });
+  const btnPirBtn = $('btnPirBtn');
+  btnPirBtn.addEventListener('click', () => {
+    sim.s.pir = !sim.s.pir;
+    btnPirBtn.textContent = sim.s.pir ? '👤 いる' : '👤 人がいる';
+    btnPirBtn.classList.toggle('on', sim.s.pir);
+    tick();
+  });
+  const btnBlueBtn = $('btnBlueBtn');
+  btnBlueBtn.addEventListener('click', () => {
+    sim.s.button_blue = !sim.s.button_blue;
+    btnBlueBtn.textContent = (sim.s.button_blue ? '🔵 ON' : '🔵 青');
+    btnBlueBtn.classList.toggle('on', sim.s.button_blue);
+    tick();
+  });
+
+  /* ========== 保存・サンプル ========== */
+  function save(){
+    try {
+      localStorage.setItem('sclab_ws',
+        JSON.stringify(Blockly.serialization.workspaces.save(workspace)));
+    } catch(e){ $('autosave').textContent = 'じどう保存：この環境では使えません'; }
+  }
+  function loadSaved(){
+    try {
+      const raw = localStorage.getItem('sclab_ws');
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      if (!data.blocks || !data.blocks.blocks || !data.blocks.blocks.length) return false;
+      Blockly.serialization.workspaces.load(data, workspace);
+      return true;
+    } catch(e){ return false; }
+  }
+
+  const SAMPLE = { blocks:{ languageVersion:0, blocks:[
+    { type:'sc_forever', x:40, y:40,
+      inputs:{ DO:{ block:{
+        type:'controls_if', extraState:{ hasElse:true },
+        inputs:{
+          IF0:{ block:{ type:'sc_button_red' } },
+          DO0:{ block:{ type:'sc_face', fields:{ FACE:'happy' },
+            next:{ block:{ type:'sc_speak', fields:{ TEXT:'こんにちは！' } } } } },
+          ELSE:{ block:{ type:'sc_face', fields:{ FACE:'neutral' } } }
+        } } } }
+    }
+  ]}};
+  function loadSample(){
+    Blockly.serialization.workspaces.load(SAMPLE, workspace);
+  }
+
+  $('clearBtn').addEventListener('click', () => {
+    if (confirm('ぜんぶ消しますか？')) workspace.clear();
+  });
+
+  /* ========== ブロック → プログラムJSON（実機へ送る形） ========== */
+  // ④問題解決と同じ変換（共通ファイル）。「ずっと」が2つ以上なら並列スレッドになる
+  function buildProgram(){ return ChappyBlocks.buildProgram(workspace); }
+
+  /* ========== デプロイ ========== */
+  // 先生モード（?teacher=1）：号機プルダウンを隠して、複数選択のチェックボックスを出す
+  const isTeacher = new URLSearchParams(location.search).get('teacher') === '1';
+  if (isTeacher) {
+    // 先生モードのときだけ、チェックリストをJSで作る（生徒画面には存在しない）
+    document.body.classList.add('teacher-mode');
+    const sel = document.getElementById('deviceSel');
+    if (sel) sel.style.display = 'none';   // 1台プルダウンは隠す
+    const picker = document.getElementById('teacherPicker');
+    if (picker) {
+      picker.style.display = 'flex';
+      let html = '<span class="tp-label">🔧先生モード｜送り先（複数えらべる）:</span>';
+      html += '<label class="tp-all"><input type="checkbox" id="tpAll"> ぜんぶ</label>';
+      for (let i = 1; i <= 8; i++) {
+        const id = 'stackchan-' + String(i).padStart(2, '0');
+        html += '<label><input type="checkbox" class="tp-dev" value="' + id + '">' + i + '</label>';
+      }
+      picker.innerHTML = html;
+      const tpAll = document.getElementById('tpAll');
+      const devs = Array.from(picker.querySelectorAll('.tp-dev'));
+      tpAll.addEventListener('change', () => { devs.forEach(d => { d.checked = tpAll.checked; }); });
+      devs.forEach(d => d.addEventListener('change', () => { tpAll.checked = devs.every(x => x.checked); }));
+    }
+  }
+
+  let edActiveDevices = [];
+  async function edRefreshDevices(){
+    try{
+      const j = await (await fetch('/api/telemetry')).json();
+      edActiveDevices = j.devices || [];
+    }catch(e){ edActiveDevices = []; }
+    const sel = $('deviceSel');
+    if(sel && !isTeacher){
+      const cur = sel.value;
+      Array.from(sel.options).forEach(opt=>{
+        const on = edActiveDevices.includes(opt.value);
+        opt.textContent = opt.value.replace('stackchan-0','') + '号機' + (on ? ' ● 接続中' : ' ○ 未接続');
+        opt.className = on ? 'online' : 'offline';
+      });
+      sel.value = cur;
+    }
+    if(isTeacher){
+      document.querySelectorAll('.tp-dev').forEach(d=>{
+        const on = edActiveDevices.includes(d.value);
+        const lbl = d.parentElement;
+        if(lbl) lbl.style.opacity = on ? '1' : '0.45';
+      });
+    }
+  }
+  edRefreshDevices();
+  setInterval(edRefreshDevices, 5000);
+
+  const deployBtn = $('deployBtn'), deployStatus = $('deployStatus');
+  deployBtn.addEventListener('click', async () => {
+    const program = buildProgram();
+    if (!program.actions.length && !(program.threads && program.threads.length)){
+      deployStatus.className = 'deploy-status err';
+      deployStatus.textContent = 'ブロックが ありません';
+      return;
+    }
+    let body, targetDevice;
+    if (isTeacher) {
+      const chosen = Array.from(document.querySelectorAll('.tp-dev'))
+                          .filter(d => d.checked).map(d => d.value);
+      if (chosen.length === 0){
+        deployStatus.className = 'deploy-status err';
+        deployStatus.textContent = '送り先を えらんでね（1台いじょう）';
+        return;
+      }
+      body = { devices: chosen, program };
+    } else {
+      targetDevice = $('deviceSel').value;
+      body = { device: targetDevice, program };
+    }
+    deployBtn.disabled = true;
+    deployStatus.className = 'deploy-status';
+    deployStatus.textContent = '送っています…（声を作っています）';
+    try {
+      const r = await fetch('/deploy', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(body) });
+      const j = await r.json();
+      if (j.ok){
+        if (isTeacher) {
+          deployStatus.className = 'deploy-status ok';
+          deployStatus.textContent = '✓ ' + (j.count||0) + '台の チャッピーに おくれた！';
+        } else if (!edActiveDevices.includes(targetDevice)){
+          deployStatus.className = 'deploy-status warn';
+          deployStatus.textContent = '⚠ サーバーには送れたけど、実機が未接続です';
+        } else {
+          deployStatus.className = 'deploy-status ok';
+          deployStatus.textContent = '✓ ' + targetDevice.replace('stackchan-0','') + '号機に おくれた！';
+        }
+      } else throw new Error();
+    } catch(e){
+      deployStatus.className = 'deploy-status err';
+      deployStatus.textContent = '✗ 送れませんでした（server.pyは動いていますか？）';
+    } finally {
+      deployBtn.disabled = false;
+    }
+  });
+
+  workspace.addChangeListener(ev => { if (!ev.isUiEvent) rebuild(); });
+
+  loadSaved();   // 保存があれば復元、なければ空でスタート
+  rebuild(); tick();
+  window.addEventListener('resize', () => Blockly.svgResize(workspace));
+});
+</script>
+</body>
+</html>

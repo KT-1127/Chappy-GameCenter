@@ -15,11 +15,12 @@
 <title>チャッピーGameセンター</title>
 <meta name="description" content="チャッピーといっしょにあそぼう！ゲームをえらんで、デイリーランキング・総合ランキングで1位をめざそう。">
 <meta name="theme-color" content="#45bdfb">
-<!-- リンクを送ったときのサムネイル。og:image は公開後に https://… から始まる絶対URLに書きかえる -->
+<!-- リンクを送ったときのサムネイル（og:image は https:// から始まる絶対URLでないと出ない） -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="チャッピーGameセンター">
 <meta property="og:description" content="チャッピーといっしょにあそぼう！ゲームをえらんで、デイリーランキング・総合ランキングで1位をめざそう。">
-<meta property="og:image" content="assets/top.jpg">
+<meta property="og:url" content="https://kt-1127.github.io/Chappy-GameCenter/">
+<meta property="og:image" content="https://kt-1127.github.io/Chappy-GameCenter/assets/top.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.png" type="image/png">
@@ -248,6 +249,7 @@ const ICON = {
   mouth: `<svg class="icon" viewBox="0 0 64 64"><path d="M32 32 L58 18 A28 28 0 1 0 58 46 Z" fill="#fff"/><circle cx="30" cy="18" r="4" fill="#30425a"/><circle cx="56" cy="32" r="4" fill="#ef4b4b"/></svg>`,
   note:  `<svg class="icon" viewBox="0 0 64 64"><path d="M24 46V12l30-6v34" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/><ellipse cx="17" cy="47" rx="9" ry="7" fill="#fff"/><ellipse cx="47" cy="41" rx="9" ry="7" fill="#fff"/></svg>`,
   house: `<svg class="icon" viewBox="0 0 64 64"><path d="M8 30 L32 8 L56 30" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 28v28h36V28" fill="#fff"/><rect x="27" y="38" width="10" height="18" rx="3" fill="#f2b134"/><path d="M20 12 l3 -6 l5 5" fill="#fff"/></svg>`,
+  lab:   `<svg class="icon" viewBox="0 0 64 64"><rect x="10" y="14" width="44" height="36" rx="12" fill="#14181f" stroke="#fff" stroke-width="5"/><circle cx="25" cy="31" r="5" fill="#35d0c5"/><circle cx="39" cy="31" r="5" fill="#35d0c5"/><rect x="24" y="40" width="16" height="4" rx="2" fill="#35d0c5"/><path d="M32 14V6" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="5" r="4" fill="#ffd84a"/></svg>`,
   glass: `<svg class="icon" viewBox="0 0 64 64"><circle cx="27" cy="27" r="17" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="7"/><path d="M40 40 L56 56" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M19 21 l3-6 l4 5 M35 21 l-3-6 l-4 5" fill="#fff" stroke="#fff" stroke-width="2"/></svg>`
 };
 

@@ -16,7 +16,7 @@ service cloud.firestore {
     function validScore(id) {
       let d = request.resource.data;
       return d.keys().hasOnly(['game', 'board', 'boardName', 'nick', 'score', 'order', 'uid', 'date', 'ts'])
-        && d.game in ['link', 'cannon', 'ringo', 'paku', 'rhythm', 'home', 'sagashi']
+        && d.game in ['link', 'cannon', 'ringo', 'paku', 'rhythm', 'home', 'sagashi', 'lab']
         && d.board is string && d.board.matches('^[A-Za-z0-9-]{1,60}$')
         && d.boardName is string && d.boardName.size() <= 60
         && d.nick is string && d.nick.size() >= 1 && d.nick.size() <= 10

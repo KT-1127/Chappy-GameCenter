@@ -176,6 +176,18 @@ button:focus-visible{outline:3px solid var(--cyan);outline-offset:3px}
 .step small{display:block;color:var(--muted);font-weight:700;font-size:12px}
 .nw{white-space:nowrap}
 .tierlist{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center;text-align:left;font-size:12px;font-weight:700;color:var(--muted)}
+/* ---------- PC（横長の広い画面）：左に絵、右にトレイとブロック ---------- */
+@media (min-width:900px) and (min-aspect-ratio:5/4){
+  #app{max-width:1200px}
+  .cards{grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}
+  .hero{height:clamp(130px,20vh,180px)}
+  #game{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,420px);grid-template-rows:auto auto 1fr;
+    grid-template-areas:"bar bar" "stage tray" "stage cols";gap:16px 28px;padding-left:28px;padding-right:28px}
+  #game .bar{grid-area:bar}
+  #stageArea{grid-area:stage;min-height:0;padding-top:30px}
+  #game .tray{grid-area:tray;align-self:end}
+  #game .cols{grid-area:cols;align-self:start}
+}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 

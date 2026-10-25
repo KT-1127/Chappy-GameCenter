@@ -38,7 +38,9 @@ const GAMES = [
   { id: "home",    name: "チャッピーhome",     kana: "HOME",   ready: true,  color: "#f2b134", color2: "#ffe7a8", icon: "house",
     desc: "チャッピーたちを、正しい色のおうちに入れよう！", order: "asc", fmt: fmtTime, note: "レベルごとのクリアタイム（はやいほど上）" },
   { id: "sagashi", name: "チャッピー探し",     kana: "SEARCH", ready: true,  color: "#2bb673", color2: "#bdf0d2", icon: "glass",
-    desc: "スマホをかざして、森のチャッピーを見つけよう！", order: "desc", fmt: pts, note: "とくてん（きんいろは10てん）" }
+    desc: "スマホをかざして、森のチャッピーを見つけよう！", order: "desc", fmt: pts, note: "とくてん（きんいろは10てん）" },
+  { id: "lab",     name: "チャッピーラボ",     kana: "LAB",    ready: true,  color: "#0fb5aa", color2: "#b5efe9", icon: "lab",
+    desc: "ブロックでプログラミング！チャッピーを動かそう", order: "desc", fmt: v => v + "問", note: "学習ページで クリアした もんだいの数" }
 ];
 GAMES.forEach(g => { g.url = "games/" + g.id + "/index.html"; g.banner = "games/" + g.id + "/thumb.jpg"; });
 const gameById = id => GAMES.find(g => g.id === id);

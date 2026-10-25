@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<script src="../../assets/config.js"></script><script src="../../assets/cgc.js"></script><script src="../../assets/bridge.js" data-game="lab"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>みる | チャッピーラボ</title>
+<link rel="icon" href="favicon.png" type="image/png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+  html,body{ margin:0; height:100%; }
+  body{ display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+  :root{
+    --bg:#EDF2F7; --surface:#FFFFFF; --ink:#1E2A38; --sub:#5B6B7E;
+    --line:#DCE4EE; --teal:#0FB5AA; --teal-soft:#E2F6F4;
+    --blue:#2F6FB0; --blue-deep:#24527F; --amber:#F5B301;
+    --coral:#E8604C; --face:#14181F; --eye:#35D0C5;
+    --radius:16px; --shadow:0 2px 12px rgba(30,42,56,.08);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Hiragino Maru Gothic ProN","BIZ UDPGothic","Yu Gothic UI","Meiryo",sans-serif;
+  }
+
+  header{
+    background:linear-gradient(120deg,var(--blue-deep),var(--blue));
+    color:#fff; padding:10px 18px;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-weight:800; font-size:17px; }
+  .brand .logo{
+    width:30px; height:30px; border-radius:8px; background:var(--face);
+    display:grid; place-items:center; flex:none;
+  }
+  .brand .logo::before{
+    content:""; width:14px; height:5px; border-radius:3px;
+    background:var(--eye); box-shadow:0 0 6px var(--eye);
+  }
+  nav{ display:flex; gap:8px; }
+  nav a{
+    color:#fff; text-decoration:none; font-size:13px; font-weight:700;
+    padding:7px 14px; border-radius:999px; border:1.5px solid rgba(255,255,255,.45);
+  }
+  nav a.here{ background:#fff; color:var(--blue-deep); border-color:#fff; }
+
+  .live{
+    margin-left:auto; display:flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:800;
+    background:rgba(255,255,255,.14); border-radius:999px; padding:6px 14px;
+  }
+  .dot{
+    width:10px; height:10px; border-radius:50%; background:#B9C6D4;
+  }
+  .live.on .dot{ background:#3EE08F; animation:pulse 1.4s infinite; }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(62,224,143,.55); }
+    70%{ box-shadow:0 0 0 8px rgba(62,224,143,0); }
+    100%{ box-shadow:0 0 0 0 rgba(62,224,143,0); }
+  }
+  .demo-btn{
+    padding:7px 14px; border:1.5px solid rgba(255,255,255,.55); background:transparent;
+    color:#fff; border-radius:999px; font-weight:800; cursor:pointer; font-size:13px;
+    font-family:inherit;
+  }
+  .demo-btn.on{ background:#fff; color:var(--blue-deep); }
+
+  .web-banner{
+    background:#FFF3CD; border-bottom:1px solid #FECB52;
+    padding:8px 18px; font-size:13px; font-weight:700; color:#856404;
+  }
+
+  .grid{
+    display:grid; grid-template-columns:1.35fr 1fr; gap:16px; padding:16px;
+    flex:1 1 auto; overflow-y:auto; min-height:0;
+    align-items:start;
+  }
+  @media (max-width:900px){ .grid{ grid-template-columns:1fr; } }
+
+  .card{
+    background:var(--surface); border-radius:var(--radius); padding:18px;
+    box-shadow:var(--shadow);
+  }
+  .card h2{
+    margin:0 0 14px; font-size:13px; letter-spacing:.08em;
+    color:var(--sub); font-weight:800;
+    display:flex; align-items:center; gap:8px;
+  }
+  .card h2 .sp{ margin-left:auto; }
+
+  /* 値タイル */
+  .tiles{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+    gap:10px; margin-bottom:16px;
+  }
+  .tile{
+    background:#F4F8FC; border:1px solid var(--line); border-radius:12px;
+    padding:10px 12px;
+  }
+  .tile .k{ font-size:12px; color:var(--sub); font-weight:700; }
+  .tile .n{
+    font-size:26px; font-weight:800; line-height:1.2;
+    font-variant-numeric:tabular-nums; transition:color .2s;
+  }
+  .tile .u{ font-size:11px; color:var(--sub); }
+  .tile.fresh .n{ color:var(--teal); }
+
+  canvas.chart{ width:100%; max-height:270px; }
+  .chart-note{
+    display:flex; align-items:center; gap:10px; margin-top:10px;
+  }
+  .pause-btn{
+    padding:7px 14px; border:none; border-radius:10px; background:#E2E9F2;
+    color:#3D4C5E; font-weight:800; font-size:13px; cursor:pointer; font-family:inherit;
+  }
+  .pause-btn.on{ background:var(--coral); color:#fff; }
+  .chart-note .hint{ font-size:12px; color:var(--sub); }
+
+  /* カメラ */
+  .cam-frame{
+    position:relative; border-radius:14px; overflow:hidden; background:var(--face);
+    aspect-ratio:4/3;
+  }
+  #cam{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    opacity:0; transition:opacity .25s;
+  }
+  #cam.show{ opacity:1; }
+  .cam-wait{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:12px; color:#8FA5B5;
+  }
+  .cam-wait .eyes{ display:flex; gap:22px; }
+  .cam-wait .eyes i{
+    width:16px; height:16px; border-radius:50%; background:var(--eye);
+    opacity:.85; animation:blink 3.2s infinite;
+  }
+  @keyframes blink{ 0%,92%,100%{ transform:scaleY(1);} 95%{ transform:scaleY(.1);} }
+  .cam-wait p{ margin:0; font-size:13px; font-weight:700; }
+  /* デモカメラ：canvasを表示 */
+  #demoCam{
+    position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    display:none;
+  }
+  #demoCam.show{ display:block; }
+  .cam-meta{
+    display:flex; justify-content:space-between; margin-top:10px;
+    font-size:12px; color:var(--sub);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .live.on .dot, .cam-wait .eyes i{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="logo"></span>チャッピーラボ</div>
+  <nav>
+    <a href="editor.html">① つくる</a>
+    <a class="here" href="dashboard.html">② みる</a>
+    <a href="learn.html">③ まなぶ</a>
+    <a href="solve.html">④ 問題解決</a>
+  </nav>
+  <div class="live" id="live"><span class="dot"></span><span id="liveText">まちうけ中</span></div>
+  <button class="demo-btn" id="demoBtn">デモデータを流す</button>
+</header>
+
+<div class="web-banner">
+  🌐 お試し版 ─ 実際のチャッピーが接続されていないため、リアルタイムセンサーデータは表示できません。「デモデータを流す」ボタンで動きを体験できます。
+</div>
+
+<div class="grid">
+  <!-- センサー -->
+  <div class="card">
+    <h2>センサー <span class="sp"></span></h2>
+    <div class="tiles">
+      <div class="tile" id="t_light"><div class="k">☀️ 明るさ</div><div class="n" id="vLight">–</div><div class="u">lx</div></div>
+      <div class="tile" id="t_distance"><div class="k">📏 きょり</div><div class="n" id="vDistance">–</div><div class="u">cm</div></div>
+      <div class="tile" id="t_temp"><div class="k">🌡️ おんど</div><div class="n" id="vTemp">–</div><div class="u">℃</div></div>
+      <div class="tile" id="t_pir"><div class="k">👤 人感</div><div class="n" id="vPir">–</div><div class="u"></div></div>
+      <div class="tile" id="t_btnR"><div class="k">🔴 赤ボタン</div><div class="n" id="vBtnR">–</div><div class="u"></div></div>
+      <div class="tile" id="t_btnB"><div class="k">🔵 青ボタン</div><div class="n" id="vBtnB">–</div><div class="u"></div></div>
+      <div class="tile" id="t_battery"><div class="k">🔋 電池</div><div class="n" id="vBattery">–</div><div class="u">%</div></div>
+    </div>
+    <canvas id="chart" class="chart"></canvas>
+    <div class="chart-note">
+      <button class="pause-btn" id="pauseBtn">⏸ 一時停止</button>
+      <span class="hint">グラフの名前をおすと 表示/非表示 を切りかえられます</span>
+    </div>
+  </div>
+
+  <!-- カメラ -->
+  <div class="card">
+    <h2>カメラ</h2>
+    <div class="cam-frame">
+      <img id="cam" alt="チャッピーのカメラ映像">
+      <canvas id="demoCam"></canvas>
+      <div class="cam-wait" id="camWait">
+        <div class="eyes"><i></i><i style="animation-delay:.15s"></i></div>
+        <p>映像をまっています…</p>
+      </div>
+    </div>
+    <div class="cam-meta">
+      <span id="camDevice">チャッピー: –</span>
+      <span id="camTime">最終受信: –</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+/* ============ グラフ ============ */
+const ctx = $('chart').getContext('2d');
+function grad(color){
+  const g = ctx.createLinearGradient(0,0,0,260);
+  g.addColorStop(0, color + '33'); g.addColorStop(1, color + '00');
+  return g;
+}
+const MAXP = 60;
+const chart = new Chart(ctx, {
+  type:'line',
+  data:{ labels:[], datasets:[
+    { label:'明るさ(lx)', data:[], borderColor:'#F5B301', backgroundColor:grad('#F5B301'),
+      fill:true, tension:.35, pointRadius:0, borderWidth:2.5, yAxisID:'y' },
+    { label:'近さ(cm)', data:[], borderColor:'#0FB5AA', backgroundColor:grad('#0FB5AA'),
+      fill:true, tension:.35, pointRadius:0, borderWidth:2, yAxisID:'y2' },
+    { label:'温度(℃)', data:[], borderColor:'#E8604C', backgroundColor:grad('#E8604C'),
+      fill:true, tension:.35, pointRadius:0, borderWidth:2, yAxisID:'y3' },
+  ]},
+  options:{
+    animation:false, responsive:true, maintainAspectRatio:false,
+    interaction:{ intersect:false, mode:'index' },
+    scales:{
+      x:{ display:false },
+      y:{ position:'left', grid:{ color:'#EDF2F7' }, ticks:{ font:{ size:11 } } },
+      y2:{ position:'right', min:0, max:50, grid:{ display:false }, ticks:{ font:{ size:11 } } },
+      y3:{ position:'right', min:0, max:40, grid:{ display:false }, ticks:{ font:{ size:11 } },
+           title:{ display:true, text:'℃', font:{ size:10 } } },
+    },
+    plugins:{ legend:{ labels:{ boxWidth:14, boxHeight:14, borderRadius:4,
+      useBorderRadius:true, font:{ size:12, weight:700 } } } },
+  }
+});
+
+let paused = false;
+$('pauseBtn').addEventListener('click', () => {
+  paused = !paused;
+  $('pauseBtn').classList.toggle('on', paused);
+  $('pauseBtn').textContent = paused ? '▶ さいかい' : '⏸ 一時停止';
+});
+
+function pushPoint(d){
+  if (paused) return;
+  chart.data.labels.push('');
+  chart.data.datasets[0].data.push(d.light ?? null);
+  chart.data.datasets[1].data.push(d.distance ?? null);
+  chart.data.datasets[2].data.push(d.temp ?? null);
+  if (chart.data.labels.length > MAXP){
+    chart.data.labels.shift();
+    chart.data.datasets.forEach(ds => ds.data.shift());
+  }
+  chart.update();
+}
+
+/* ============ 現在値タイル ============ */
+let lastRx = 0;
+function setVal(id, tileId, v){
+  $(id).textContent = (v==null ? '–' : Math.round(v));
+  const t = $(tileId);
+  t.classList.add('fresh');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.classList.remove('fresh'), 900);
+}
+function showLatest(d){
+  setVal('vLight','t_light', d.light);
+  setVal('vDistance','t_distance', d.distance);
+  setVal('vTemp','t_temp', d.temp);
+  setVal('vBattery','t_battery', d.battery);
+  const p = document.getElementById('vPir');
+  p.textContent = (d.pir ? 'いる' : 'いない');
+  const pb = document.getElementById('t_pir');
+  pb.classList.add('fresh'); clearTimeout(pb._tm);
+  pb._tm = setTimeout(()=>pb.classList.remove('fresh'), 900);
+  const br = document.getElementById('vBtnR');
+  if(br){ br.textContent = (d.button_red ? 'ON' : 'OFF');
+    const x=document.getElementById('t_btnR'); x.classList.add('fresh');
+    clearTimeout(x._tm); x._tm=setTimeout(()=>x.classList.remove('fresh'),900); }
+  const bl = document.getElementById('vBtnB');
+  if(bl){ bl.textContent = (d.button_blue ? 'ON' : 'OFF');
+    const y=document.getElementById('t_btnB'); y.classList.add('fresh');
+    clearTimeout(y._tm); y._tm=setTimeout(()=>y.classList.remove('fresh'),900); }
+}
+
+/* ============ 接続状態バッジ ============ */
+setInterval(() => {
+  const live = Date.now() - lastRx < 2500;
+  $('live').classList.toggle('on', live);
+  $('liveText').textContent = live ? '受信中' : 'まちうけ中';
+}, 500);
+
+/* ============ デモモード ============ */
+let demo = null;
+const demoBtn = $('demoBtn');
+const demoCam = $('demoCam');
+
+demoBtn.addEventListener('click', () => {
+  if (demo){
+    clearInterval(demo); demo = null;
+    demoBtn.classList.remove('on'); demoBtn.textContent = 'デモデータを流す';
+    demoCam.classList.remove('show');
+    $('camWait').style.display = 'flex';
+    return;
+  }
+  demoBtn.classList.add('on'); demoBtn.textContent = 'デモを止める';
+
+  // デモカメラを表示
+  demoCam.width = 320; demoCam.height = 240;
+  demoCam.classList.add('show');
+  $('camWait').style.display = 'none';
+  $('camDevice').textContent = 'チャッピー: demo';
+  const g = demoCam.getContext('2d');
+
+  let k = 0;
+  demo = setInterval(() => {
+    k += 0.3;
+    const d = {
+      device:'demo',
+      light:    400 + Math.cos(k*0.7)*300,
+      distance: 25 + Math.sin(k)*20,
+      temp:     24 + Math.sin(k*0.5)*4,
+      pir:      (Math.sin(k*1.3) > 0) ? 1 : 0,
+      button_red:  (Math.sin(k*2.1) > 0.7) ? 1 : 0,
+      button_blue: (Math.cos(k*1.7) > 0.7) ? 1 : 0,
+      battery:  80,
+    };
+
+    showLatest(d);
+    pushPoint(d);
+    lastRx = Date.now();
+
+    // デモ映像: 動く目
+    g.fillStyle = '#14181F'; g.fillRect(0,0,320,240);
+    const dx = Math.sin(k)*24;
+    g.fillStyle = '#35D0C5';
+    g.beginPath(); g.arc(120+dx,110,26,0,7); g.fill();
+    g.beginPath(); g.arc(210+dx,110,26,0,7); g.fill();
+    g.strokeStyle='#35D0C5'; g.lineWidth=9; g.lineCap='round';
+    g.beginPath(); g.moveTo(130,178); g.quadraticCurveTo(165,178+Math.sin(k*2)*14,200,178); g.stroke();
+    g.fillStyle='#5B6B7E'; g.font='700 15px sans-serif'; g.fillText('DEMO', 18, 28);
+
+    $('camTime').textContent = '最終受信: ' + new Date().toLocaleTimeString('ja-JP');
+  }, 400);
+});
+</script>
+</body>
+</html>

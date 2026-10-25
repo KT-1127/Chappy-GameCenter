@@ -26,6 +26,7 @@ assets/top.png    センターの画像。軽い assets/top.jpg をリンク共�
   rhythm    チャッピーリズム   … chappy リズム/ から
   sagashi   チャッピー探し     … AR/ から
   home      チャッピーhome     … chappy home/チャッピーのおうち/ から
+  lab       チャッピーラボ     … chappy-lab-trial/ から（公開中の chappy-lab と同じもの）
 tools/banner.html バナー画像を作るページ
 tools/shrink.py   表示用の軽い画像（thumb.jpg / assets/top.jpg）を作る
 ```
@@ -88,6 +89,7 @@ tools/shrink.py   表示用の軽い画像（thumb.jpg / assets/top.jpg）を作
   - リズム：曲 × むずかしさ ごとのスコア
   - 探し：とくてん
   - home：レベルごとのクリアタイム（速いほど上）
+  - ラボ：学習ページでクリアした問題の数（多いほど上）
 
 ## ローカルで試す
 
