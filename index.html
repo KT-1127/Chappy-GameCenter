@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TGT2Y7KLF3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TGT2Y7KLF3');
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>チャッピーGameセンター</title>
+<meta name="description" content="チャッピーといっしょにあそぼう！ゲームをえらんで、デイリーランキング・総合ランキングで1位をめざそう。">
+<meta name="theme-color" content="#45bdfb">
+<!-- リンクを送ったときのサムネイル。og:image は公開後に https://… から始まる絶対URLに書きかえる -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="チャッピーGameセンター">
+<meta property="og:description" content="チャッピーといっしょにあそぼう！ゲームをえらんで、デイリーランキング・総合ランキングで1位をめざそう。">
+<meta property="og:image" content="assets/top.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/config.js"></script>
+<script src="assets/cgc.js"></script>
+<script src="assets/chappy.js"></script>
+<style>
+/* ---------- 空と背景 ---------- */
+body{background:linear-gradient(180deg,#45bdfb 0%,#8fdcff 38%,#d9f5ff 70%,#fff4d6 100%);min-height:100vh;overflow-x:hidden}
+.sky{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.cloud{position:absolute;background:#fff;border-radius:999px;opacity:.85;filter:drop-shadow(0 6px 0 rgba(69,189,251,.25));animation:drift linear infinite}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:55%;height:160%;left:14%;bottom:20%}
+.cloud::after{width:38%;height:120%;right:12%;bottom:30%}
+@keyframes drift{from{transform:translateX(-30vw)}to{transform:translateX(130vw)}}
+.fall{position:absolute;top:-40px;font-size:26px;animation:fall linear forwards;will-change:transform}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+.hill{position:fixed;left:-10%;right:-10%;bottom:-60px;height:170px;background:#7fd66b;border-radius:50% 50% 0 0;z-index:0;box-shadow:inset 0 14px 0 #9be588}
+.hill.b{bottom:-90px;left:30%;right:-30%;background:#5fc457;box-shadow:inset 0 14px 0 #7fd66b}
+
+main{position:relative;z-index:1;max-width:1120px;margin:0 auto;padding:16px 16px 140px}
+
+/* ---------- 上のバー ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.nickbar{display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:6px 6px 6px 14px;box-shadow:0 4px 0 rgba(30,90,140,.18);font-weight:800}
+.nickbar .who{max-width:11em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.nickbar small{white-space:nowrap;color:var(--sub);font-weight:700}
+.mode{font-size:12px;font-weight:800;color:#fff;background:rgba(0,40,80,.28);border-radius:999px;padding:6px 12px}
+
+/* ---------- タイトルとチャッピー ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 300px;align-items:center;gap:8px;margin-top:10px}
+.title{font-family:"Mochiy Pop One",sans-serif;font-size:clamp(34px,7vw,76px);line-height:1.12;margin:0;letter-spacing:.02em;
+  color:#fff;text-shadow:0 4px 0 #1d8fd1,0 8px 0 rgba(0,60,110,.2)}
+.title span{display:inline-block;animation:hop 2.6s ease-in-out infinite;animation-delay:calc(var(--i)*.08s)}
+.title .big{color:#ffd84a;text-shadow:0 4px 0 #e0861a,0 8px 0 rgba(120,60,0,.2)}
+@keyframes hop{0%,70%,100%{transform:translateY(0)}80%{transform:translateY(-14px) rotate(-4deg)}90%{transform:translateY(2px)}}
+.lead{font-size:clamp(15px,2.4vw,19px);font-weight:800;color:#0b4a73;margin:14px 0 0;background:rgba(255,255,255,.6);display:inline-block;padding:8px 16px;border-radius:16px}
+.mascot{position:relative;width:300px;justify-self:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mascot .cpwrap{width:240px;margin:40px auto 0}
+.bubble{position:absolute;top:0;left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;border-radius:20px;padding:10px 16px;font-weight:900;color:var(--ink);
+  box-shadow:0 4px 0 rgba(30,90,140,.2);font-size:15px;transition:transform .25s cubic-bezier(.2,1.6,.4,1)}
+.bubble::after{content:"";position:absolute;left:50%;bottom:-10px;border:10px solid transparent;border-top-color:#fff;border-bottom:0;transform:translateX(-50%)}
+.bubble.pop{transform:translateX(-50%) scale(1.12)}
+.mascot{touch-action:none;-webkit-user-select:none;user-select:none}
+.mascot .cpwrap{transform-origin:50% 100%}
+.cpwrap.a-boing{animation:aBoing .6s cubic-bezier(.3,1.6,.5,1)}
+.cpwrap.a-spin{animation:aSpin .8s cubic-bezier(.4,1.4,.5,1)}
+.cpwrap.a-flip{animation:aFlip 1s cubic-bezier(.3,.8,.4,1)}
+.cpwrap.a-shake{animation:aShake .5s ease-in-out}
+.cpwrap.a-dance{animation:aDance .5s ease-in-out infinite}
+.cpwrap.a-dizzy{animation:aDizzy 1s ease-in-out 2}
+.cpwrap.a-pet{animation:aPet .5s ease-in-out infinite}
+@keyframes aBoing{0%{transform:scale(1)}25%{transform:scale(1.18,.78)}55%{transform:scale(.9,1.14) translateY(-18px)}80%{transform:scale(1.05,.95)}100%{transform:scale(1)}}
+@keyframes aSpin{0%{transform:rotateY(0)}100%{transform:rotateY(720deg)}}
+@keyframes aFlip{0%{transform:translateY(0) rotate(0)}15%{transform:translateY(10px) scale(1.1,.85)}55%{transform:translateY(-150px) rotate(-360deg)}85%{transform:translateY(0) rotate(-360deg) scale(1.1,.88)}100%{transform:rotate(-360deg)}}
+@keyframes aShake{0%,100%{transform:rotate(0)}20%{transform:rotate(-9deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(4deg)}}
+@keyframes aDance{0%,100%{transform:rotate(-8deg) translateY(0)}50%{transform:rotate(8deg) translateY(-16px)}}
+@keyframes aDizzy{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg) translateX(-10px)}75%{transform:rotate(14deg) translateX(10px)}}
+@keyframes aPet{0%,100%{transform:scale(1)}50%{transform:scale(1.04,.96)}}
+.pop-fx{position:fixed;z-index:60;pointer-events:none;font-size:26px;line-height:1;left:0;top:0;animation:popFx var(--t,.9s) cubic-bezier(.2,.8,.3,1) forwards}
+@keyframes popFx{0%{transform:translate(var(--x),var(--y)) scale(.3);opacity:1}100%{transform:translate(calc(var(--x) + var(--dx)),calc(var(--y) + var(--dy))) scale(1.1) rotate(var(--r));opacity:0}}
+.combo{position:absolute;right:6px;top:52px;font:400 28px "Mochiy Pop One";color:#ffd84a;text-shadow:0 3px 0 #e0861a,0 0 12px #fff;pointer-events:none;opacity:0;transition:opacity .2s}
+.combo.on{opacity:1;animation:comboIn .25s cubic-bezier(.2,1.8,.4,1)}
+@keyframes comboIn{from{transform:scale(1.6)}}
+.flash{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle,rgba(255,240,150,.55),transparent 70%);animation:flash 1s ease-out forwards}
+@keyframes flash{from{opacity:1}to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.cpwrap[class*=" a-"]{animation:none!important}}
+
+.notice{margin:14px 0 0;background:#fffbe6;border:3px dashed #ffb800;border-radius:20px;padding:12px 16px;font-weight:800;color:#6a4b00;display:flex;gap:10px;align-items:flex-start}
+.notice[hidden]{display:none}
+.notice b{flex:none;background:#ffb800;color:#fff;border-radius:999px;padding:2px 10px;font-size:13px}
+
+/* ---------- ゲームカード ---------- */
+h2.sec{font-family:"Mochiy Pop One",sans-serif;font-size:24px;color:#0b4a73;margin:30px 0 14px;display:flex;align-items:center;gap:10px}
+h2.sec::before{content:"";width:14px;height:14px;border-radius:50%;background:#ff5a5a;box-shadow:20px 0 0 #ffd84a,40px 0 0 #3cc47c;margin-right:44px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.card{--c:#45bdfb;--c2:#cdeeff;position:relative;background:#fff;border-radius:28px;padding:16px;box-shadow:0 8px 0 var(--c),0 16px 30px rgba(0,50,90,.15);
+  display:flex;flex-direction:column;gap:10px;transition:transform .2s cubic-bezier(.2,1.4,.4,1);animation:cardIn .6s cubic-bezier(.2,1.4,.4,1) backwards;animation-delay:calc(var(--i)*.07s)}
+@keyframes cardIn{from{opacity:0;transform:translateY(30px) scale(.9)}}
+.card:hover{transform:translateY(-6px) rotate(-.6deg)}
+.card .art{position:relative;aspect-ratio:1882/836;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,var(--c2),var(--c));cursor:pointer}
+.card .art img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .4s cubic-bezier(.2,1.2,.4,1)}
+.card:hover .art img{transform:scale(1.06)}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-8px) rotate(4deg)}}
+.card h3{margin:2px 0 0;font-family:"Mochiy Pop One",sans-serif;font-size:20px;color:var(--ink)}
+.card p{margin:0;color:var(--sub);font-weight:700;font-size:14px;min-height:2.6em}
+.card .btns{display:flex;gap:8px;margin-top:auto}
+.card .btns .btn{flex:1;min-width:0;padding:11px 6px;font-size:14px}
+.card .btns .btn.play{flex:.85}
+.btn.play{background:var(--c);box-shadow:0 5px 0 color-mix(in srgb,var(--c) 70%,#000)}
+.btn.rank{background:#fff;color:var(--ink);border:3px solid var(--c);box-shadow:0 5px 0 var(--c2)}
+.stamp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-10deg);font:900 20px/1 "Mochiy Pop One";padding:10px 16px;border:4px solid;border-radius:14px;background:rgba(255,255,255,.92);white-space:nowrap;z-index:2}
+.card.off .art,.card.soon .art{filter:grayscale(.85) brightness(1.05)}
+.card.off .stamp{color:#e2463f}
+.card.soon .stamp{color:#7a8aa0;border-style:dashed}
+.card.off .btn.play,.card.soon .btn.play{background:#c5ced9;box-shadow:0 5px 0 #a3afbd;cursor:not-allowed}
+
+footer{position:relative;z-index:1;text-align:center;padding:0 16px 40px;font-weight:800;color:#2b6b2a}
+footer a{color:#1d5c1c;margin:0 10px}
+
+/* ---------- ランキング ---------- */
+.rk-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.rk-banner{display:block;width:calc(100% + 36px);margin:-22px -18px 14px;aspect-ratio:1882/836;object-fit:cover;border-radius:28px 28px 0 0}
+.rk-head .ic{width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--c2),var(--c));flex:none}
+.rk-head .ic svg{width:38px;height:38px}
+.rk-head h3{margin:0;font-family:"Mochiy Pop One";font-size:20px}
+.rk-head small{color:var(--sub);font-weight:700}
+.tabs{display:flex;background:#eef3f8;border-radius:999px;padding:4px;gap:4px;margin:8px 0}
+.tabs button{flex:1;border:0;border-radius:999px;padding:10px;font:900 15px "M PLUS Rounded 1c";background:transparent;color:var(--sub);cursor:pointer}
+.tabs button.on{background:var(--c);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+select.board{width:100%;padding:10px 12px;border-radius:14px;border:3px solid #e2e9f1;font:800 14px "M PLUS Rounded 1c";color:var(--ink);background:#fff}
+.podium{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:end;gap:8px;margin:18px 0 6px;text-align:center}
+.podium .p{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.podium .p .n{font-weight:900;font-size:14px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.podium .p .s{font-weight:800;font-size:12px;color:var(--sub)}
+.podium .p .bar{width:100%;border-radius:14px 14px 4px 4px;display:grid;place-items:center;font:900 26px "Mochiy Pop One";color:#fff}
+.podium .p1 .bar{height:96px;background:linear-gradient(#ffd84a,#f2a900)}
+.podium .p2 .bar{height:72px;background:linear-gradient(#dfe6ee,#a9b6c4)}
+.podium .p3 .bar{height:56px;background:linear-gradient(#f3b98a,#c7783d)}
+.podium .crown{font-size:26px;animation:bob 2.4s ease-in-out infinite}
+.podium .p.me .n{color:var(--c)}
+ol.rk{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+ol.rk li{display:flex;align-items:center;gap:10px;background:#f6f9fc;border-radius:14px;padding:8px 12px;font-weight:800}
+ol.rk li .r{width:30px;text-align:center;font:900 16px "Mochiy Pop One";color:var(--sub)}
+ol.rk li .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ol.rk li .s{color:var(--ink)}
+ol.rk li.me{background:color-mix(in srgb,var(--c) 18%,#fff);outline:3px solid var(--c)}
+.empty{text-align:center;padding:26px 10px;color:var(--sub);font-weight:800}
+.empty .cpwrap{width:110px;margin:0 auto 8px}
+.rk-note{font-size:12px;color:var(--sub);font-weight:700;margin-top:10px;text-align:center}
+
+/* ---------- ニックネーム ---------- */
+.nick-face{width:120px;margin:-70px auto 0}
+.nickrow{display:flex;gap:8px;margin:14px 0 4px}
+.nickrow input{flex:1;min-width:0;font:900 20px "M PLUS Rounded 1c";padding:12px 14px;border-radius:16px;border:3px solid #cfe3f3;color:var(--ink);outline:none}
+.nickrow input:focus{border-color:#45bdfb}
+.dice{flex:none;width:54px;border-radius:16px;border:0;background:#ffd84a;font-size:24px;cursor:pointer;box-shadow:0 4px 0 #e0a800}
+.dice:active{transform:translateY(3px);box-shadow:0 1px 0 #e0a800}
+.err{min-height:1.4em;color:#e2463f;font-weight:800;font-size:13px}
+.rules{background:#f3f8fc;border-radius:16px;padding:10px 14px;font-weight:700;font-size:13px;color:var(--sub);margin:6px 0 10px;line-height:1.8}
+.rules li{margin-left:-6px}
+.agree{display:flex;gap:8px;align-items:center;font-weight:800;margin:8px 0 16px;cursor:pointer}
+.agree input{width:22px;height:22px;accent-color:#45bdfb}
+
+@media (max-width:760px){
+  .hero{grid-template-columns:1fr;text-align:center}
+  .mascot{width:240px;order:-1}
+  .mascot .cpwrap{width:170px}
+  .hill{height:110px}
+}
+</style>
+</head>
+<body>
+<div class="sky" id="sky"></div>
+<div class="hill"></div><div class="hill b"></div>
+
+<main>
+  <div class="top">
+    <div class="nickbar"><small>ニックネーム</small><span class="who" id="who">まだ きまってないよ</span><button class="btn sm" id="btnNick">きめる</button></div>
+    <span class="mode" id="mode"></span>
+  </div>
+
+  <section class="hero">
+    <div>
+      <h1 class="title" id="title">チャッピーGameセンター</h1>
+      <p class="lead">あそびたいゲームをえらんで、ランキング1位をめざそう！</p>
+      <div class="notice" id="notice" hidden><b>おしらせ</b><span id="noticeText"></span></div>
+    </div>
+    <div class="mascot" id="mascot" title="チャッピーをタッチしてみて！">
+      <div class="bubble" id="bubble">きょうは どれで あそぶ？</div>
+      <div class="cpwrap" id="cpHero"></div>
+      <div class="combo" id="combo"></div>
+    </div>
+  </section>
+
+  <h2 class="sec">ゲームをえらぼう</h2>
+  <div class="grid" id="grid"></div>
+</main>
+
+<footer>
+  <a href="terms.html">サイトのきやく</a>｜<a href="admin.html">管理者ページ</a>
+</footer>
+
+<!-- ランキング -->
+<div class="modal" id="mRank" hidden>
+  <div class="sheet">
+    <button class="x" data-close aria-label="とじる">×</button>
+    <div id="rkBody"></div>
+  </div>
+</div>
+
+<!-- ニックネーム -->
+<div class="modal" id="mNick" hidden>
+  <div class="sheet" style="margin-top:70px">
+    <div class="nick-face" id="cpNick"></div>
+    <h3 style="text-align:center;font-family:'Mochiy Pop One';font-size:22px;margin:6px 0 0">ニックネームを きめよう！</h3>
+    <p style="text-align:center;margin:6px 0 0;color:var(--sub);font-weight:700">ランキングには この なまえが のるよ</p>
+    <div class="nickrow"><input id="nickIn" maxlength="10" autocomplete="off" placeholder="れい：りんごマスター"><button class="dice" id="dice" title="ランダムで きめる">🎲</button></div>
+    <div class="err" id="nickErr"></div>
+    <ul class="rules">
+      <li><b>本名・学校名・住所などは つかわない</b></li>
+      <li>ほかの人が いやな気もちに なる なまえは ダメ</li>
+      <li>先生が なまえや きろくを けすことが あるよ</li>
+    </ul>
+    <label class="agree"><input type="checkbox" id="agree"> <span><a href="terms.html" target="_blank">サイトのきやく</a>を よんで、まもります</span></label>
+    <button class="btn big" id="nickOk" style="width:100%">これで けってい！</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const { GAMES, esc } = CGC;
+let settings = { games: {}, notice: "" };
+
+/* ---------- アイコン ---------- */
+const ICON = {
+  link:  `<svg class="icon" viewBox="0 0 64 64"><rect x="6" y="20" width="26" height="24" rx="12" fill="none" stroke="#fff" stroke-width="7"/><rect x="32" y="20" width="26" height="24" rx="12" fill="none" stroke="#fff" stroke-width="7"/><circle cx="32" cy="32" r="5" fill="#ff5a8a"/></svg>`,
+  cannon:`<svg class="icon" viewBox="0 0 64 64"><rect x="10" y="20" width="38" height="18" rx="9" transform="rotate(-25 30 30)" fill="#fff"/><circle cx="22" cy="44" r="11" fill="#fff"/><circle cx="22" cy="44" r="4" fill="#ff8a3d"/><circle cx="54" cy="12" r="7" fill="#ef4b4b"/><path d="M54 5 q3-4 6-3" stroke="#3cc47c" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
+  truck: `<svg class="icon" viewBox="0 0 64 64"><rect x="4" y="22" width="34" height="22" rx="4" fill="#fff"/><path d="M38 28h12l8 9v7H38z" fill="#fff"/><circle cx="16" cy="47" r="6" fill="#30425a"/><circle cx="48" cy="47" r="6" fill="#30425a"/><circle cx="14" cy="17" r="6" fill="#ef4b4b"/><circle cx="27" cy="15" r="6" fill="#ffd84a"/></svg>`,
+  mouth: `<svg class="icon" viewBox="0 0 64 64"><path d="M32 32 L58 18 A28 28 0 1 0 58 46 Z" fill="#fff"/><circle cx="30" cy="18" r="4" fill="#30425a"/><circle cx="56" cy="32" r="4" fill="#ef4b4b"/></svg>`,
+  note:  `<svg class="icon" viewBox="0 0 64 64"><path d="M24 46V12l30-6v34" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/><ellipse cx="17" cy="47" rx="9" ry="7" fill="#fff"/><ellipse cx="47" cy="41" rx="9" ry="7" fill="#fff"/></svg>`,
+  house: `<svg class="icon" viewBox="0 0 64 64"><path d="M8 30 L32 8 L56 30" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 28v28h36V28" fill="#fff"/><rect x="27" y="38" width="10" height="18" rx="3" fill="#f2b134"/><path d="M20 12 l3 -6 l5 5" fill="#fff"/></svg>`,
+  glass: `<svg class="icon" viewBox="0 0 64 64"><circle cx="27" cy="27" r="17" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="7"/><path d="M40 40 L56 56" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M19 21 l3-6 l4 5 M35 21 l-3-6 l-4 5" fill="#fff" stroke="#fff" stroke-width="2"/></svg>`
+};
+
+/* ---------- タイトル（1文字ずつはねる） ---------- */
+(() => {
+  const words = [["チャッピー", ""], ["Game", "big"], ["センター", ""]];
+  let i = 0;
+  $("title").innerHTML = words.map(([w, c]) => `<span class="${c}" style="display:inline-block">` + [...w].map(ch => `<span style="--i:${i++}">${ch}</span>`).join("") + `</span>`).join("<wbr>");
+})();
+
+/* ---------- 空 ---------- */
+(() => {
+  const sky = $("sky");
+  for (let i = 0; i < 6; i++) {
+    const c = document.createElement("div"); c.className = "cloud";
+    const w = 90 + Math.random() * 120;
+    Object.assign(c.style, { width: w + "px", height: w * .34 + "px", top: 4 + Math.random() * 55 + "%", animationDuration: 50 + Math.random() * 60 + "s", animationDelay: -Math.random() * 100 + "s" });
+    sky.appendChild(c);
+  }
+})();
+function rain(n = 18, items = ["🍎", "🍎", "⭐", "🎮", "🍏"]) {
+  for (let i = 0; i < n; i++) {
+    const f = document.createElement("div"); f.className = "fall";
+    f.textContent = items[Math.random() * items.length | 0];
+    Object.assign(f.style, { left: Math.random() * 100 + "vw", animationDuration: 2.2 + Math.random() * 2 + "s", animationDelay: Math.random() * .8 + "s", fontSize: 20 + Math.random() * 20 + "px" });
+    $("sky").appendChild(f); setTimeout(() => f.remove(), 5200);
+  }
+}
+
+/* ---------- チャッピー ---------- */
+// setMood は絵を作り直して新しい <svg> を返すので、hero は毎回入れかえる
+let hero = Chappy.mount($("cpHero"), { mood: "normal", follow: true }), moodT = 0;
+function mood(m, ms) {
+  clearTimeout(moodT);
+  if (hero._opts.mood !== m) hero = Chappy.setMood(hero, m);
+  if (ms) moodT = setTimeout(() => { if (hero._opts.mood !== "normal") hero = Chappy.setMood(hero, "normal"); }, ms);
+}
+const LINES = () => {
+  const n = CGC.getNick();
+  return [n ? `${n}さん、こんにちは！` : "ニックネームを きめてね！", "きょうは どれで あそぶ？", "ランキング1位を めざそう！", "りんご だいすき！🍎",
+    "あそぶ時間は まもろうね", "きのうの じぶんを こえよう！", "タッチすると ジャンプするよ！", "デイリーランキングは 毎日リセット！"];
+};
+let li = 0;
+function say(t) { const b = $("bubble"); b.textContent = t; b.classList.add("pop"); setTimeout(() => b.classList.remove("pop"), 250); }
+setInterval(() => { const l = LINES(); say(l[++li % l.length]); }, 6000);
+/* ---------- チャッピーをさわる ----------
+ * 頭 = なでなで / 体 = ボヨン / しっぽのりんご = りんごが飛ぶ
+ * 連打コンボ 5 = 回転, 10 = フィーバー, 20 = 目が回る / 長押し = ねむる / 押したまま頭をなでる = ハート */
+const pick = a => a[Math.random() * a.length | 0];
+let AC = null;
+function boop(f = 520, d = .12, type = "sine", v = .14, slide = 1.6) {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === "suspended") AC.resume();
+    const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * slide, t + d);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+    o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + .02);
+  } catch (e) {}
+}
+function burst(x, y, items, n = 8, spread = 120) {
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement("span"), a = Math.random() * Math.PI * 2, r = spread * (.5 + Math.random() * .7);
+    s.className = "pop-fx"; s.textContent = pick(items);
+    s.style.cssText = `--x:${x - 13}px;--y:${y - 13}px;--dx:${Math.cos(a) * r}px;--dy:${Math.sin(a) * r - 40}px;--r:${(Math.random() - .5) * 120}deg;--t:${.7 + Math.random() * .5}s;font-size:${18 + Math.random() * 16}px`;
+    document.body.appendChild(s); setTimeout(() => s.remove(), 1300);
+  }
+}
+let animT = 0;
+function anim(name, ms) {
+  const w = $("cpHero"); clearTimeout(animT);
+  w.className = "cpwrap"; void w.offsetWidth; w.classList.add("a-" + name);
+  if (ms) animT = setTimeout(() => w.className = "cpwrap", ms);
+}
+function partOf(e) {
+  const r = $("cpHero").getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+  return px > .68 && py < .55 ? "apple" : py < .5 ? "head" : "body";
+}
+
+let combo = 0, comboT = 0, lastTap = 0, idleT = 0, busy = 0;
+function showCombo() {
+  const c = $("combo");
+  if (combo < 3) { c.classList.remove("on"); return; }
+  c.textContent = combo + " コンボ！"; c.classList.remove("on"); void c.offsetWidth; c.classList.add("on");
+  clearTimeout(comboT); comboT = setTimeout(() => { c.classList.remove("on"); combo = 0; }, 900);
+}
+function fever(x, y) {
+  busy = Date.now() + 3200;
+  mood("happy", 3400); anim("dance", 3200); say("フィーバー！！ 🎉"); rain(30, ["🍎", "⭐", "🎵", "🍏", "✨", "🎮"]);
+  document.body.insertAdjacentHTML("beforeend", '<div class="flash"></div>'); setTimeout(() => document.querySelector(".flash")?.remove(), 1000);
+  [0, 1, 2, 3, 4].forEach(i => setTimeout(() => { boop(660 + i * 110, .14, "triangle", .14, 1.3); burst(x, y, ["⭐", "✨", "🎵"], 6, 160); }, i * 140));
+  setTimeout(() => Chappy.play(hero, "wave"), 600); setTimeout(() => Chappy.play(hero, "jump"), 1700);
+}
+function tapAt(e) {
+  const now = Date.now(), part = partOf(e), x = e.clientX, y = e.clientY;
+  combo = now - lastTap < 650 ? combo + 1 : 1; lastTap = now; showCombo();
+  if (now < busy) { burst(x, y, ["✨", "⭐"], 3); return; }
+  boop(440 + Math.min(combo, 20) * 40, .12, "sine", .14, 1.7);
+
+  if (combo === 10) return fever(x, y);
+  if (combo === 20) {
+    busy = now + 2200; mood("think", 2400); anim("dizzy", 2000); say("め、めがまわる〜 @_@");
+    boop(500, .6, "triangle", .12, .4); burst(x, y, ["💫", "⭐"], 10, 140); return;
+  }
+  if (combo === 5 || combo === 15) {
+    anim("spin", 800); mood("happy", 1200); say(pick(["くるりん！", "まわっちゃう〜！", "ぐるぐる！"]));
+    boop(700, .25, "triangle", .14, 2); burst(x, y, ["⭐", "✨"], 10); return;
+  }
+  if (part === "head") {
+    Chappy.play(hero, pick(["ears", "nod"])); mood("happy", 1400); anim("boing", 600);
+    say(pick(["えへへ、なでなで うれしい！", "もっと なでて〜", "ふにゃ〜♪", "みみ くすぐったい！"])); burst(x, y, ["💖", "💕", "💗"], 6, 90);
+  } else if (part === "apple") {
+    Chappy.play(hero, "wave"); anim("shake", 500); mood("think", 1000);
+    say(pick(["りんごは あげないよ〜！", "ぼくの たからもの！🍎", "それ たべちゃダメ！"]));
+    boop(300, .15, "square", .08, 1.4); burst(x, y, ["🍎", "🍏", "🍎"], 7, 150);
+  } else {
+    const r = Math.random();
+    if (r < .3) { Chappy.play(hero, "jump"); anim("boing", 600); say(pick(["ジャンプ！", "ぴょーん！", "わーい！"])); }
+    else if (r < .5) { anim("flip", 1000); mood("happy", 1100); say(pick(["ちゅうがえり！", "見てて〜！"])); boop(500, .4, "triangle", .12, 2.2); }
+    else if (r < .75) { Chappy.play(hero, "wave"); anim("boing", 600); mood("happy", 1500); say(pick(["やっほー！", "あそぼう！", "こんにちは〜！"])); }
+    else { anim("boing", 600); Chappy.play(hero, "nod"); say(pick(["ボヨーン！", "おなか ぽよぽよ", "くすぐったい！"])); }
+    burst(x, y, ["⭐", "✨", "🎵"], 6);
+  }
+}
+
+// 長押し・なでなで
+let press = null;
+const M = $("mascot");
+M.addEventListener("pointerdown", e => {
+  wake(); try { M.setPointerCapture(e.pointerId); } catch (err) {}
+  press = { x: e.clientX, y: e.clientY, t: Date.now(), moved: 0, sleep: false, pet: 0 };
+  press.timer = setTimeout(() => {
+    if (!press || press.moved > 30) return;
+    press.sleep = true; mood("sleep"); anim("pet"); say("すや すや… Zzz");
+    press.zz = setInterval(() => { const r = $("cpHero").getBoundingClientRect(); burst(r.right - 40, r.top + 40, ["💤", "Z"], 1, 60); }, 500);
+  }, 650);
+});
+M.addEventListener("pointermove", e => {
+  if (!press) return;
+  const d = Math.hypot(e.clientX - press.x, e.clientY - press.y);
+  press.moved += d; press.x = e.clientX; press.y = e.clientY;
+  if (press.sleep || partOf(e) !== "head" || press.moved < 40) return;
+  // 頭をなでている
+  if (!press.pet) { mood("happy"); anim("pet"); Chappy.play(hero, "ears"); say("なでなで… しあわせ〜💖"); }
+  if (Date.now() - press.pet > 140) { press.pet = Date.now(); burst(e.clientX, e.clientY, ["💖", "💕"], 1, 50); boop(900, .06, "sine", .05, 1.2); }
+});
+function release(e) {
+  if (!press) return;
+  const p = press; press = null; clearTimeout(p.timer); clearInterval(p.zz);
+  if (p.sleep) { mood("normal"); anim("flip", 1000); setTimeout(() => Chappy.play(hero, "jump"), 200); say("はっ！ ねてないよ！"); boop(400, .3, "triangle", .14, 2.5); return; }
+  if (p.pet) { anim(""); mood("happy", 1200); return; }
+  if (e.type === "pointerup" && p.moved < 30) tapAt(e);
+}
+M.addEventListener("pointerup", release);
+M.addEventListener("pointercancel", release);
+
+// しばらくさわらないと、ひとりで動く
+function wake() { clearTimeout(idleT); idleT = setTimeout(idle, 9000 + Math.random() * 6000); }
+function idle() {
+  if (!document.hidden && Date.now() > busy && !press) {
+    const r = Math.random();
+    if (r < .3) { Chappy.play(hero, "ears"); }
+    else if (r < .55) { Chappy.play(hero, "wave"); say(pick(["ねえねえ、さわってみて！", "タップしてね！", "なでなでして〜"])); }
+    else if (r < .75) { Chappy.play(hero, "jump"); anim("boing", 600); }
+    else { mood("sleep", 2500); say("ふわぁ… ねむくなってきた…"); }
+  }
+  wake();
+}
+wake();
+
+/* ---------- ニックネーム ---------- */
+let nickCp = null, afterNick = null;
+function showNick() { $("who").textContent = CGC.getNick() || "まだ きまってないよ"; $("btnNick").textContent = CGC.getNick() ? "かえる" : "きめる"; }
+function openNick(then) {
+  afterNick = then || null;
+  $("nickIn").value = CGC.getNick(); $("nickErr").textContent = ""; $("agree").checked = CGC.hasAgreed();
+  openModal("mNick");
+  if (!nickCp) nickCp = Chappy.mount($("cpNick"), { mood: "happy", head: true });
+  setTimeout(() => $("nickIn").focus(), 60);
+}
+const A = ["りんご", "ほし", "そら", "にじ", "かぜ", "もり", "うみ", "ひかり", "ロケット", "パズル", "リズム", "ゆめ"];
+const B = ["マスター", "ハンター", "ヒーロー", "はかせ", "名人", "キング", "クイーン", "ニンジャ", "パイロット", "チャンプ"];
+$("dice").onclick = () => { $("nickIn").value = A[Math.random() * A.length | 0] + B[Math.random() * B.length | 0]; Chappy.play(nickCp, "nod"); };
+$("nickOk").onclick = () => {
+  const c = CGC.checkNick($("nickIn").value);
+  if (!c.ok) { $("nickErr").textContent = c.msg; Chappy.setMood(nickCp, "think"); return; }
+  if (!$("agree").checked) { $("nickErr").textContent = "きやくを よんで チェックしてね"; return; }
+  CGC.setNick(c.nick); CGC.setAgreed(); showNick(); closeModal("mNick");
+  say(`よろしくね、${c.nick}さん！`); Chappy.play(hero, "wave"); rain(12);
+  if (afterNick) setTimeout(afterNick, 500);
+};
+$("nickIn").addEventListener("keydown", e => { if (e.key === "Enter") $("nickOk").click(); });
+$("btnNick").onclick = () => openNick();
+
+/* ---------- カード ---------- */
+function render() {
+  $("grid").innerHTML = GAMES.map((g, i) => {
+    const on = CGC.isEnabled(settings, g.id), cls = !g.ready ? "soon" : !on ? "off" : "";
+    return `<article class="card ${cls}" style="--c:${g.color};--c2:${g.color2};--i:${i}" data-id="${g.id}">
+      <div class="art" data-play><img src="${g.banner}" alt="${esc(g.name)}" loading="lazy">
+        ${cls === "soon" ? `<div class="stamp">じゅんび中…</div>` : cls === "off" ? `<div class="stamp">おやすみ中</div>` : ""}</div>
+      <h3>${esc(g.name)}</h3><p>${esc(g.desc)}</p>
+      <div class="btns"><button class="btn play" data-play>${cls ? "あそべないよ" : "あそぶ！"}</button><button class="btn rank" data-rank>🏆 ランキング</button></div>
+    </article>`;
+  }).join("");
+  document.querySelectorAll(".card").forEach(card => {
+    const g = CGC.gameById(card.dataset.id);
+    card.querySelectorAll("[data-play]").forEach(b => b.onclick = () => play(g));
+    card.querySelector("[data-rank]").onclick = () => openRank(g);
+  });
+}
+function play(g) {
+  if (!g.ready) { say(`${g.name}は いま じゅんび中だよ！`); Chappy.play(hero, "nod"); return; }
+  if (!CGC.isEnabled(settings, g.id)) { say("そのゲームは おやすみ中だよ"); mood("sleep", 2000); return; }
+  const go = () => { Chappy.play(hero, "jump"); say("いってらっしゃい！"); setTimeout(() => location.href = g.url, 450); };
+  if (!CGC.getNick() || !CGC.hasAgreed()) openNick(go); else go();
+}
+
+/* ---------- ランキング ---------- */
+let rk = { g: null, tab: "daily", data: null };
+async function openRank(g, board) {
+  rk.g = g; if (!board) rk.tab = rk.tab || "daily";
+  const m = $("mRank"); m.querySelector(".sheet").style.setProperty("--c", g.color); m.querySelector(".sheet").style.setProperty("--c2", g.color2);
+  if (m.hidden) openModal("mRank");
+  $("rkBody").innerHTML = head(g) + `<div class="empty">よみこみ中…</div>`;
+  try { rk.data = await CGC.ranking(g.id, board); }
+  catch (e) { $("rkBody").innerHTML = head(g) + `<div class="empty">つうしんできなかったよ…<br>もういちど ためしてね</div>`; return; }
+  drawRank();
+}
+const head = g => `<img class="rk-banner" src="${g.banner}" alt=""><div class="rk-head"><div class="ic">${ICON[g.icon]}</div><div><h3>${esc(g.name)}</h3><small>${esc(g.note || "ランキング")}</small></div></div>`;
+function drawRank() {
+  const g = rk.g, d = rk.data, list = (d && d[rk.tab]) || [];
+  let h = head(g) + `<div class="tabs"><button data-t="daily" class="${rk.tab === "daily" ? "on" : ""}">☀️ デイリー（きょう）</button><button data-t="total" class="${rk.tab === "total" ? "on" : ""}">👑 そうごう</button></div>`;
+  if (d && d.boards && d.boards.length > 1) h += `<select class="board" id="rkBoard">${d.boards.map(b => `<option value="${esc(b.board)}" ${b.board === d.board ? "selected" : ""}>${esc(b.boardName)}</option>`).join("")}</select>`;
+  else if (d && d.boards && d.boards[0]) h += `<div style="text-align:center;font-weight:800;color:var(--sub)">${esc(d.boards[0].boardName)}</div>`;
+  if (!list.length) {
+    h += `<div class="empty"><div class="cpwrap" id="rkCp"></div>${rk.tab === "daily" ? "きょうは まだ だれも きろくがないよ。<br>いちばんのりを めざそう！" : "まだ きろくがないよ。<br>さいしょの1位は きみだ！"}</div>`;
+  } else {
+    const top = list.filter(r => r.rank <= 3).slice(0, 3);
+    const pod = [top[1], top[0], top[2]];
+    h += `<div class="podium">` + pod.map((r, i) => r ? `<div class="p p${r.rank}${r.me ? " me" : ""}">${r.rank === 1 ? `<span class="crown">👑</span>` : ""}<span class="n">${esc(r.nick)}</span><span class="s">${esc(g.fmt(r.score))}</span><div class="bar">${r.rank}</div></div>` : `<div></div>`).join("") + `</div>`;
+    const rest = list.slice(top.length);
+    if (rest.length) h += `<ol class="rk">` + rest.map(r => `<li class="${r.me ? "me" : ""}"><span class="r">${r.rank}</span><span class="n">${esc(r.nick)}</span><span class="s">${esc(g.fmt(r.score))}</span></li>`).join("") + `</ol>`;
+  }
+  h += `<div class="rk-note">${rk.tab === "daily" ? "デイリーは まいにち 0時に リセット。1人 いちばん良い きろくだけ のるよ" : "これまでで 1人 いちばん良い きろくだけ のるよ"}</div>`;
+  $("rkBody").innerHTML = h;
+  $("rkBody").querySelectorAll("[data-t]").forEach(b => b.onclick = () => { rk.tab = b.dataset.t; drawRank(); });
+  const sel = $("rkBoard"); if (sel) sel.onchange = () => openRank(g, sel.value);
+  const cp = $("rkCp"); if (cp) Chappy.mount(cp, { mood: "think" });
+}
+
+/* ---------- モーダル ---------- */
+function openModal(id) { $(id).hidden = false; document.body.style.overflow = "hidden"; }
+function closeModal(id) { $(id).hidden = true; document.body.style.overflow = ""; }
+document.querySelectorAll(".modal").forEach(m => {
+  m.addEventListener("click", e => { if (e.target === m || e.target.closest("[data-close]")) closeModal(m.id); });
+});
+addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".modal:not([hidden])").forEach(m => closeModal(m.id)); });
+
+/* ---------- はじめ ---------- */
+(async () => {
+  $("mode").textContent = CGC.isShared ? "🔥 みんなでランキング" : "🧪 おためしモード（この端末だけ）";
+  showNick(); render();
+  settings = await CGC.getSettings(); render();
+  if (settings.notice) { $("noticeText").textContent = settings.notice; $("notice").hidden = false; }
+  if (!settings.online && CGC.isShared) say("つうしんできないみたい…");
+  // ゲームから「ニックネームを決める」で来たとき
+  const want = new URLSearchParams(location.search).get("play");
+  if (want && CGC.gameById(want)) { history.replaceState(null, "", location.pathname); const g = CGC.gameById(want); (CGC.getNick() && CGC.hasAgreed()) ? play(g) : openNick(() => play(g)); }
+})();
+</script>
+</body>
+</html>

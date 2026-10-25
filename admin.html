@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TGT2Y7KLF3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TGT2Y7KLF3');
+</script>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>管理者ページ｜チャッピーGameセンター</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/config.js"></script>
+<script src="assets/cgc.js"></script>
+<script src="assets/chappy.js"></script>
+<style>
+body{background:#eef6fc}
+main{max-width:980px;margin:0 auto;padding:20px 16px 60px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.bar h1{margin:0;font-family:"Mochiy Pop One";font-size:24px;display:flex;align-items:center;gap:10px}
+.bar h1 .cpb{width:46px}
+.bar .who{font-weight:700;color:var(--sub);font-size:13px}
+.panel{background:#fff;border-radius:22px;padding:18px 20px;margin:0 0 18px;box-shadow:0 4px 0 #d3e3f0}
+.panel h2{margin:0 0 4px;font-size:18px}
+.panel .hint{margin:0 0 14px;color:var(--sub);font-weight:600;font-size:14px;line-height:1.7}
+.warn{background:#fff1f0;border:2px solid #ef4b4b;color:#a3231f;border-radius:16px;padding:12px 16px;font-weight:800;margin-bottom:16px}
+.info{background:#fffbe6;border:2px solid #ffb800;color:#6a4b00;border-radius:16px;padding:12px 16px;font-weight:700;margin-bottom:16px;line-height:1.7}
+.login{max-width:400px;margin:40px auto;text-align:center}
+.login .cpb{width:130px;margin:0 auto}
+.login form{display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto}
+input[type=password],input[type=email],input[type=text],input[type=number],select,textarea{font:700 15px "M PLUS Rounded 1c";padding:10px 12px;border-radius:12px;border:2px solid #d3e0ec;color:var(--ink);background:#fff;max-width:100%}
+textarea{width:100%;min-height:70px;resize:vertical}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.gsw{display:flex;align-items:center;gap:12px;border:2px solid #e3ecf4;border-radius:16px;padding:8px 12px}
+.gsw img{width:72px;height:32px;object-fit:cover;border-radius:8px;flex:none;background:#eee}
+.gsw .nm{flex:1;font-weight:800;min-width:0}
+.gsw .nm small{display:block;color:var(--sub);font-weight:700;font-size:12px}
+.sw{position:relative;width:62px;height:34px;flex:none}
+.sw input{opacity:0;width:0;height:0;position:absolute}
+.sw span{position:absolute;inset:0;border-radius:999px;background:#c5ced9;cursor:pointer;transition:.2s}
+.sw span::before{content:"";position:absolute;left:4px;top:4px;width:26px;height:26px;border-radius:50%;background:#fff;transition:.2s}
+.sw input:checked+span{background:#3cc47c}
+.sw input:checked+span::before{transform:translateX(28px)}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.tblwrap{overflow-x:auto;border:2px solid #e3ecf4;border-radius:14px}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+th,td{padding:8px 10px;border-bottom:1px solid #eef3f8;text-align:left;white-space:nowrap}
+th{background:#f4f8fc;font-weight:800;color:var(--sub)}
+td input[type=text]{width:9.5em;padding:6px 8px}
+td input[type=number]{width:8em;padding:6px 8px}
+td .fmt{color:var(--sub);font-size:12px;margin-left:4px}
+tr.dirty td{background:#fffbe6}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.count{color:var(--sub);font-weight:700;font-size:13px;margin:8px 0 0}
+#toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,160%);opacity:0;pointer-events:none;background:#24364d;color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;transition:transform .3s,opacity .3s;z-index:100}
+#toast.show{transform:translate(-50%,0);opacity:1}
+</style>
+</head>
+<body>
+<main>
+  <div class="bar">
+    <h1><span class="cpb" id="cpBar"></span>管理者ページ</h1>
+    <div style="display:flex;gap:8px;align-items:center"><span class="who" id="who"></span><a class="btn sm gray" href="index.html">センターへ</a><button class="btn sm gray" id="logout" hidden>ログアウト</button></div>
+  </div>
+
+  <div id="modeInfo" class="info"></div>
+
+  <!-- ログイン -->
+  <section class="panel login" id="loginBox">
+    <div class="cpb" id="cpLogin"></div>
+    <h2>管理者ログイン</h2>
+    <p class="hint" id="loginHint"></p>
+    <form id="loginForm">
+      <input type="email" id="email" autocomplete="username" placeholder="メールアドレス">
+      <input type="password" id="pass" autocomplete="current-password" placeholder="パスワード" required>
+      <button class="btn">ログイン</button>
+    </form>
+    <p id="loginErr" style="color:#e2463f;font-weight:800;min-height:1.4em"></p>
+  </section>
+
+  <div id="app" hidden>
+    <div class="warn" id="defWarn" hidden>⚠ パスワードが はじめのまま（chappy）です。いちばん下の「パスワードの変更」で すぐに変えてください。</div>
+
+    <section class="panel">
+      <h2>🎮 ゲームの ON / OFF</h2>
+      <p class="hint">OFF にしたゲームは、トップページで「おやすみ中」になり、プレイできなくなります。プレイ中の画面も 1分以内に止まります。記録の登録もできなくなります。</p>
+      <div class="games" id="games"></div>
+    </section>
+
+    <section class="panel">
+      <h2>📣 トップページの おしらせ</h2>
+      <p class="hint">空にすると おしらせは出ません（300文字まで）。例：「きょうは 昼休みだけ あそべます」</p>
+      <textarea id="notice" maxlength="300"></textarea>
+      <div class="acts"><button class="btn sm" id="saveNotice">おしらせを保存</button></div>
+    </section>
+
+    <section class="panel">
+      <h2>🏆 ランキングの 編集・削除</h2>
+      <p class="hint">記録は「1人・1日・1つのステージ（曲）ごとのベスト」で1行です。デイリーはその日の行、総合はすべての行から 1人のベストを出しています。<br>
+        ニックネームやスコアを書きかえたら「保存」。消したい行はチェックして「チェックした行を削除」。</p>
+      <div class="filters">
+        <select id="fGame"></select>
+        <select id="fBoard"><option value="">ステージ・曲：ぜんぶ</option></select>
+        <select id="fScope"><option value="all">すべての日</option><option value="today">きょうだけ</option></select>
+        <input type="text" id="fNick" placeholder="ニックネームでしぼる">
+        <button class="btn sm" id="reload">表示</button>
+      </div>
+      <div class="tblwrap"><table>
+        <thead><tr><th><input type="checkbox" id="chkAll"></th><th>日付</th><th>ステージ・曲</th><th>ニックネーム</th><th>スコア</th><th></th></tr></thead>
+        <tbody id="rows"><tr><td colspan="6" style="color:var(--sub)">ゲームをえらんで「表示」を押してください</td></tr></tbody>
+      </table></div>
+      <p class="count" id="count"></p>
+      <div class="acts">
+        <button class="btn sm red" id="delChecked">チェックした行を削除</button>
+        <button class="btn sm red" id="clearToday">このゲームの きょうの記録を ぜんぶ削除</button>
+        <button class="btn sm red" id="clearAll">このゲームの記録を ぜんぶ削除</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>🔑 パスワードの変更</h2>
+      <p class="hint" id="passHint"></p>
+      <form id="passForm" style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="password" id="np1" placeholder="新しいパスワード" autocomplete="new-password" minlength="6" required>
+        <input type="password" id="np2" placeholder="もういちど" autocomplete="new-password" minlength="6" required>
+        <button class="btn sm">変更する</button>
+      </form>
+    </section>
+  </div>
+</main>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const { GAMES, esc } = CGC;
+const FB = CGC.adminMode === "firebase";
+
+Chappy.mount($("cpBar"), { head: true, mood: "happy" });
+const cpLogin = Chappy.mount($("cpLogin"), { mood: "normal", follow: true });
+
+$("modeInfo").innerHTML = FB
+  ? "🔥 <b>Firebase モード</b>：記録と設定は Firestore に保存され、すべての端末で共有されます。"
+  : "🧪 <b>おためしモード</b>：記録と設定は <u>この端末のこのブラウザの中だけ</u> に保存されます。クラスで共有するには README.md の手順で Firebase を用意し、assets/config.js に設定を貼ってください。";
+$("loginHint").innerHTML = FB
+  ? "Firebase に登録した 管理者のメールアドレスとパスワードで ログインします。"
+  : "おためしモードの はじめのパスワードは <b>chappy</b> です。入ったら すぐに変えてください。";
+$("email").hidden = !FB; $("email").required = FB;
+$("passHint").textContent = FB
+  ? "6文字以上。ログインしている管理者アカウントのパスワードが変わります。「もう一度ログインしてください」と出たら、ログインし直してから変更してください。"
+  : "6文字以上。管理者どうしで共有してください（生徒には教えないでください）。";
+
+let tt = 0;
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(tt); tt = setTimeout(() => el.classList.remove("show"), 2800); }
+
+const ERR = { auth: "ログインが切れました。もう一度ログインしてください", relogin: "安全のため、もう一度ログインしてから変更してください", weak: "パスワードが弱すぎます（6文字以上）", "permission-denied": "権限がありません（管理者として登録されているか確認してください）" };
+async function call(op, args) {
+  let r;
+  try { r = await CGC.admin(op, args); }
+  catch (e) { toast(ERR[e.code] || "通信できませんでした"); throw e; }
+  if (!r.ok) {
+    toast(ERR[r.error] || "できませんでした（" + r.error + "）");
+    if (r.error === "auth") showLogin();
+    throw new Error(r.error);
+  }
+  if ("defaultPass" in r) $("defWarn").hidden = !r.defaultPass;
+  return r;
+}
+
+/* ---------- ログイン ---------- */
+function showLogin() { $("app").hidden = true; $("loginBox").hidden = false; $("logout").hidden = true; $("who").textContent = ""; }
+$("loginForm").onsubmit = async e => {
+  e.preventDefault(); $("loginErr").textContent = "";
+  const r = await CGC.adminLogin($("email").value.trim(), $("pass").value).catch(() => ({ ok: false, error: "net" }));
+  if (!r.ok) {
+    $("loginErr").textContent = r.error === "notadmin" ? "このアカウントは管理者として登録されていません" : r.error === "net" ? "通信できませんでした" : "メールアドレスかパスワードがちがいます";
+    Chappy.setMood(cpLogin, "think"); return;
+  }
+  $("pass").value = "";
+  if ("defaultPass" in r) $("defWarn").hidden = !r.defaultPass;
+  enter(r.email);
+};
+$("logout").onclick = async () => { await CGC.adminLogout(); showLogin(); };
+
+async function enter(email) {
+  $("loginBox").hidden = true; $("app").hidden = false; $("logout").hidden = false;
+  $("who").textContent = email ? email + " でログイン中" : "";
+  const s = await CGC.getSettings();
+  drawGames(s.games || {});
+  $("notice").value = s.notice || "";
+  $("fGame").innerHTML = GAMES.map(g => `<option value="${g.id}">${esc(g.name)}${g.ready ? "" : "（じゅんび中）"}</option>`).join("");
+  loadRows();
+}
+
+/* ---------- ON/OFF ---------- */
+function drawGames(games) {
+  $("games").innerHTML = GAMES.map(g => `<label class="gsw"><img src="${g.banner}" alt="">
+    <span class="nm">${esc(g.name)}<small>${g.ready ? "" : "じゅんび中・"}<b data-st>${games[g.id] === false ? "OFF：あそべない" : "ON：あそべる"}</b></small></span>
+    <span class="sw"><input type="checkbox" data-g="${g.id}" ${games[g.id] === false ? "" : "checked"}><span></span></span></label>`).join("");
+  $("games").querySelectorAll("input[data-g]").forEach(inp => inp.onchange = async () => {
+    const st = inp.closest(".gsw").querySelector("[data-st]");
+    try { await call("setGame", { game: inp.dataset.g, enabled: inp.checked }); }
+    catch (e) { inp.checked = !inp.checked; return; }
+    st.textContent = inp.checked ? "ON：あそべる" : "OFF：あそべない";
+    toast(CGC.gameById(inp.dataset.g).name + " を " + (inp.checked ? "ON" : "OFF") + " にしました");
+  });
+}
+
+/* ---------- おしらせ ---------- */
+$("saveNotice").onclick = async () => { await call("setNotice", { notice: $("notice").value.trim() }); toast("おしらせを保存しました"); };
+
+/* ---------- 記録 ---------- */
+let rows = [];
+const curGame = () => CGC.gameById($("fGame").value);
+$("fGame").onchange = () => { $("fBoard").value = ""; loadRows(); };
+$("fBoard").onchange = $("fScope").onchange = () => loadRows();
+$("reload").onclick = () => loadRows();
+$("fNick").oninput = () => drawRows();
+
+async function loadRows() {
+  const g = curGame(); if (!g) return;
+  const board = $("fBoard").value;
+  const r = await call("list", { game: g.id, board, scope: $("fScope").value });
+  rows = r.rows;
+  $("fBoard").innerHTML = `<option value="">ステージ・曲：ぜんぶ</option>` + r.boards.map(b => `<option value="${esc(b.board)}">${esc(b.boardName)}</option>`).join("");
+  $("fBoard").value = r.boards.some(b => b.board === board) ? board : "";
+  drawRows();
+}
+function drawRows() {
+  const g = curGame(), q = $("fNick").value.trim();
+  const list = q ? rows.filter(r => r.nick.includes(q)) : rows;
+  const unit = g.order === "asc" ? "（タイムはミリ秒：1000＝1秒）" : "";
+  $("rows").innerHTML = list.length ? list.map(r => `<tr data-id="${esc(r.id)}">
+      <td><input type="checkbox" data-chk></td><td>${esc(r.date)}</td><td>${esc(r.boardName)}</td>
+      <td><input type="text" data-nick maxlength="10" value="${esc(r.nick)}"></td>
+      <td><input type="number" data-score value="${r.score}"><span class="fmt">${esc(g.fmt(r.score))}</span></td>
+      <td><button class="btn sm green" data-save>保存</button></td></tr>`).join("")
+    : `<tr><td colspan="6" style="color:var(--sub)">記録はありません</td></tr>`;
+  $("count").textContent = list.length ? `${list.length} 行（新しい順・最大1000行）${unit}` : "";
+  $("chkAll").checked = false;
+  $("rows").querySelectorAll("tr[data-id]").forEach(tr => {
+    const n = tr.querySelector("[data-nick]"), s = tr.querySelector("[data-score]");
+    const dirty = () => tr.classList.add("dirty");
+    n.oninput = dirty;
+    s.oninput = () => { dirty(); tr.querySelector(".fmt").textContent = s.value !== "" && isFinite(s.value) ? g.fmt(Number(s.value)) : ""; };
+    tr.querySelector("[data-save]").onclick = async () => {
+      const nick = n.value.trim();
+      if (!nick) { toast("ニックネームを入れてください"); return; }
+      const c = CGC.checkNick(nick);
+      if (!c.ok && !confirm(c.msg + "\nこのまま保存しますか？")) return;
+      if (s.value === "" || !isFinite(s.value)) { toast("スコアは数字で入れてください"); return; }
+      await call("update", { id: tr.dataset.id, nick, score: Number(s.value) });
+      const row = rows.find(x => x.id === tr.dataset.id); row.nick = nick; row.score = Number(s.value);
+      tr.classList.remove("dirty"); toast("保存しました");
+    };
+  });
+}
+$("chkAll").onchange = () => $("rows").querySelectorAll("[data-chk]").forEach(c => c.checked = $("chkAll").checked);
+$("delChecked").onclick = async () => {
+  const ids = [...$("rows").querySelectorAll("tr[data-id]")].filter(tr => tr.querySelector("[data-chk]").checked).map(tr => tr.dataset.id);
+  if (!ids.length) { toast("消す行にチェックを入れてください"); return; }
+  if (!confirm(`${ids.length} 行を削除します。もとにもどせません。よろしいですか？`)) return;
+  const r = await call("delete", { ids }); toast(r.deleted + " 行を削除しました"); loadRows();
+};
+async function clear(scope) {
+  const g = curGame();
+  const what = scope === "today" ? "きょうの記録" : "すべての記録";
+  if (!confirm(`「${g.name}」の ${what} を ぜんぶ削除します。もとにもどせません。よろしいですか？`)) return;
+  if (scope === "all" && prompt("確認のため「けす」と入力してください") !== "けす") return;
+  const r = await call("clear", { game: g.id, scope }); toast(r.deleted + " 行を削除しました"); loadRows();
+}
+$("clearToday").onclick = () => clear("today");
+$("clearAll").onclick = () => clear("all");
+
+/* ---------- パスワード ---------- */
+$("passForm").onsubmit = async e => {
+  e.preventDefault();
+  const a = $("np1").value, b = $("np2").value;
+  if (a.length < 6) { toast("6文字以上にしてください"); return; }
+  if (a !== b) { toast("2つのパスワードが ちがいます"); return; }
+  await call("setPass", { newPass: a });
+  $("np1").value = $("np2").value = ""; $("defWarn").hidden = true; toast("パスワードを変更しました");
+};
+
+// Firebase で前にログインしていれば、そのまま入る
+CGC.adminRestore().then(r => { if (r.ok) enter(r.email); }).catch(() => {});
+</script>
+</body>
+</html>

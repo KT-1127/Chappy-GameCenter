@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- チャッピー（白いネコ型ロボット・黒い画面の顔）のファビコン -->
+  <defs>
+    <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4FC5D0"/>
+      <stop offset="1" stop-color="#2EA6B3"/>
+    </linearGradient>
+  </defs>
+  <!-- 耳 -->
+  <path d="M8 27 L12 4 L29 15 Z" fill="#FFFFFF" stroke="#131A18" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M56 27 L52 4 L35 15 Z" fill="#FFFFFF" stroke="#131A18" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M13.5 19 L15 10 L21.5 14.5 Z" fill="#20A3AF"/>
+  <path d="M50.5 19 L49 10 L42.5 14.5 Z" fill="#20A3AF"/>
+  <!-- 頭 -->
+  <rect x="4" y="13" width="56" height="47" rx="20" fill="#FFFFFF" stroke="#131A18" stroke-width="3"/>
+  <!-- 画面の顔 -->
+  <rect x="11" y="21" width="42" height="32" rx="12" fill="#131A18"/>
+  <!-- 目 -->
+  <ellipse cx="24" cy="34" rx="4.6" ry="7" fill="url(#eye)"/>
+  <ellipse cx="40" cy="34" rx="4.6" ry="7" fill="url(#eye)"/>
+  <ellipse cx="22.8" cy="30.8" rx="1.5" ry="2" fill="#E8FCFD"/>
+  <ellipse cx="38.8" cy="30.8" rx="1.5" ry="2" fill="#E8FCFD"/>
+  <!-- 口 -->
+  <path d="M27 44 Q29.5 47.5 32 44 Q34.5 47.5 37 44" fill="none" stroke="#3AB7C2" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

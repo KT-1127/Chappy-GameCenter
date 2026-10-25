@@ -1,0 +1,1357 @@
+<!doctype html><html><head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TGT2Y7KLF3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TGT2Y7KLF3');
+</script>
+<meta charset=utf8><script src="../../assets/config.js"></script><script src="../../assets/cgc.js"></script><script src="../../assets/bridge.js" data-game="rhythm"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>チャッピーリズム</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;700&family=Chakra+Petch:wght@500;600&display=swap">
+<style>
+/* Layout: full-bleed canvas (night-sky stage) under DOM screens. Select = [Chappy stage | song list | detail]; result = [Chappy stage | result panel].
+   Deliberately single dark theme: a night-sky arcade. */
+:root{
+  --bg:#070b16;--ink:#eef6ff;--dim:#8fa6c4;--faint:#5d7190;
+  --gold:#ffd36b;--rose:#ff5a4e;--sky:#4fd3f0;--pink:#ff5a8a;
+  --panel:rgba(12,19,36,.86);--panel2:rgba(20,30,54,.92);--line:rgba(140,200,240,.2);--line2:rgba(140,200,240,.38);
+  --display:'Dela Gothic One','Zen Kaku Gothic New',system-ui,sans-serif;
+  --body:'Zen Kaku Gothic New',system-ui,sans-serif;
+  --num:'Chakra Petch',ui-monospace,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+canvas#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#chappyBox{position:fixed;z-index:1;pointer-events:none;display:none}
+.ch-wrap{transform-origin:37.8% 98.5%;will-change:transform}
+#safeTop{position:fixed;top:0;left:0;width:1px;height:env(safe-area-inset-top,0px);pointer-events:none;visibility:hidden}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+.screen{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;gap:14px;
+  padding-block:calc(env(safe-area-inset-top,0px) + 14px) calc(env(safe-area-inset-bottom,0px) + 14px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+/* ---------- 曲選択 ---------- */
+.topbar{display:flex;align-items:center;gap:16px;min-height:48px}
+.logo{font-family:var(--display);font-size:28px;letter-spacing:.04em;line-height:1;
+  background:linear-gradient(180deg,#fff 0%,#dff6ff 45%,var(--sky) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 14px rgba(79,211,240,.35))}
+.logo small{display:block;font-family:var(--num);font-size:10px;letter-spacing:.32em;color:var(--dim);-webkit-text-fill-color:var(--dim);margin-top:6px}
+.spacer{flex:1}
+.apples{display:flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-family:var(--num);font-size:16px;font-variant-numeric:tabular-nums}
+.apples svg{width:20px;height:20px}
+.btn{white-space:nowrap;appearance:none;border:1px solid var(--line2);background:var(--panel);border-radius:12px;padding:10px 16px;cursor:pointer;font-size:14px;color:var(--ink)}
+.btn:hover{border-color:var(--sky)}
+.sel-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(220px,1fr) minmax(320px,420px) minmax(320px,400px);gap:18px}
+.stage{min-width:0;pointer-events:none}
+.songlist{min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 6px 4px 2px;scrollbar-width:thin}
+.song{appearance:none;display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:12px;text-align:left;cursor:pointer;
+  border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:8px 12px 8px 8px;transition:border-color .15s,transform .15s}
+.song:hover{border-color:var(--line2)}
+.song[aria-selected="true"]{border-color:var(--sky);background:var(--panel2);box-shadow:0 0 0 1px var(--sky),0 0 22px rgba(79,211,240,.22);transform:translateX(4px)}
+.jk{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.jk svg{width:28px;height:28px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.st{min-width:0;display:flex;flex-direction:column;gap:3px}
+.st b{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st small{font-family:var(--num);font-size:11px;color:var(--dim);letter-spacing:.04em}
+.song.locked{opacity:.55}.song.locked .jk{background:#2a3550}
+.detail.locked .djk{background:#2a3550}
+.boss{font-family:var(--num);font-size:9px;letter-spacing:.12em;color:#fff;background:var(--pink);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:2px}
+.dots{display:grid;grid-template-columns:repeat(4,10px);gap:5px}
+.dot{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--faint)}
+.dot.failed{border-color:#7f8ea6;background:#3b4558}
+.dot.clear{border-color:var(--sky);background:var(--sky)}
+.dot.fc{border-color:var(--gold);background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.dot.ap{border:0;background:conic-gradient(#ff7a7a,#ffd36b,#7be0a0,#4fd3f0,#b07cff,#ff7a7a);box-shadow:0 0 8px rgba(255,255,255,.6)}
+.detail{min-height:0;overflow-y:auto;border:1px solid var(--line);border-radius:18px;background:var(--panel);padding:18px;display:flex;flex-direction:column;gap:14px}
+.dhead{display:grid;grid-template-columns:96px 1fr;gap:14px;align-items:center}
+.djk{width:96px;height:96px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 8px 24px rgba(0,0,0,.35)}
+.djk svg{width:54px;height:54px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+.dtitle{min-width:0}
+.dtitle h2{margin:0;font-family:var(--display);font-weight:400;font-size:22px;line-height:1.25;text-wrap:balance}
+.dtitle p{margin:4px 0 0;color:var(--dim);font-size:12px;letter-spacing:.06em}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-family:var(--num);font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.meta b{color:var(--ink);font-weight:600}
+.diffs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.diff{appearance:none;cursor:pointer;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);padding:8px 2px 7px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.diff span{font-size:11px;color:var(--dim);white-space:nowrap}
+.diff b{font-family:var(--num);font-size:22px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.diff[aria-pressed="true"]{border-color:var(--dc);background:color-mix(in srgb,var(--dc) 20%,transparent);box-shadow:0 0 16px color-mix(in srgb,var(--dc) 35%,transparent)}
+.diff[aria-pressed="true"] span{color:var(--ink)}
+.best{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:rgba(0,0,0,.18)}
+.best .rk{font-family:var(--display);font-size:30px;line-height:1;color:var(--gold);min-width:44px;text-align:center}
+.best .rk.none{color:var(--faint);font-size:16px}
+.best .sc{font-family:var(--num);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.best .sc small{display:block;font-size:10px;color:var(--dim);letter-spacing:.14em;font-weight:500}
+.lampTag{font-family:var(--num);font-size:11px;letter-spacing:.08em;padding:3px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--dim);white-space:nowrap}
+.lampTag.clear{color:var(--sky);border-color:var(--sky)}.lampTag.fc{color:#1a1200;background:var(--gold);border-color:var(--gold)}
+.lampTag.ap{color:#140f33;border:0;background:linear-gradient(90deg,#ff9a9a,#ffd36b,#7be0a0,#4fd3f0,#c9a2ff)}.lampTag.failed{color:#9aa6bb}
+.go{appearance:none;border:0;border-radius:999px;padding:15px 0;font-family:var(--display);font-size:20px;letter-spacing:.1em;color:#0d1830;cursor:pointer;
+  background:linear-gradient(90deg,var(--sky),#eaf8ff);box-shadow:0 0 30px rgba(79,211,240,.4)}
+.go:active{transform:scale(.98)}
+.go:disabled{opacity:.55;cursor:wait}
+.ghost{appearance:none;border:1px solid var(--line2);background:transparent;border-radius:999px;padding:11px 0;font-size:14px;color:var(--ink);cursor:pointer}
+.ghost:hover{border-color:var(--sky)}
+.ghost:disabled{opacity:.4;cursor:not-allowed}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--dim)}
+.stepper .ctl{display:flex;align-items:center;gap:6px}
+.stepper button{appearance:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--line2);background:rgba(255,255,255,.04);cursor:pointer;font-family:var(--num);font-size:18px;line-height:1}
+.stepper output{min-width:56px;text-align:center;font-family:var(--num);font-size:18px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
+.keys{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:var(--dim)}
+.keys kbd{font-family:var(--num);font-size:13px;min-width:28px;text-align:center;border:1px solid var(--line2);border-bottom-width:3px;border-radius:7px;padding:3px 0;color:var(--ink);background:rgba(255,255,255,.04)}
+.recs::before{content:'きろく';grid-column:1/-1;font-size:11px;letter-spacing:.14em;color:var(--faint)}
+.recs{display:grid;grid-template-columns:auto 1fr auto auto;gap:6px 12px;align-items:center;font-size:12px;color:var(--dim);border-top:1px solid var(--line);padding-top:12px}
+.recs .rn{font-family:var(--display);font-size:15px;color:var(--gold);text-align:center;min-width:28px}
+.recs .rs{font-family:var(--num);font-variant-numeric:tabular-nums;color:var(--ink);text-align:right}
+.recs .rd{font-weight:700}
+.hint{margin:0;font-size:12px;color:var(--dim);line-height:1.7}
+/* ---------- 結果 ---------- */
+.res-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(240px,1fr) minmax(340px,540px);gap:24px;align-items:center}
+.res-grid .stage{align-self:stretch}
+.res-panel{border:1px solid var(--line);border-radius:22px;background:var(--panel);padding:22px 24px;display:flex;flex-direction:column;gap:14px;max-height:100%;overflow-y:auto}
+.res-song{font-size:14px;color:var(--dim);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.res-song b{color:var(--ink);font-size:17px}
+.res-top{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center}
+.bigrank{font-family:var(--display);font-size:100px;line-height:.9;color:var(--gold);filter:drop-shadow(0 0 24px rgba(255,211,107,.45));min-width:120px;text-align:center}
+.bigrank.dim{color:#7f8ea6;filter:none;font-size:56px}
+.res-score{font-family:var(--num);font-size:40px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:.04em;line-height:1}
+.res-score small{display:block;font-size:12px;color:var(--dim);letter-spacing:.16em;font-weight:500;margin-bottom:6px}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.newrec{font-family:var(--num);font-size:12px;letter-spacing:.1em;color:#1a0d00;background:linear-gradient(90deg,#ffd36b,#ff9a6b);border-radius:999px;padding:4px 10px;animation:glow 1s ease-in-out infinite alternate}
+@keyframes glow{to{box-shadow:0 0 16px rgba(255,211,107,.8)}}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 22px;margin:0;border-top:1px solid var(--line);padding-top:12px}
+.stats div{display:flex;justify-content:space-between;gap:10px;font-size:13px}
+.stats dt{color:var(--dim)}
+.stats dd{margin:0;font-family:var(--num);font-weight:600;font-variant-numeric:tabular-nums}
+.unlock{display:flex;align-items:center;gap:12px;border:1px solid var(--gold);border-radius:12px;padding:10px 14px;background:rgba(255,211,107,.08);font-size:14px}
+.unlock canvas{width:48px;height:24px}
+/* ---------- モーダル ---------- */
+.modal{position:fixed;inset:0;display:flex;align-items:flex-start;justify-content:center;background:rgba(4,8,18,.66);
+  padding-block:calc(env(safe-area-inset-top,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 16px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));overflow-y:auto;z-index:5}
+.panel{margin:auto;width:100%;max-width:440px;border:1px solid var(--line2);border-radius:20px;background:#0d1528;padding:22px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.panel.wide{max-width:780px}
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 26px}
+@media (max-width:760px){.set-grid{grid-template-columns:1fr}}
+.panel h2{margin:0;font-family:var(--display);font-weight:400;font-size:24px;text-align:center}
+.set-row{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
+.set-row>label,.set-row>.lbl{font-size:13px;color:var(--dim)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line2);border-radius:12px;padding:3px;gap:3px}
+.seg button{appearance:none;border:0;border-radius:9px;background:transparent;color:var(--dim);padding:8px 0;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:rgba(79,211,240,.2);color:var(--ink)}
+.skins{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.skin{appearance:none;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.03);padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font-size:11px;color:var(--dim)}
+.skin canvas{width:52px;height:26px}
+.skin[aria-pressed="true"]{border-color:var(--sky);color:var(--ink);background:rgba(79,211,240,.12)}
+.skin:disabled{cursor:not-allowed;opacity:.55}
+.skin small{font-family:var(--num);font-size:10px;display:flex;align-items:center;gap:3px}
+.skin small svg{width:11px;height:11px}
+.calib-ring{width:160px;height:160px;margin:6px auto;border-radius:50%;border:3px solid var(--line2);display:grid;place-items:center;font-family:var(--num);font-size:44px;font-weight:600;transition:transform .06s,border-color .06s}
+.calib-ring.beat{transform:scale(1.08);border-color:var(--sky)}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:#0d1528;border:1px solid var(--line2);border-radius:999px;padding:10px 18px;font-size:14px;z-index:9;max-width:calc(100% - 32px)}
+#pauseBtn{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);left:max(10px,env(safe-area-inset-left,0px));width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);background:rgba(12,19,36,.7);cursor:pointer;z-index:3;display:grid;place-items:center}
+#pauseBtn svg{width:18px;height:18px}
+#loading{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;z-index:4}
+#loading div{font-family:var(--display);font-size:22px;letter-spacing:.1em;color:var(--ink);text-shadow:0 0 18px rgba(79,211,240,.6)}
+/* ---------- 画面のせまいとき ---------- */
+@media (max-width:1080px){.sel-grid{grid-template-columns:1fr minmax(300px,380px)}.sel-grid .stage{display:none}.res-grid{grid-template-columns:1fr}.res-grid .stage{display:none}}
+@media (max-width:720px){
+  .screen{overflow-y:auto}
+  .sel-grid{display:flex;flex-direction:column}.songlist{max-height:42vh;flex:none}.detail{overflow:visible}
+  .logo{font-size:19px;white-space:nowrap}.topbar{gap:10px}.apples{padding:6px 10px}.res-top{grid-template-columns:1fr;text-align:center}.bigrank{margin:auto}
+}
+@media (prefers-reduced-motion:reduce){.newrec{animation:none}.song{transition:none}}
+</style>
+
+<canvas id="game" aria-label="ゲーム画面"></canvas>
+<div id="safeTop"></div>
+
+<section class="screen" id="selectScreen" aria-label="曲をえらぶ">
+  <header class="topbar">
+    <div class="logo">チャッピーリズム<small>CHAPPY RHYTHM</small></div>
+    <div class="spacer"></div>
+    <div class="apples" title="あつめたりんご" aria-label="あつめたりんご"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#ff5a4e" d="M12 7.2c1.6-1.3 4.3-1.6 5.9.2 1.9 2.1 1.6 6.4-.6 9.6-1.2 1.7-2.4 3-3.9 3-1 0-1-.5-1.4-.5s-.4.5-1.4.5c-1.5 0-2.7-1.3-3.9-3-2.2-3.2-2.5-7.5-.6-9.6 1.6-1.8 4.3-1.5 5.9-.2z"/><path fill="#7a4a2a" d="M12 7c0-2 .6-3.6 2-4.6l.8.9C13.7 4.2 13.2 5.5 13.2 7z"/><path fill="#5aa04a" d="M14 4.6c1.6-1.7 3.8-1.8 4.8-1.2-.6 1.7-2.6 2.8-4.8 1.2z"/></svg><b id="appleCount">0</b></div>
+    <button class="btn" id="btnSettings" type="button">せってい</button>
+  </header>
+  <div class="sel-grid">
+    <div class="stage" id="selStage"></div>
+    <div class="songlist" id="songList" role="listbox" aria-label="曲"></div>
+    <div class="detail" id="detail">
+      <div class="dhead"><div class="djk" id="dJacket"></div><div class="dtitle"><h2 id="dTitle"></h2><p id="dSub"></p></div></div>
+      <div class="meta" id="dMeta"></div>
+      <div class="diffs" id="diffs" role="group" aria-label="むずかしさ"></div>
+      <div class="best" id="dBest"></div>
+      <button class="go" id="btnPlay" type="button">あそぶ</button>
+      <div class="row2"><button class="ghost" id="btnDemo" type="button">おてほんを見る</button><button class="ghost" id="btnHow" type="button">あそびかた</button></div>
+      <div class="stepper"><span>ノーツの速さ</span><span class="ctl"><button type="button" id="spdDown" aria-label="おそく">−</button><output id="spdVal">5</output><button type="button" id="spdUp" aria-label="はやく">＋</button></span></div>
+      <div class="recs" id="dRecs" aria-label="むずかしさごとのきろく"></div>
+      <div class="keys"><kbd>D</kbd><kbd>F</kbd><kbd>J</kbd><kbd>K</kbd><span>か、画面をタップ</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="resultScreen" hidden aria-label="けっか">
+  <div class="res-grid">
+    <div class="stage" id="resStage"></div>
+    <div class="res-panel">
+      <div class="res-song" id="rSong"></div>
+      <div class="res-top">
+        <div class="bigrank" id="rRank">S</div>
+        <div><div class="res-score"><small>SCORE</small><span id="rScore">0</span></div><div class="badges" id="rBadges"></div></div>
+      </div>
+      <dl class="stats" id="rStats"></dl>
+      <div class="unlock" id="rUnlock" hidden></div>
+      <button class="go" id="btnRetry" type="button">もう一度</button>
+      <button class="ghost" id="btnBack" type="button">曲をえらぶ</button>
+    </div>
+  </div>
+</section>
+
+<button id="pauseBtn" type="button" aria-label="ポーズ" hidden><svg viewBox="0 0 20 20"><rect x="4" y="3" width="4" height="14" rx="1.5" fill="#eef6ff"/><rect x="12" y="3" width="4" height="14" rx="1.5" fill="#eef6ff"/></svg></button>
+<div id="loading" hidden><div>じゅんび中…</div></div>
+
+<div class="modal" id="pauseModal" hidden role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+  <div class="panel">
+    <h2 id="pauseTitle">ポーズ</h2>
+    <button class="go" id="btnResume" type="button">つづける</button>
+    <button class="ghost" id="btnRestart" type="button">さいしょから</button>
+    <button class="ghost" id="btnQuit" type="button">曲をえらぶ</button>
+    <p class="hint" style="text-align:center">Esc キーでもポーズできます</p>
+  </div>
+</div>
+
+<div class="modal" id="settingsModal" hidden role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="panel wide">
+    <h2 id="setTitle">せってい</h2>
+    <div class="set-grid"><div>
+    <div class="set-row"><div class="stepper"><span>ノーツの速さ</span><span class="ctl"><button type="button" id="sSpdDown" aria-label="おそく">−</button><output id="sSpdVal">5</output><button type="button" id="sSpdUp" aria-label="はやく">＋</button></span></div></div>
+    <div class="set-row">
+      <div class="stepper"><span>判定タイミング</span><span class="ctl"><button type="button" id="offDown" aria-label="はやく">−</button><output id="offVal">0</output><button type="button" id="offUp" aria-label="おそく">＋</button></span></div>
+      <p class="hint">たたくのがいつも遅れて判定されるときは「＋」、早いときは「−」。わからないときは自動で合わせられます。</p>
+      <button class="ghost" id="btnCalib" type="button">自動で合わせる</button>
+    </div>
+    </div><div>
+    <div class="set-row"><div class="lbl">タップ音の大きさ</div><div class="seg" id="tapVolSeg"></div></div>
+    <div class="set-row"><div class="lbl">曲の音量</div><div class="seg" id="musVolSeg"></div></div>
+    <div class="set-row"><div class="lbl">ゲームオーバー（ライフが0になったら終わり）</div><div class="seg" id="goSeg"></div></div>
+    </div></div>
+    <div class="set-row"><div class="lbl">ノーツのきせかえ（りんごを集めるとふえるよ）</div><div class="skins" id="skinList"></div></div>
+    <button class="go" id="btnSetClose" type="button">とじる</button>
+  </div>
+</div>
+
+<div class="modal" id="calibModal" hidden role="dialog" aria-modal="true" aria-labelledby="calTitle">
+  <div class="panel">
+    <h2 id="calTitle">タイミング調整</h2>
+    <p class="hint" id="calText" style="text-align:center">「コッ」という音に合わせて、スペースキーか画面をタップしてね</p>
+    <div class="calib-ring" id="calRing">♪</div>
+    <button class="go" id="btnCalOk" type="button" hidden>これにする</button>
+    <button class="ghost" id="btnCalCancel" type="button">やめる</button>
+  </div>
+</div>
+
+<div class="modal" id="howModal" hidden role="dialog" aria-modal="true" aria-labelledby="howTitle">
+  <div class="panel">
+    <h2 id="howTitle">あそびかた</h2>
+    <p class="hint">ノーツが下の光るラインに重なったら、そのレーンのキー（<b>D F J K</b>）を押すか、画面をタップ。</p>
+    <p class="hint"><b>ロングノーツ</b>は、おわりまで押しつづけてね。<b>りんごノーツ</b>は2つ同時に来るよ。</p>
+    <p class="hint">うまくたたくと左上の<b>フィーバーゲージ</b>がたまって、いっぱいになると<b>FEVER</b>！しばらくスコアが2倍になるよ。</p>
+    <p class="hint">ミスするとライフがへるよ。0になるとゲームオーバー（せっていで「なし」にもできるよ）。</p>
+    <p class="hint">とったりんごの数で、ノーツのきせかえがふえるよ。</p>
+    <button class="go" id="btnHowClose" type="button">わかった</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script src="chappy.js"></script>
+<script>
+(()=>{
+/* ---- synth.js ---- */
+/* ===== 音の合成エンジン（曲の書き出しと、タップ音などのライブ再生で共用） ===== */
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function makeNoise(ctx,sec){const b=ctx.createBuffer(1,Math.floor(ctx.sampleRate*sec),ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;return b}
+function makeImpulse(ctx,sec,decay){
+  const n=Math.floor(ctx.sampleRate*sec),b=ctx.createBuffer(2,n,ctx.sampleRate);
+  for(let c=0;c<2;c++){const d=b.getChannelData(c);for(let i=0;i<n;i++){const x=i/n;d[i]=(Math.random()*2-1)*Math.pow(1-x,decay)*(i<ctx.sampleRate*.012?i/(ctx.sampleRate*.012):1)}}
+  return b;
+}
+function makeCrackle(ctx,sec){ // レコードのパチパチ（ローファイ用）
+  const n=Math.floor(ctx.sampleRate*sec),b=ctx.createBuffer(2,n,ctx.sampleRate);
+  for(let c=0;c<2;c++){const d=b.getChannelData(c);let lp=0;
+    for(let i=0;i<n;i++){lp+=((Math.random()*2-1)-lp)*.08;d[i]=lp*.05;if(Math.random()<.00035){const a=(Math.random()*.6+.2)*(Math.random()<.5?-1:1);for(let k=0;k<14&&i+k<n;k++)d[i+k]+=a*Math.exp(-k/2.5)}}}
+  return b;
+}
+
+function createSynth(ctx,opt={}){
+  const S={ctx,voices:[],cur:null};
+  // 音ごとに作ったノードを記録して、鳴り終わったら外す（長く遊んでも重くならないように）
+  for(const fn of ['createGain','createOscillator','createBiquadFilter','createBufferSource','createStereoPanner']){
+    const orig=ctx[fn].bind(ctx);ctx[fn]=(...a)=>{const n=orig(...a);if(S.cur)S.cur.push(n);return n};
+  }
+  S.gc=now=>{let k=0;for(const v of S.voices){if(v.end<now){for(const n of v.nodes){try{n.disconnect()}catch(e){}}}else S.voices[k++]=v}S.voices.length=k};
+  S.track=(end,fn)=>{S.cur=[];try{fn()}finally{const nodes=S.cur;S.cur=null;if(nodes.length)S.voices.push({end,nodes})}};
+  const out=ctx.createGain();out.gain.value=opt.gain??1;
+  const comp=ctx.createDynamicsCompressor();
+  comp.threshold.value=opt.thr??-12;comp.knee.value=8;comp.ratio.value=3;comp.attack.value=.005;comp.release.value=.2;
+  out.connect(comp);comp.connect(opt.dest||ctx.destination);
+  S.out=out;S.noise=makeNoise(ctx,1.5);
+  // 残響とディレイ（センド）
+  const rev=ctx.createConvolver();rev.buffer=makeImpulse(ctx,opt.revLen||2.2,opt.revDecay||3.5);
+  const revIn=ctx.createGain(),revOut=ctx.createGain();revOut.gain.value=opt.rev??.25;
+  const revHp=ctx.createBiquadFilter();revHp.type='highpass';revHp.frequency.value=280;
+  revIn.connect(revHp);revHp.connect(rev);rev.connect(revOut);revOut.connect(out);
+  const dl=ctx.createDelay(2);dl.delayTime.value=opt.delayTime||.32;
+  const fb=ctx.createGain();fb.gain.value=opt.fb??.3;
+  const dlp=ctx.createBiquadFilter();dlp.type='lowpass';dlp.frequency.value=2800;
+  const dIn=ctx.createGain(),dOut=ctx.createGain();dOut.gain.value=opt.dly??.28;
+  dIn.connect(dl);dl.connect(dlp);dlp.connect(fb);fb.connect(dl);dlp.connect(dOut);dOut.connect(out);
+  // バス（ドラム・ベース・伴奏・メロディ・効果音）
+  const bus={},brev={},bdly={};
+  for(const name of ['drums','bass','music','lead','fx']){
+    const gv=(opt.bus&&opt.bus[name])??1;
+    const g=ctx.createGain();g.gain.value=gv;g.connect(out);bus[name]=g;
+    const r=ctx.createGain();r.gain.value=gv;r.connect(revIn);brev[name]=r; // 残響もバスの音量に合わせる
+    const d=ctx.createGain();d.gain.value=gv;d.connect(dIn);bdly[name]=d;
+  }
+  // サイドチェイン風：キックに合わせて伴奏を一瞬下げる
+  const duckG=ctx.createGain();duckG.connect(bus.music);S.duckDepth=opt.duck||0;
+  S.bus=bus;
+
+  function chan(busName,o){
+    const g=ctx.createGain();let node=g;
+    if(o&&o.pan){const p=ctx.createStereoPanner();p.pan.value=o.pan;g.connect(p);node=p}
+    node.connect(busName==='music'?duckG:bus[busName]);
+    if(o&&o.rev){const s=ctx.createGain();s.gain.value=o.rev;node.connect(s);s.connect(brev[busName])}
+    if(o&&o.dly){const s=ctx.createGain();s.gain.value=o.dly;node.connect(s);s.connect(bdly[busName])}
+    return g;
+  }
+  function adsr(p,t,peak,a,d,s,dur,r){
+    p.setValueAtTime(0,t);p.linearRampToValueAtTime(peak,t+a);
+    if(s<1)p.setTargetAtTime(peak*s,t+a,Math.max(.005,d/3));
+    const end=t+Math.max(dur,a+.005);p.setTargetAtTime(0,end,Math.max(.005,r/4));
+    return end+r*1.6;
+  }
+  function perc(p,t,peak,dec){p.setValueAtTime(peak,t);p.exponentialRampToValueAtTime(.0005,t+dec);}
+  function noiseSrc(t,dur){const n=ctx.createBufferSource();n.buffer=S.noise;n.start(t,Math.random()*.5);n.stop(t+dur);return n}
+  function osc(type,f,t,stop){const o=ctx.createOscillator();o.type=type;o.frequency.value=f;o.start(t);o.stop(stop);return o}
+  function filt(type,f,q){const b=ctx.createBiquadFilter();b.type=type;b.frequency.value=f;if(q!=null)b.Q.value=q;return b}
+  function vibrato(o,t,dur,rate,cents,delay){
+    if(dur<delay+.08)return;const l=ctx.createOscillator();l.frequency.value=rate;const lg=ctx.createGain();
+    lg.gain.setValueAtTime(0,t);lg.gain.setValueAtTime(0,t+delay);lg.gain.linearRampToValueAtTime(cents,t+delay+.25);
+    l.connect(lg);for(const x of [].concat(o))lg.connect(x.detune);l.start(t);l.stop(t+dur+.4);
+  }
+  S.duck=(t,v=1)=>{if(!S.duckDepth)return;const p=duckG.gain;p.setValueAtTime(1-S.duckDepth*v,t);p.linearRampToValueAtTime(1,t+.22)};
+
+  /* ---------- ドラム ---------- */
+  S.kick=(t,v=1,o={})=>{
+    const tn=o.tone||1,f=osc('sine',150*tn,t,t+.7);
+    f.frequency.setValueAtTime(155*tn,t);f.frequency.exponentialRampToValueAtTime(52*tn,t+.07);f.frequency.exponentialRampToValueAtTime(42*tn,t+.35);
+    const g=chan('drums');g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.95*v,t+.002);g.gain.setTargetAtTime(0,t+.05,(o.dec||.34)/4);
+    f.connect(g);
+    const n=noiseSrc(t,.03),hp=filt('highpass',2200),gc=chan('drums');perc(gc.gain,t,.22*v,.015);n.connect(hp);hp.connect(gc);
+    S.duck(t,v);
+  };
+  S.snare=(t,v=1,o={})=>{
+    const f0=o.f||210,b=osc('triangle',f0,t,t+.16);b.frequency.setValueAtTime(f0,t);b.frequency.exponentialRampToValueAtTime(f0*.62,t+.09);
+    const gb=chan('drums',{pan:o.pan,rev:(o.rev??.22)*.5});perc(gb.gain,t,.42*v,.13);b.connect(gb);
+    const n=noiseSrc(t,.4),hp=filt('highpass',o.hp||1400),lp=filt('lowpass',o.lp||9000),gn=chan('drums',{pan:o.pan,rev:o.rev??.22});
+    perc(gn.gain,t,.55*v,o.dec||.19);n.connect(hp);hp.connect(lp);lp.connect(gn);
+  };
+  S.clap=(t,v=1,o={})=>{
+    for(const [d,a,dec] of [[0,.55,.012],[.011,.5,.012],[.022,.48,.014],[.031,.6,o.dec||.16]]){
+      const n=noiseSrc(t+d,dec+.05),bp=filt('bandpass',o.f||1250,1.1),g=chan('drums',{pan:o.pan,rev:o.rev??.3});
+      perc(g.gain,t+d,a*v,dec);n.connect(bp);bp.connect(g);
+    }
+  };
+  S.hat=(t,v=1,o={})=>{
+    const dec=o.open?(o.dec||.32):(o.dec||.045),n=noiseSrc(t,dec+.05),hp=filt('highpass',o.hp||7200),bp=filt('peaking',10500,1);bp.gain.value=6;
+    const g=chan('drums',{pan:o.pan??.18,rev:o.open?.12:0});perc(g.gain,t,(o.open?.22:.19)*v,dec);n.connect(hp);hp.connect(bp);bp.connect(g);
+  };
+  S.crash=(t,v=1,o={})=>{
+    const n=noiseSrc(t,2),hp=filt('highpass',4200),g=chan('drums',{pan:o.pan??-.15,rev:.35});perc(g.gain,t,.32*v,o.dec||1.6);n.connect(hp);hp.connect(g);
+    const n2=noiseSrc(t,.4),bp=filt('bandpass',6200,.8),g2=chan('drums',{rev:.2});perc(g2.gain,t,.22*v,.35);n2.connect(bp);bp.connect(g2);
+  };
+  S.tom=(t,v=1,o={})=>{
+    const f0=o.f||140,f=osc('sine',f0,t,t+.4);f.frequency.setValueAtTime(f0*1.25,t);f.frequency.exponentialRampToValueAtTime(f0*.75,t+.25);
+    const g=chan('drums',{pan:o.pan||0,rev:.2});perc(g.gain,t,.55*v,.32);f.connect(g);
+  };
+  S.rim=(t,v=1,o={})=>{ // ウッドブロック風「コッ」
+    const f0=o.f||1650,f=osc('sine',f0,t,t+.08),g=chan('drums',{pan:o.pan??.25,rev:.12});perc(g.gain,t,.32*v,.05);f.connect(g);
+    const f2=osc('triangle',f0*2.3,t,t+.03),g2=chan('drums',{pan:o.pan??.25});perc(g2.gain,t,.08*v,.018);f2.connect(g2);
+  };
+  S.cowbell=(t,v=1,o={})=>{
+    const g=chan('drums',{pan:o.pan??-.3,rev:.12}),bp=filt('bandpass',2600,.9);perc(g.gain,t,.16*v,.22);bp.connect(g);
+    for(const f of [562,835]){const s=osc('square',f,t,t+.25);s.connect(bp)}
+  };
+  S.shaker=(t,v=1,o={})=>{
+    const n=noiseSrc(t,.12),bp=filt('bandpass',6800,1.2),g=chan('drums',{pan:o.pan??-.35});
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.16*v,t+.018);g.gain.exponentialRampToValueAtTime(.001,t+.07);n.connect(bp);bp.connect(g);
+  };
+
+  /* ---------- ベース ---------- */
+  S.bass=(t,m,d,v=1,o={})=>{
+    const type=o.type||'saw',f=mtof(m);let end;
+    const g=chan('bass');
+    if(type==='saw'||type==='square'){
+      const a=osc(type==='saw'?'sawtooth':'square',f,t,t+d+.4),lp=filt('lowpass',(o.cut||1600),o.q??2);
+      lp.frequency.setValueAtTime(o.cut||1600,t);lp.frequency.exponentialRampToValueAtTime(o.low||260,t+(o.fdec||.16));
+      const sub=osc('sine',f,t,t+d+.4);const gs=ctx.createGain();gs.gain.value=.55;sub.connect(gs);gs.connect(g);
+      a.connect(lp);lp.connect(g);end=adsr(g.gain,t,.32*v,.004,.12,.75,d*.92,.06);
+    }else if(type==='reese'){
+      const lp=filt('lowpass',o.cut||620,1.2);for(const det of [-16,16]){const a=osc('sawtooth',f,t,t+d+.5);a.detune.value=det;a.connect(lp)}
+      const sub=osc('sine',f,t,t+d+.5),gs=ctx.createGain();gs.gain.value=.7;sub.connect(gs);gs.connect(g);
+      lp.connect(g);end=adsr(g.gain,t,.3*v,.01,.2,.85,d*.95,.08);
+    }else if(type==='pizz'){
+      const a=osc('triangle',f,t,t+.6),b=osc('sine',f*2,t,t+.2),gb=ctx.createGain();gb.gain.value=.25;b.connect(gb);gb.connect(g);
+      a.connect(g);perc(g.gain,t,.5*v,Math.min(.45,d+.15));
+    }else{ // sub / walk
+      const a=osc('triangle',f,t,t+d+.4),b=osc('sine',f,t,t+d+.4);a.connect(g);b.connect(g);
+      end=adsr(g.gain,t,.38*v,.008,.2,.7,d*.9,.08);
+    }
+  };
+
+  /* ---------- メロディ ---------- */
+  S.lead=(t,m,d,v=1,o={})=>{
+    const type=o.type||'chip',f=mtof(m),pan=o.pan||0;
+    if(type==='chip'){
+      const g=chan('lead',{pan,dly:o.dly??.32,rev:.12}),lp=filt('lowpass',4600,.6);
+      const a=osc('square',f,t,t+d+.4),b=osc('triangle',f,t,t+d+.4),ga=ctx.createGain();ga.gain.value=.42;a.connect(ga);ga.connect(lp);b.connect(lp);lp.connect(g);
+      vibrato([a,b],t,d,5.6,14,.22);adsr(g.gain,t,.26*v,.004,.12,.7,d*.94,.07);
+      if(o.bell){const gb=chan('lead',{pan,dly:.3,rev:.2});const s=osc('sine',f*2,t,t+1.2),s2=osc('sine',f*4,t,t+.6),g2=ctx.createGain();g2.gain.value=.3;s.connect(gb);s2.connect(g2);g2.connect(gb);perc(gb.gain,t,.13*v,1.0)}
+    }else if(type==='saw'){
+      const g=chan('lead',{pan,dly:o.dly??.35,rev:.25}),lp=filt('lowpass',o.cut||3400,.8);
+      lp.frequency.setValueAtTime(800,t);lp.frequency.exponentialRampToValueAtTime(o.cut||3400,t+.06);
+      const oscs=[-9,9].map(det=>{const a=osc('sawtooth',f,t,t+d+.6);a.detune.value=det;a.connect(lp);return a});
+      const sq=osc('square',f/2,t,t+d+.6),gq=ctx.createGain();gq.gain.value=.25;sq.connect(gq);gq.connect(lp);
+      lp.connect(g);vibrato(oscs,t,d,5.4,11,.25);adsr(g.gain,t,.17*v,.012,.25,.75,d*.95,.14);
+    }else if(type==='whistle'){
+      const g=chan('lead',{pan,dly:o.dly??.25,rev:.3});const a=osc('sine',f,t,t+d+.5),b=osc('triangle',f*2,t,t+d+.5),gb=ctx.createGain();gb.gain.value=.08;
+      a.connect(g);b.connect(gb);gb.connect(g);vibrato([a,b],t,d,6.2,22,.15);adsr(g.gain,t,.3*v,.02,.15,.8,d*.92,.08);
+      const n=noiseSrc(t,.12),bp=filt('bandpass',f*2,2),gn=chan('lead',{pan});perc(gn.gain,t,.05*v,.08);n.connect(bp);bp.connect(gn);
+    }else if(type==='bell'){
+      const g=chan('lead',{pan,dly:o.dly??.3,rev:.32});const dec=Math.max(.7,Math.min(2.4,d+.6));
+      for(const [mul,a,dk] of [[1,1,1],[2,.42,.55],[3,.2,.35],[4.17,.1,.2]]){const s=osc('sine',f*mul,t,t+dec*dk+.1),gg=ctx.createGain();perc(gg.gain,t,a,dec*dk);s.connect(gg);gg.connect(g)}
+      g.gain.value=.24*v;
+    }else if(type==='marimba'){
+      const g=chan('lead',{pan,dly:o.dly??.18,rev:.18});
+      for(const [mul,a,dk] of [[1,1,.55],[4,.35,.09],[10,.12,.025]]){const s=osc('sine',f*mul,t,t+dk+.1),gg=ctx.createGain();perc(gg.gain,t,a,dk);s.connect(gg);gg.connect(g)}
+      g.gain.value=.36*v;
+    }else if(type==='pulse'){ // ドラムンベース用の明るいリード
+      const g=chan('lead',{pan,dly:o.dly??.3,rev:.15}),lp=filt('lowpass',5200,.7);
+      const a=osc('square',f,t,t+d+.4),b=osc('sawtooth',f,t,t+d+.4);b.detune.value=7;const gb=ctx.createGain();gb.gain.value=.55;
+      a.connect(lp);b.connect(gb);gb.connect(lp);lp.connect(g);vibrato([a,b],t,d,6,12,.2);adsr(g.gain,t,.17*v,.003,.08,.65,d*.9,.05);
+    }else if(type==='ep'){ S.ep(t,[m],d,v*1.4,{pan,bus:'lead',dly:.25}) }
+  };
+
+  /* ---------- 伴奏 ---------- */
+  S.pad=(t,ms,d,v=1,o={})=>{
+    const g=chan('music',{rev:o.rev??.35}),lp=filt('lowpass',o.cut||1400,.5);lp.connect(g);
+    for(const m of ms){for(const det of [-8,8]){const a=osc(o.wave||'sawtooth',mtof(m),t,t+d+1.2);a.detune.value=det+(Math.random()*4-2);a.connect(lp)}}
+    adsr(g.gain,t,.05*v,o.a||.18,.4,.85,d,o.r||.5);
+  };
+  S.ep=(t,ms,d,v=1,o={})=>{ // エレピ（FM）
+    for(const m of ms){
+      const f=mtof(m),g=chan(o.bus||'music',{pan:o.pan||0,rev:.25,dly:o.dly||0});
+      const car=osc('sine',f,t,t+d+.8),mod=osc('sine',f,t,t+d+.8),mi=ctx.createGain();
+      mi.gain.setValueAtTime(f*1.6,t);mi.gain.exponentialRampToValueAtTime(f*.12,t+.35);mod.connect(mi);mi.connect(car.frequency);
+      const tr=ctx.createOscillator();tr.frequency.value=4.8;const tg=ctx.createGain();tg.gain.value=.12;tr.connect(tg);tr.start(t);tr.stop(t+d+.8);
+      const amp=ctx.createGain();tg.connect(amp.gain);car.connect(amp);amp.connect(g);
+      adsr(g.gain,t,.1*v,.006,.9,.45,d,.35);
+    }
+  };
+  S.arp=(t,m,d,v=1,o={})=>{
+    const g=chan('music',{pan:o.pan||0,dly:o.dly??.3,rev:.1}),lp=filt('lowpass',o.cut||3000,1.5);
+    const a=osc(o.wave||'square',mtof(m),t,t+.4);a.connect(lp);lp.connect(g);perc(g.gain,t,.075*v,Math.min(.32,d+.12));
+  };
+  S.pluck=(t,ms,d,v=1,o={})=>{ // ウクレレ風のストローク
+    ms.forEach((m,i)=>{const tt=t+i*(o.strum??.012),g=chan('music',{pan:(i/(ms.length-1||1)-.5)*.5,rev:.18}),lp=filt('lowpass',4000,1);
+      lp.frequency.setValueAtTime(4200,tt);lp.frequency.exponentialRampToValueAtTime(600,tt+.18);
+      const a=osc('sawtooth',mtof(m),tt,tt+.6);a.connect(lp);lp.connect(g);perc(g.gain,tt,.07*v,Math.min(.5,d+.2))});
+  };
+  S.stab=(t,ms,d,v=1,o={})=>{ // ブラス風の短い和音
+    const g=chan('music',{rev:.2,dly:o.dly||0}),lp=filt('lowpass',600,1.4);
+    lp.frequency.setValueAtTime(700,t);lp.frequency.linearRampToValueAtTime(o.cut||2800,t+.03);lp.frequency.exponentialRampToValueAtTime(900,t+.2);
+    for(const m of ms)for(const det of [-6,6]){const a=osc('sawtooth',mtof(m),t,t+d+.3);a.detune.value=det;a.connect(lp)}
+    lp.connect(g);adsr(g.gain,t,.07*v,.006,.1,.6,d,.06);
+  };
+  S.meow=(t,m,d,v=1,o={})=>{ // ねこの「にゃー」
+    const f=mtof(m),g=chan('lead',{pan:o.pan||0,rev:.25}),a=osc('sawtooth',f,t,t+d+.3),bp=filt('bandpass',900,3.5);
+    a.frequency.setValueAtTime(f*.88,t);a.frequency.linearRampToValueAtTime(f*1.04,t+.07);a.frequency.linearRampToValueAtTime(f*.84,t+Math.max(.2,d));
+    bp.frequency.setValueAtTime(700,t);bp.frequency.linearRampToValueAtTime(2300,t+.08);bp.frequency.exponentialRampToValueAtTime(800,t+Math.max(.25,d));
+    a.connect(bp);bp.connect(g);adsr(g.gain,t,.5*v,.03,.1,.8,Math.max(.18,d*.85),.1);
+  };
+
+  /* ---------- 効果音 ---------- */
+  S.crunch=(t,v=1)=>{for(const [d,f,a] of [[0,2600,.5],[.035,1800,.42],[.07,3200,.26]]){const n=noiseSrc(t+d,.1),bp=filt('bandpass',f,1.6),g=chan('fx');perc(g.gain,t+d,a*v,.06);n.connect(bp);bp.connect(g)}};
+  S.riser=(t,d,v=1)=>{
+    const n=noiseSrc(t,d+.1),bp=filt('bandpass',400,2.5),g=chan('fx',{rev:.4});
+    bp.frequency.setValueAtTime(350,t);bp.frequency.exponentialRampToValueAtTime(7000,t+d);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.22*v,t+d);g.gain.linearRampToValueAtTime(0,t+d+.05);n.connect(bp);bp.connect(g);
+  };
+  S.tap=(t,q='p',v=1)=>{ // 捉えた音：音程のない「パンッ」
+    const big=(q==='p'?1:q==='g'?.85:.6)*v;
+    for(const [d,f,qq,a,dec] of [[0,1900,1.1,.5,.05],[.009,1300,1,.42,.06],[.018,1100,.9,.36,.13]]){
+      const n=noiseSrc(t+d,.2),bp=filt('bandpass',f,qq),g=chan('fx');perc(g.gain,t+d,a*big,dec);n.connect(bp);bp.connect(g)}
+    const n=noiseSrc(t,.05),hp=filt('highpass',6000),g=chan('fx');perc(g.gain,t,.28*big,.025);n.connect(hp);hp.connect(g);
+  };
+  S.shimmer=(t,v=1)=>{const n=noiseSrc(t,.4),hp=filt('highpass',8000),g=chan('fx',{rev:.5});g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.12*v,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+.3);n.connect(hp);hp.connect(g)};
+  S.whoosh=(t,v=1)=>{ // フィーバー開始
+    const n=noiseSrc(t,1.1),bp=filt('bandpass',300,1.8),g=chan('fx',{rev:.6});
+    bp.frequency.setValueAtTime(300,t);bp.frequency.exponentialRampToValueAtTime(9000,t+.55);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.35*v,t+.5);g.gain.exponentialRampToValueAtTime(.001,t+1);n.connect(bp);bp.connect(g);
+    S.crashFx(t+.5,.8*v);
+  };
+  S.crashFx=(t,v=1)=>{const n=noiseSrc(t,1.6),hp=filt('highpass',4500),g=chan('fx',{rev:.4});perc(g.gain,t,.3*v,1.3);n.connect(hp);hp.connect(g)};
+  S.click=(t,acc)=>{const f=osc('sine',acc?2000:1500,t,t+.06),g=chan('fx');perc(g.gain,t,.45,.04);f.connect(g)};
+  S.crackle=(t,d,v=1)=>{const s=ctx.createBufferSource();s.buffer=makeCrackle(ctx,6);s.loop=true;const g=chan('music');g.gain.value=v;s.connect(g);s.start(t);s.stop(t+d)};
+
+  S.play=e=>S.track(e.t+(e.d||0)+(e.k==='crash'?2.6:e.k==='pad'?2:1.6),()=>S.play0(e));
+  S.play0=e=>{
+    switch(e.k){
+      case 'kick':return S.kick(e.t,e.v,e.o);case 'snare':return S.snare(e.t,e.v,e.o);case 'clap':return S.clap(e.t,e.v,e.o);
+      case 'hat':return S.hat(e.t,e.v,e.o);case 'crash':return S.crash(e.t,e.v,e.o);case 'tom':return S.tom(e.t,e.v,e.o);
+      case 'rim':return S.rim(e.t,e.v,e.o);case 'cowbell':return S.cowbell(e.t,e.v,e.o);case 'shaker':return S.shaker(e.t,e.v,e.o);
+      case 'bass':return S.bass(e.t,e.m,e.d,e.v,e.o);case 'lead':return S.lead(e.t,e.m,e.d,e.v,e.o);
+      case 'pad':return S.pad(e.t,e.ms,e.d,e.v,e.o);case 'ep':return S.ep(e.t,e.ms,e.d,e.v,e.o);case 'arp':return S.arp(e.t,e.m,e.d,e.v,e.o);
+      case 'pluck':return S.pluck(e.t,e.ms,e.d,e.v,e.o);case 'stab':return S.stab(e.t,e.ms,e.d,e.v,e.o);case 'meow':return S.meow(e.t,e.m,e.d,e.v,e.o);
+      case 'crunch':return S.crunch(e.t,e.v);case 'riser':return S.riser(e.t,e.d,e.v);case 'crackle':return S.crackle(e.t,e.d,e.v);
+    }
+  };
+  return S;
+}
+
+/* ---- session.js ---- */
+/* ===== 判定・スコア・ライフ・フィーバー（画面と切り離したゲームの中身） ===== */
+const WIN={p:.05,g:.1,o:.14,early:.2};
+const W_ACC={p:1,g:.8,o:.4,m:0};
+const RANKS=[['S+',.985],['S',.95],['A',.9],['B',.8],['C',.7],['D',0]];
+const LAMP_ORDER=['none','failed','clear','fc','ap'];
+function rankOf(acc){for(const [r,v] of RANKS)if(acc>=v)return r;return 'D'}
+function createSession(chart,o){
+  const notes=chart.map((c,i)=>({i,t:c[0]/1000,lane:c[1],type:c[2],tail:c[2]===2?c[3]/1000:0,st:0,hr:null,tr:null}));
+  const units=Math.max(1,notes.length+notes.filter(n=>n.type===2).length);
+  const S={notes,units,score:0,base:0,bonus:0,combo:0,maxCombo:0,cnt:{p:0,g:0,o:0,m:0},fast:0,slow:0,
+    life:100,fever:0,feverOn:false,feverEnd:0,feverCount:0,failed:false,apples:0,judged:0,holding:[null,null,null,null]};
+  const lifeLoss=({easy:3,normal:5,hard:6,expert:7})[o.diff]||5;
+  const feverLen=o.feverLen||8;
+  let head=0;
+  const emit=e=>{if(o.onEvent)o.onEvent(e)};
+  function judge(kind,n,part,t,delta){
+    S.cnt[kind]++;S.judged++;
+    const add=1e6/units*W_ACC[kind];S.base+=add;if(S.feverOn)S.bonus+=add;
+    if(kind==='m'){
+      S.combo=0;if(!S.feverOn)S.fever=Math.max(0,S.fever-.06);
+      S.life-=S.feverOn?lifeLoss/2:lifeLoss;
+    }else{
+      S.combo++;if(S.combo>S.maxCombo)S.maxCombo=S.combo;
+      if(!S.feverOn)S.fever=Math.min(1,S.fever+({p:.03,g:.018,o:.006})[kind]*(n.type===1?1.6:1));
+      S.life=Math.min(100,S.life+({p:.8,g:.4,o:0})[kind]);
+      if(n.type===1&&part==='head')S.apples++;
+      if(delta!=null&&kind!=='p'){if(delta<0)S.fast++;else S.slow++}
+    }
+    S.score=Math.round(S.base+S.bonus);
+    emit({type:'judge',kind,note:n,part,t,delta,combo:S.combo});
+    if(!S.feverOn&&S.fever>=1&&!S.failed){S.feverOn=true;S.feverEnd=t+feverLen;S.feverCount++;emit({type:'fever',on:true,t})}
+    if(S.life<=0){S.life=0;if(o.gameover&&!S.failed){S.failed=true;emit({type:'fail',t})}}
+  }
+  function missNote(n,t){n.hr='m';n.st=2;judge('m',n,'head',t,null);if(n.type===2){n.tr='m';judge('m',n,'tail',t,null)}}
+  // レーンを押した
+  S.press=(lane,t)=>{
+    if(S.failed)return null;
+    while(head<notes.length&&notes[head].st===2)head++;
+    let best=null,bd=1e9;
+    for(let k=head;k<notes.length;k++){const n=notes[k];if(n.t-t>WIN.early)break;if(n.st!==0||n.lane!==lane)continue;
+      const d=Math.abs(t-n.t);if(d<bd){bd=d;best=n}}
+    if(!best||bd>WIN.early)return null;
+    const delta=t-best.t;
+    if(bd>WIN.o){if(delta<0){missNote(best,t);return {kind:'m',note:best,early:true}}return null}
+    const kind=bd<=WIN.p?'p':bd<=WIN.g?'g':'o';
+    best.hr=kind;
+    if(best.type===2){best.st=1;S.holding[lane]=best}else best.st=2;
+    judge(kind,best,'head',t,delta);
+    return {kind,note:best,delta};
+  };
+  // レーンを離した（ロングノーツの途中なら判定）
+  S.release=(lane,t)=>{
+    const n=S.holding[lane];if(!n)return null;S.holding[lane]=null;n.st=2;
+    if(S.failed)return null;
+    if(t>=n.tail-.15){n.tr='p';judge('p',n,'tail',t,null);return {kind:'p',note:n}}
+    n.tr='m';judge('m',n,'tail',t,null);return {kind:'m',note:n};
+  };
+  // 時間を進める（見のがしたノーツ・ロングの終わり・フィーバー終了）
+  S.update=t=>{
+    if(S.failed)return;
+    for(let k=head;k<notes.length;k++){const n=notes[k];if(n.t>t)break;if(n.st===0&&t-n.t>WIN.o)missNote(n,n.t+WIN.o)}
+    for(let l=0;l<4;l++){const n=S.holding[l];if(n&&t>=n.tail){S.holding[l]=null;n.st=2;n.tr='p';judge('p',n,'tail',n.tail,null)}}
+    if(S.feverOn&&t>=S.feverEnd){S.feverOn=false;S.fever=0;emit({type:'fever',on:false,t})}
+  };
+  // 終わったときに残っていたノーツは見のがし扱い
+  S.finalize=t=>{if(S.failed)return;for(let l=0;l<4;l++){const n=S.holding[l];if(n){S.holding[l]=null;n.st=2;if(t>=n.tail-.15){n.tr='p';judge('p',n,'tail',t,null)}else{n.tr='m';judge('m',n,'tail',t,null)}}}
+    for(const n of notes)if(n.st===0)missNote(n,t)};
+  S.allDone=()=>{while(head<notes.length&&notes[head].st===2)head++;return head>=notes.length};
+  S.result=()=>{
+    const acc=S.base/1e6,c=S.cnt;
+    const lamp=S.failed?'failed':c.m===0?(c.g===0&&c.o===0?'ap':'fc'):'clear';
+    return {score:S.score,base:Math.round(S.base),bonus:Math.round(S.bonus),acc,rank:rankOf(acc),lamp,cnt:Object.assign({},c),
+      maxCombo:S.maxCombo,fast:S.fast,slow:S.slow,apples:S.apples,feverCount:S.feverCount,units};
+  };
+  return S;
+}
+
+/* ---- core.js ---- */
+/* ===== 基本：曲リスト・保存データ・設定 ===== */
+const DIFFS=[
+  {k:'easy',name:'かんたん',col:'#5fd38d'},
+  {k:'normal',name:'ふつう',col:'#4fd3f0'},
+  {k:'hard',name:'むずかしい',col:'#ffb547'},
+  {k:'expert',name:'げきむず',col:'#ff5a8a'}
+];
+const SONGS=[{"id":"theme","title":"チャッピーのテーマ","sub":"Chappy Theme","bpm":140,"dur":77.129,"t0":0.3,"beat":0.42857142857142855,"preview":34.536,"colors":["#4fd3f0","#ffd98a"],"icon":"apple","gain":1,"boss":false,"charts":{"easy":[[300,1,0,0],[1157,1,1,0],[3729,0,0,0],[4586,1,0,0],[5443,0,0,0],[6300,2,0,0],[7157,0,0,0],[8014,2,0,0],[8871,0,0,0],[9729,0,0,0],[10586,0,0,0],[11443,1,0,0],[12300,1,0,0],[13157,0,0,0],[14014,0,0,0],[14871,2,0,0],[15729,0,0,0],[16586,0,0,0],[17443,0,0,0],[18300,1,0,0],[19157,2,0,0],[20014,2,0,0],[20871,2,0,0],[21729,0,0,0],[22586,2,0,0],[23443,0,0,0],[24300,1,0,0],[25157,3,0,0],[26014,2,0,0],[26871,2,0,0],[27729,2,0,0],[28586,0,0,0],[29443,2,0,0],[30300,0,0,0],[31157,1,0,0],[32014,3,0,0],[32871,2,0,0],[33729,3,0,0],[34586,2,0,0],[35443,1,0,0],[36300,3,0,0],[37157,2,0,0],[38014,1,0,0],[38871,0,0,0],[39729,1,0,0],[41014,2,1,0],[41657,1,0,0],[43157,3,0,0],[44014,2,0,0],[44871,1,0,0],[45729,0,0,0],[46586,3,0,0],[47443,3,0,0],[48086,1,1,0],[48729,3,0,0],[50014,2,0,0],[50871,3,0,0],[51729,0,0,0],[52586,2,0,0],[53443,3,0,0],[54729,3,0,0],[55371,1,0,0],[56871,3,0,0],[57729,2,0,0],[58586,1,0,0],[59443,1,0,0],[60300,1,0,0],[61586,2,1,0],[62229,1,0,0],[63729,3,0,0],[64586,2,0,0],[65443,1,0,0],[66300,1,0,0],[67157,3,0,0],[68014,3,0,0],[68657,1,1,0],[69729,1,0,0],[70586,3,0,0],[71443,2,0,0],[72300,1,0,0],[73157,2,1,0]],"normal":[[300,1,0,0],[729,3,0,0],[1157,0,1,0],[1157,3,1,0],[2014,1,0,0],[2871,0,0,0],[3729,0,2,4371],[4586,1,2,5229],[5443,1,2,6086],[6300,2,0,0],[6729,3,0,0],[7157,1,0,0],[7586,2,0,0],[8014,3,0,0],[8443,2,0,0],[8871,1,0,0],[9300,3,0,0],[9729,1,2,10371],[10586,0,0,0],[11014,1,0,0],[11443,2,0,0],[11871,1,0,0],[12300,3,0,0],[12729,2,0,0],[13157,1,2,13800],[14014,0,0,0],[14443,1,0,0],[14871,2,0,0],[15300,1,0,0],[15729,0,0,0],[16157,2,0,0],[16586,0,2,17229],[17443,0,0,0],[17871,1,0,0],[18300,2,0,0],[18729,3,0,0],[19157,3,0,0],[19586,3,0,0],[20014,3,2,20657],[20871,2,0,0],[21300,1,0,0],[21729,0,0,0],[22157,2,0,0],[22586,3,0,0],[23014,2,0,0],[23443,1,0,0],[23871,3,0,0],[24300,2,0,0],[24729,3,0,0],[25157,3,0,0],[25586,2,0,0],[26014,3,0,0],[26443,3,0,0],[26871,2,0,0],[27300,0,0,0],[27729,2,0,0],[28157,1,0,0],[28586,0,0,0],[29014,2,0,0],[29443,3,0,0],[29871,2,0,0],[30300,1,0,0],[30729,3,0,0],[31157,2,0,0],[31586,3,0,0],[32014,3,0,0],[32443,2,0,0],[32871,1,0,0],[33300,2,0,0],[33729,3,0,0],[34157,1,0,0],[34586,1,0,0],[35443,1,0,0],[35871,3,0,0],[36300,3,2,36782],[37157,2,0,0],[37586,1,0,0],[38014,0,0,0],[38871,1,0,0],[39300,3,0,0],[39729,2,0,0],[40157,1,0,0],[40586,0,0,0],[41014,1,1,0],[41014,2,1,0],[41443,2,0,0],[42300,1,0,0],[42729,3,0,0],[43157,3,2,43639],[44014,2,0,0],[44443,1,0,0],[44871,0,0,0],[45729,1,0,0],[46157,3,0,0],[46586,3,0,0],[47014,3,0,0],[47657,3,0,0],[48086,0,1,0],[48086,3,1,0],[48729,3,0,0],[49157,1,0,0],[50014,2,0,0],[50443,3,0,0],[50871,3,2,51514],[51729,0,0,0],[52157,1,0,0],[52586,2,0,0],[53014,3,0,0],[53443,3,0,0],[53871,2,0,0],[54300,1,0,0],[54729,2,0,0],[55157,0,0,0],[56014,1,0,0],[56443,3,0,0],[56871,3,2,57354],[57729,3,0,0],[58157,2,0,0],[58586,1,0,0],[59443,1,0,0],[59871,3,0,0],[60300,2,0,0],[60729,1,0,0],[61157,0,0,0],[61586,1,1,0],[61586,2,1,0],[62014,2,0,0],[62871,1,0,0],[63300,3,0,0],[63729,3,2,64211],[64586,3,0,0],[65014,2,0,0],[65443,1,0,0],[66300,1,0,0],[66729,3,0,0],[67157,3,0,0],[67586,3,0,0],[68229,3,0,0],[68657,0,1,0],[68657,3,1,0],[69086,1,0,0],[69729,1,0,0],[70157,3,0,0],[70586,3,2,71068],[71443,3,0,0],[71871,2,0,0],[72300,1,0,0],[72729,3,0,0],[73157,1,1,0],[73157,2,1,0],[74014,0,0,0]],"hard":[[300,1,0,0],[514,2,0,0],[729,0,1,0],[1157,0,1,0],[1157,3,1,0],[2014,1,0,0],[2871,0,0,0],[3729,0,2,4371],[4157,2,0,0],[4586,2,2,5229],[5014,0,0,0],[5443,1,2,6086],[5871,2,0,0],[6300,3,0,0],[6729,3,0,0],[7157,1,0,0],[7586,2,0,0],[8014,3,0,0],[8443,2,0,0],[8871,1,0,0],[9300,3,0,0],[9729,1,2,10371],[10157,3,0,0],[10586,0,0,0],[11014,1,0,0],[11443,2,0,0],[11657,1,0,0],[11871,0,0,0],[12300,2,0,0],[12729,1,0,0],[13157,0,2,13800],[13586,2,0,0],[14014,0,0,0],[14443,1,0,0],[14871,2,0,0],[15300,1,0,0],[15729,0,0,0],[16157,2,0,0],[16586,0,2,17229],[17014,3,0,0],[17443,0,0,0],[17871,1,0,0],[18300,2,0,0],[18729,3,0,0],[19157,3,0,0],[19371,2,0,0],[19586,1,0,0],[20014,1,1,0],[20014,2,1,0],[20443,2,0,0],[20871,2,0,0],[21086,1,0,0],[21300,0,0,0],[21729,0,0,0],[22157,2,0,0],[22586,3,0,0],[22800,2,0,0],[23014,1,0,0],[23443,0,0,0],[23871,2,0,0],[24300,1,0,0],[24729,2,0,0],[25157,3,0,0],[25586,2,0,0],[26014,3,0,0],[26443,3,0,0],[26657,2,0,0],[26871,1,0,0],[27300,0,0,0],[27729,2,0,0],[27943,1,0,0],[28157,0,0,0],[28586,0,0,0],[29014,2,0,0],[29443,3,0,0],[29657,2,0,0],[29871,1,0,0],[30300,0,0,0],[30729,2,0,0],[31157,1,0,0],[31586,2,0,0],[32014,3,0,0],[32443,2,0,0],[32871,1,0,0],[33300,2,0,0],[33729,3,0,0],[34157,1,0,0],[34586,1,0,0],[34800,0,0,0],[35014,3,0,0],[35229,1,0,0],[35443,0,0,0],[35871,2,0,0],[36086,1,0,0],[36300,2,1,0],[36729,1,0,0],[37157,2,0,0],[37586,1,0,0],[38014,0,0,0],[38443,3,0,0],[38657,1,0,0],[38871,0,0,0],[39300,2,0,0],[39514,1,0,0],[39729,0,0,0],[40157,0,0,0],[40586,0,0,0],[41014,1,1,0],[41014,2,1,0],[41443,2,0,0],[41657,1,0,0],[41871,2,0,0],[42300,1,0,0],[42729,3,0,0],[42943,2,0,0],[43157,0,1,0],[43586,0,0,0],[43800,2,0,0],[44014,3,0,0],[44443,2,0,0],[44871,1,0,0],[45086,0,0,0],[45300,2,0,0],[45514,1,0,0],[45729,0,0,0],[46157,2,0,0],[46371,3,0,0],[47014,3,0,0],[47443,3,0,0],[47657,1,1,0],[47871,0,0,0],[48086,3,1,0],[48300,1,0,0],[48514,2,0,0],[48729,3,0,0],[49157,1,0,0],[50014,2,0,0],[50229,3,0,0],[50657,3,0,0],[51729,0,0,0],[51943,1,0,0],[52157,2,0,0],[52371,3,0,0],[52800,3,0,0],[53229,3,0,0],[53871,2,0,0],[54300,1,0,0],[54729,1,1,0],[54729,2,1,0],[55157,0,0,0],[55586,3,0,0],[55800,1,0,0],[56014,0,0,0],[56443,2,0,0],[56657,1,0,0],[56871,2,1,0],[57300,1,0,0],[57729,2,0,0],[58157,1,0,0],[58586,0,0,0],[59014,3,0,0],[59229,1,0,0],[59443,0,0,0],[59871,2,0,0],[60086,1,0,0],[60300,0,0,0],[60729,0,0,0],[61157,0,0,0],[61586,1,1,0],[61586,2,1,0],[62014,2,0,0],[62229,1,0,0],[62443,2,0,0],[62871,1,0,0],[63300,3,0,0],[63514,2,0,0],[63729,0,1,0],[64157,0,0,0],[64371,2,0,0],[64586,3,0,0],[65014,2,0,0],[65443,1,0,0],[65657,0,0,0],[65871,2,0,0],[66086,1,0,0],[66300,0,0,0],[66729,2,0,0],[66943,3,0,0],[67586,3,0,0],[68014,3,0,0],[68229,1,1,0],[68443,0,0,0],[68657,3,1,0],[68871,1,0,0],[69086,0,0,0],[69300,2,0,0],[69514,1,0,0],[69729,0,0,0],[70157,2,0,0],[70371,1,0,0],[70586,2,1,0],[71014,0,0,0],[71229,1,0,0],[71443,2,0,0],[71871,1,0,0],[72300,0,0,0],[72514,1,0,0],[72729,2,1,0],[73157,1,1,0],[73157,2,1,0],[73586,1,0,0],[74014,0,0,0]],"expert":[[300,1,0,0],[514,2,0,0],[729,0,1,0],[1157,0,1,0],[1157,3,1,0],[2014,1,0,0],[2871,0,0,0],[3729,0,2,4371],[4157,2,0,0],[4586,2,2,5229],[5014,0,0,0],[5443,1,2,6086],[5871,2,0,0],[6300,3,0,0],[6514,0,0,0],[6729,3,0,0],[6943,0,0,0],[7157,2,0,0],[7586,3,0,0],[8014,3,0,0],[8443,2,0,0],[8871,1,0,0],[9300,3,0,0],[9729,1,2,10371],[10157,3,0,0],[10586,0,0,0],[11014,1,0,0],[11443,2,0,0],[11657,1,0,0],[11871,0,0,0],[12300,2,0,0],[12729,1,0,0],[13157,0,2,13800],[13586,2,0,0],[14014,0,0,0],[14443,1,0,0],[14871,2,0,0],[15300,1,0,0],[15729,0,0,0],[16157,2,0,0],[16586,0,2,17229],[17014,3,0,0],[17443,0,0,0],[17871,1,0,0],[18300,2,0,0],[18729,3,0,0],[19157,3,0,0],[19371,2,0,0],[19586,1,0,0],[20014,1,1,0],[20014,2,1,0],[20443,2,0,0],[20871,2,0,0],[21086,1,0,0],[21300,0,0,0],[21514,3,0,0],[21729,0,0,0],[21943,3,0,0],[22157,1,0,0],[22371,2,0,0],[22586,2,0,0],[22800,1,0,0],[23014,0,0,0],[23229,2,0,0],[23443,0,0,0],[23657,3,0,0],[23871,1,0,0],[24086,2,0,0],[24300,0,0,0],[24514,3,0,0],[24729,1,0,0],[24943,3,0,0],[25157,2,0,0],[25371,1,0,0],[25586,1,0,0],[25800,3,0,0],[26014,2,0,0],[26229,1,0,0],[26443,3,0,0],[26657,2,0,0],[26871,1,0,0],[27086,3,0,0],[27300,0,0,0],[27514,2,0,0],[27729,1,0,0],[27943,0,0,0],[28157,0,0,0],[28371,2,0,0],[28586,0,0,0],[28800,3,0,0],[29014,1,0,0],[29229,2,0,0],[29443,2,0,0],[29657,1,0,0],[29871,0,0,0],[30086,3,0,0],[30300,0,0,0],[30514,3,0,0],[30729,1,0,0],[30943,2,0,0],[31157,0,0,0],[31371,3,0,0],[31586,1,0,0],[31800,2,0,0],[32014,2,0,0],[32229,1,0,0],[32443,1,0,0],[32657,3,0,0],[32871,0,0,0],[33300,1,0,0],[33729,2,0,0],[33943,1,0,0],[34157,1,0,0],[34371,2,0,0],[34586,1,1,0],[34800,1,0,0],[35014,3,0,0],[35229,2,0,0],[35443,1,0,0],[35871,3,0,0],[36086,2,0,0],[36300,0,1,0],[36729,1,0,0],[36943,2,0,0],[37157,3,0,0],[37586,2,0,0],[38014,1,1,0],[38014,2,1,0],[38229,0,0,0],[38443,3,0,0],[38657,1,0,0],[38871,0,0,0],[39300,2,0,0],[39514,1,0,0],[39729,0,1,0],[40157,0,0,0],[40586,0,0,0],[41014,1,1,0],[41014,2,1,0],[41443,1,1,0],[41443,2,1,0],[41657,1,0,0],[41871,2,0,0],[42086,2,0,0],[42300,1,0,0],[42729,3,0,0],[42943,2,0,0],[43157,0,1,0],[43586,0,0,0],[43800,2,0,0],[44014,3,0,0],[44443,2,0,0],[44871,1,1,0],[44871,2,1,0],[45086,0,0,0],[45300,2,0,0],[45514,1,0,0],[45729,0,0,0],[46157,2,0,0],[46371,3,0,0],[46586,0,1,0],[47014,3,0,0],[47443,3,0,0],[47657,1,1,0],[47871,0,0,0],[48086,0,1,0],[48300,1,0,0],[48514,2,0,0],[48729,3,0,0],[49157,1,0,0],[50014,2,0,0],[50229,3,0,0],[50443,3,0,0],[50657,3,0,0],[50871,3,2,51514],[51729,0,0,0],[51943,1,0,0],[52157,2,0,0],[52371,3,0,0],[52586,3,0,0],[52800,3,0,0],[53014,3,0,0],[53229,3,0,0],[53443,3,0,0],[53871,2,0,0],[54300,1,0,0],[54514,2,0,0],[54729,1,1,0],[54943,1,0,0],[55157,1,1,0],[55371,0,0,0],[55586,3,0,0],[55800,1,0,0],[56014,0,0,0],[56443,2,0,0],[56657,1,0,0],[56871,1,1,0],[57300,1,0,0],[57514,1,0,0],[57729,2,0,0],[58157,1,0,0],[58586,0,1,0],[58586,3,1,0],[58800,0,0,0],[59014,3,0,0],[59229,1,0,0],[59443,0,0,0],[59871,2,0,0],[60086,1,0,0],[60300,0,1,0],[60729,0,0,0],[61157,0,0,0],[61586,1,1,0],[61586,2,1,0],[62014,1,1,0],[62014,2,1,0],[62229,1,0,0],[62443,2,0,0],[62657,2,0,0],[62871,1,0,0],[63300,3,0,0],[63514,2,0,0],[63729,0,1,0],[64157,0,0,0],[64371,2,0,0],[64586,3,0,0],[65014,2,0,0],[65443,1,1,0],[65443,2,1,0],[65657,0,0,0],[65871,2,0,0],[66086,1,0,0],[66300,0,0,0],[66729,2,0,0],[66943,3,0,0],[67157,0,1,0],[67586,3,0,0],[68014,3,0,0],[68229,1,1,0],[68443,0,0,0],[68657,0,1,0],[68871,1,0,0],[69086,0,0,0],[69300,2,0,0],[69514,1,0,0],[69729,0,0,0],[70157,2,0,0],[70371,1,0,0],[70586,1,1,0],[71014,0,0,0],[71229,1,0,0],[71443,2,0,0],[71871,1,0,0],[72300,0,0,0],[72514,1,0,0],[72729,1,1,0],[73157,1,1,0],[73157,2,1,0],[73586,1,0,0],[74014,0,0,0]]},"audio":"audio/theme.mp3","lv":{"easy":3,"normal":5,"hard":7,"expert":9},"n":{"easy":81,"normal":151,"hard":212,"expert":260},"holds":{"easy":0,"normal":13,"hard":6,"expert":7}},{"id":"ringo","title":"りんごころころ","sub":"Apple Roll","bpm":120,"dur":89.7,"t0":0.3,"beat":0.5,"preview":40.25,"colors":["#ff7a6b","#ffe08a"],"icon":"roll","gain":1,"boss":false,"charts":{"easy":[[7300,0,0,0],[8300,0,0,0],[9128,2,0,0],[10300,1,0,0],[11300,2,0,0],[12300,1,0,0],[13128,2,0,0],[14300,1,0,0],[15300,3,0,0],[16300,0,0,0],[17128,2,0,0],[18300,1,0,0],[19300,2,0,0],[20300,0,0,0],[21300,1,0,0],[22300,1,0,0],[23128,3,0,0],[23800,3,0,0],[25300,2,0,0],[26300,2,0,0],[27300,0,2,28080],[28300,1,0,0],[29300,1,0,0],[30300,2,0,0],[31300,0,2,32080],[32300,0,0,0],[33300,2,0,0],[34300,3,0,0],[35300,2,2,36080],[36300,3,0,0],[37300,0,0,0],[38300,1,1,0],[39300,0,0,0],[40300,3,0,0],[41300,2,0,0],[42300,2,0,0],[43300,1,0,0],[44300,2,0,0],[45300,1,0,0],[46300,1,0,0],[47300,2,2,48080],[48300,3,0,0],[49300,2,0,0],[50300,2,0,0],[51300,1,0,0],[52300,3,0,0],[53300,3,0,0],[54300,3,0,0],[55300,2,0,0],[56128,2,1,0],[57300,3,0,0],[58300,1,0,0],[59300,3,0,0],[60300,1,0,0],[61300,3,0,0],[62300,1,0,0],[63128,2,0,0],[63800,1,1,0],[64628,2,0,0],[65300,1,0,0],[66300,2,0,0],[67300,1,0,0],[68300,2,0,0],[69300,1,0,0],[70300,1,0,0],[71300,2,2,72080],[72300,3,0,0],[73300,2,0,0],[74300,2,0,0],[75300,1,0,0],[76300,3,0,0],[77300,3,0,0],[78300,3,0,0],[79300,2,0,0],[80128,2,1,0],[81300,2,0,0],[82300,2,0,0],[83300,1,0,0],[84300,2,0,0],[85300,3,2,86080],[86300,1,1,0]],"normal":[[7300,0,0,0],[7800,1,0,0],[8300,0,0,0],[8800,0,0,0],[9128,2,0,0],[9800,1,0,0],[10300,1,0,0],[10800,3,0,0],[11300,2,0,0],[11800,0,0,0],[12300,0,0,0],[12800,0,0,0],[13128,1,0,0],[13800,0,0,0],[14300,1,0,0],[14800,3,0,0],[15300,2,0,0],[15800,1,0,0],[16300,0,0,0],[16800,0,0,0],[17128,2,0,0],[17800,1,0,0],[18300,1,0,0],[18800,3,0,0],[19300,2,0,0],[19800,0,0,0],[20300,0,0,0],[20800,2,0,0],[21300,1,0,0],[21800,0,0,0],[22300,1,0,0],[22800,2,0,0],[23300,3,0,0],[23800,3,0,0],[24300,1,0,0],[24800,0,0,0],[25300,1,0,0],[25800,2,0,0],[26300,1,0,0],[26800,0,0,0],[27300,0,2,28080],[28300,1,0,0],[28800,0,0,0],[29300,1,0,0],[29800,2,0,0],[30300,1,0,0],[30800,0,0,0],[31300,0,2,32080],[32300,0,0,0],[32800,1,0,0],[33300,2,0,0],[33800,3,0,0],[34300,3,0,0],[34800,2,0,0],[35300,1,2,36080],[36300,3,0,0],[36800,2,0,0],[37300,0,0,0],[37800,2,0,0],[38300,0,1,0],[38300,3,1,0],[39300,0,0,0],[39800,1,0,0],[40300,3,0,0],[40800,2,0,0],[41300,2,0,0],[41800,3,0,0],[42300,2,0,0],[42800,1,0,0],[43300,1,0,0],[43800,2,0,0],[44300,1,0,0],[44800,0,0,0],[45300,0,0,0],[45800,1,0,0],[46300,0,0,0],[46800,0,0,0],[47300,2,2,48080],[48300,3,0,0],[48800,2,0,0],[49300,2,0,0],[49800,3,0,0],[50300,2,0,0],[50800,1,0,0],[51300,1,0,0],[51800,2,0,0],[52300,3,0,0],[52800,2,0,0],[53300,1,0,0],[53800,0,0,0],[54300,1,0,0],[54800,0,0,0],[55300,0,2,55921],[56128,1,1,0],[56128,2,1,0],[56800,1,0,0],[57300,2,0,0],[57800,1,0,0],[58300,0,0,0],[58800,1,0,0],[59300,2,0,0],[59800,1,0,0],[60300,0,0,0],[60800,2,0,0],[61300,3,0,0],[61800,1,0,0],[62300,0,0,0],[62800,2,0,0],[63300,3,0,0],[63800,0,1,0],[63800,3,1,0],[64300,1,0,0],[64800,0,0,0],[65300,0,0,0],[65800,1,0,0],[66300,0,0,0],[66800,0,0,0],[67300,0,0,0],[67800,1,0,0],[68300,0,0,0],[68800,0,0,0],[69300,0,0,0],[69800,1,0,0],[70300,0,0,0],[70800,0,0,0],[71300,2,2,72080],[72300,3,0,0],[72800,2,0,0],[73300,2,0,0],[73800,3,0,0],[74300,2,0,0],[74800,1,0,0],[75300,1,0,0],[75800,2,0,0],[76300,3,0,0],[76800,2,0,0],[77300,1,0,0],[77800,0,0,0],[78300,1,0,0],[78800,0,0,0],[79300,0,2,79921],[80128,1,1,0],[80128,2,1,0],[80800,0,0,0],[81300,0,0,0],[81800,1,0,0],[82300,0,0,0],[82800,0,0,0],[83300,0,0,0],[83800,1,0,0],[84300,0,0,0],[84800,1,0,0],[85300,2,2,86080],[86300,0,1,0],[86300,3,1,0]],"hard":[[7300,0,0,0],[7627,1,0,0],[7800,2,0,0],[8300,1,0,0],[8628,0,0,0],[8800,1,0,0],[9128,3,0,0],[9300,1,0,0],[9628,2,0,0],[9800,1,0,0],[10128,0,0,0],[10300,1,0,0],[10628,2,0,0],[10800,3,0,0],[11300,2,0,0],[11628,1,0,0],[11800,0,0,0],[12300,0,0,0],[12628,0,0,0],[12800,1,0,0],[13128,2,0,0],[13300,0,0,0],[13628,1,0,0],[13800,0,0,0],[14128,0,0,0],[14300,1,0,0],[14628,2,0,0],[14800,3,0,0],[15300,2,0,0],[15628,1,0,0],[15800,0,0,0],[16300,0,0,0],[16628,0,0,0],[16800,1,0,0],[17128,3,0,0],[17300,1,0,0],[17628,2,0,0],[17800,1,0,0],[18128,0,0,0],[18300,1,0,0],[18628,2,0,0],[18800,3,0,0],[19300,2,0,0],[19628,1,0,0],[19800,0,0,0],[20300,0,0,0],[20628,1,0,0],[20800,2,0,0],[21128,1,0,0],[21300,0,0,0],[21628,0,0,0],[21800,3,0,0],[22300,3,0,0],[22628,3,0,0],[22800,0,0,0],[23128,1,0,0],[23300,2,0,0],[23800,0,1,0],[23800,3,1,0],[24300,1,0,0],[24628,3,0,0],[24800,0,0,0],[25300,1,0,0],[25628,2,0,0],[25800,3,0,0],[26300,2,0,0],[26628,1,0,0],[27300,0,2,28080],[27628,3,0,0],[28300,1,0,0],[28628,2,0,0],[28800,0,0,0],[29300,1,0,0],[29628,2,0,0],[29800,3,0,0],[30300,2,0,0],[30628,0,0,0],[30800,1,0,0],[31300,0,2,32080],[31628,2,0,0],[32300,1,0,0],[32627,2,0,0],[32800,3,0,0],[33128,3,0,0],[33300,0,0,0],[33628,1,0,0],[33800,2,0,0],[34128,3,0,0],[34300,0,0,0],[34628,3,0,0],[35128,2,0,0],[35300,1,2,36080],[35628,3,0,0],[35800,2,0,0],[36300,2,0,0],[36628,0,0,0],[36800,1,0,0],[37300,0,0,0],[37628,2,0,0],[37800,1,0,0],[38300,0,1,0],[38300,3,1,0],[38800,2,0,0],[39300,0,0,0],[39628,1,0,0],[39800,2,0,0],[40300,3,0,0],[40628,2,0,0],[40800,1,0,0],[41128,0,0,0],[41300,1,0,0],[41628,3,0,0],[41800,2,0,0],[42128,1,0,0],[42628,0,0,0],[42800,3,0,0],[43128,2,0,0],[43300,3,0,0],[43628,0,0,0],[44128,2,0,0],[44300,3,0,0],[44628,2,0,0],[44800,1,0,0],[45128,0,0,0],[45300,1,0,0],[45628,3,0,0],[45800,2,0,0],[46128,1,0,0],[46628,0,0,0],[46800,3,0,0],[47128,3,0,0],[47300,0,1,0],[47628,3,0,0],[48128,2,0,0],[48300,1,0,0],[48628,0,0,0],[48800,3,0,0],[49128,1,0,0],[49300,2,0,0],[49628,0,0,0],[49800,3,0,0],[50128,1,0,0],[50300,2,0,0],[50628,1,0,0],[50800,0,0,0],[51128,0,0,0],[51300,1,0,0],[51628,3,0,0],[51800,2,0,0],[52128,1,0,0],[52300,3,0,0],[52628,0,0,0],[52800,2,0,0],[53128,1,0,0],[53628,3,0,0],[53800,0,0,0],[54128,2,0,0],[54300,1,0,0],[54628,3,0,0],[54800,0,0,0],[55128,2,0,0],[55300,1,1,0],[55628,3,0,0],[55800,2,0,0],[56128,1,1,0],[56128,2,1,0],[56628,3,0,0],[56800,0,0,0],[57128,1,0,0],[57300,2,0,0],[57628,1,0,0],[57800,0,0,0],[58128,0,0,0],[58300,3,0,0],[58628,3,0,0],[58800,0,0,0],[59128,1,0,0],[59300,2,0,0],[59628,1,0,0],[59800,0,0,0],[60128,0,0,0],[60300,3,0,0],[60628,3,0,0],[60800,0,0,0],[61128,0,0,0],[61300,1,0,0],[61628,0,0,0],[61800,3,0,0],[62128,2,0,0],[62300,3,0,0],[62628,3,0,0],[62800,0,0,0],[63128,0,0,0],[63300,1,1,0],[63800,0,1,0],[63800,3,1,0],[64300,0,0,0],[64628,0,0,0],[64800,3,0,0],[65128,1,0,0],[65300,2,0,0],[65628,1,0,0],[65800,3,0,0],[66128,0,0,0],[66300,2,0,0],[66628,1,0,0],[66800,0,0,0],[67128,0,0,0],[67300,1,0,0],[67628,2,0,0],[68128,0,0,0],[68300,1,0,0],[68628,0,0,0],[68800,3,0,0],[69128,2,0,0],[69300,3,0,0],[69628,1,0,0],[69800,0,0,0],[70128,3,0,0],[70628,2,0,0],[70800,1,0,0],[71128,2,0,0],[71300,0,1,0],[71628,1,0,0],[71800,0,0,0],[72128,0,0,0],[72628,0,0,0],[72800,3,0,0],[73128,1,0,0],[73300,2,0,0],[73628,1,0,0],[73800,3,0,0],[74128,0,0,0],[74300,2,0,0],[74628,1,0,0],[74800,0,0,0],[75128,0,0,0],[75300,1,0,0],[75628,2,0,0],[76128,0,0,0],[76300,3,0,0],[76628,1,0,0],[76800,2,0,0],[77128,0,0,0],[77300,1,0,0],[77628,2,0,0],[77800,0,0,0],[78128,3,0,0],[78300,1,0,0],[78628,2,0,0],[78800,0,0,0],[79128,3,0,0],[79300,1,1,0],[79628,2,0,0],[80128,1,1,0],[80128,2,1,0],[80628,1,0,0],[80800,0,0,0],[81128,0,0,0],[81300,1,0,0],[81800,2,0,0],[82300,1,0,0],[82628,0,0,0],[82800,3,0,0],[83128,2,0,0],[83300,3,0,0],[83800,3,0,0],[84300,2,0,0],[84800,3,0,0],[85300,0,1,0],[85300,3,1,0],[85800,0,0,0],[86300,0,1,0],[86300,3,1,0]],"expert":[[300,3,0,0],[800,2,0,0],[1300,3,0,0],[1800,2,0,0],[2300,3,0,0],[2800,2,0,0],[3300,3,0,0],[3800,2,0,0],[4300,3,0,0],[4800,2,0,0],[5300,3,0,0],[5800,2,0,0],[6300,3,0,0],[6800,2,0,0],[7300,0,0,0],[7627,1,0,0],[7800,2,0,0],[8300,1,0,0],[8628,0,0,0],[8800,1,0,0],[9128,3,0,0],[9300,1,0,0],[9628,2,0,0],[9800,1,0,0],[10128,0,0,0],[10300,1,0,0],[10628,2,0,0],[10800,3,0,0],[11128,0,0,0],[11300,2,0,0],[11628,1,0,0],[11800,0,0,0],[12128,2,0,0],[12300,1,0,0],[12628,0,0,0],[12800,1,0,0],[13128,2,0,0],[13300,0,0,0],[13628,1,0,0],[13800,0,0,0],[14128,0,0,0],[14300,1,0,0],[14628,2,0,0],[14800,3,0,0],[15128,0,0,0],[15300,2,0,0],[15628,1,0,0],[15800,0,0,0],[16128,2,0,0],[16300,3,0,0],[16628,2,0,0],[16800,3,0,0],[17128,3,0,0],[17300,1,0,0],[17628,2,0,0],[17800,1,0,0],[18128,0,0,0],[18300,1,0,0],[18628,2,0,0],[18800,3,0,0],[19128,0,0,0],[19300,2,0,0],[19628,1,0,0],[19800,0,0,0],[20128,2,0,0],[20300,3,0,0],[20628,3,0,0],[20800,0,0,0],[21128,0,0,0],[21300,3,0,0],[21628,2,0,0],[21800,1,0,0],[22128,3,0,0],[22300,2,0,0],[22628,3,0,0],[22800,0,0,0],[23128,1,0,0],[23300,2,0,0],[23800,0,1,0],[23800,3,1,0],[24128,1,0,0],[24300,2,0,0],[24628,0,0,0],[24800,1,0,0],[25300,2,0,0],[25628,3,0,0],[25800,0,0,0],[26300,0,0,0],[26628,2,0,0],[26800,3,0,0],[27300,2,2,28080],[27628,0,0,0],[28300,3,0,0],[28628,1,0,0],[28800,2,0,0],[29300,3,0,0],[29628,3,0,0],[29800,0,0,0],[30300,0,0,0],[30628,3,0,0],[31300,1,2,32080],[31628,2,0,0],[32300,2,0,0],[32627,3,0,0],[32800,0,0,0],[33128,1,0,0],[33300,2,0,0],[33628,3,0,0],[33800,0,0,0],[34128,1,0,0],[34300,2,0,0],[34628,0,0,0],[34800,1,0,0],[35128,0,0,0],[35300,3,2,36080],[35628,0,0,0],[35800,1,0,0],[36300,3,0,0],[36628,0,0,0],[36800,2,0,0],[37300,0,0,0],[37628,2,0,0],[37800,1,0,0],[38300,0,1,0],[38300,3,1,0],[38800,2,0,0],[39300,0,0,0],[39628,1,0,0],[39800,2,0,0],[40300,0,1,0],[40300,3,1,0],[40628,2,0,0],[40800,1,0,0],[41128,0,0,0],[41300,1,0,0],[41628,3,0,0],[41800,2,0,0],[42128,1,0,0],[42300,2,1,0],[42628,0,0,0],[42800,3,0,0],[43128,2,0,0],[43300,3,0,0],[43628,0,0,0],[44128,2,0,0],[44300,0,1,0],[44628,2,0,0],[44800,1,0,0],[45128,0,0,0],[45300,1,0,0],[45628,3,0,0],[45800,2,0,0],[46128,1,0,0],[46300,2,1,0],[46628,0,0,0],[46800,3,0,0],[47128,3,0,0],[47300,0,1,0],[47628,3,0,0],[48128,2,0,0],[48300,1,1,0],[48628,0,0,0],[48800,3,0,0],[49128,1,0,0],[49300,2,0,0],[49628,0,0,0],[49800,3,0,0],[50128,1,0,0],[50300,2,1,0],[50628,1,0,0],[50800,0,0,0],[51128,0,0,0],[51300,1,0,0],[51628,3,0,0],[51800,2,0,0],[52128,1,0,0],[52300,0,1,0],[52628,0,0,0],[52800,2,0,0],[53128,1,0,0],[53628,3,0,0],[53800,0,0,0],[54128,2,0,0],[54300,1,1,0],[54628,3,0,0],[54800,0,0,0],[55128,2,0,0],[55300,1,1,0],[55628,3,0,0],[55800,2,0,0],[56128,1,1,0],[56128,2,1,0],[56628,3,0,0],[56800,0,0,0],[57128,1,0,0],[57300,2,0,0],[57628,1,0,0],[57800,0,0,0],[58128,0,0,0],[58300,3,0,0],[58628,3,0,0],[58800,0,0,0],[59128,1,0,0],[59300,2,0,0],[59628,1,0,0],[59800,0,0,0],[60128,0,0,0],[60300,3,0,0],[60628,3,0,0],[60800,0,0,0],[61128,0,0,0],[61300,1,0,0],[61628,0,0,0],[61800,3,0,0],[62128,2,0,0],[62300,3,0,0],[62628,3,0,0],[62800,0,0,0],[63128,0,0,0],[63300,1,1,0],[63800,0,1,0],[63800,3,1,0],[64300,0,1,0],[64300,3,1,0],[64628,0,0,0],[64800,3,0,0],[65128,1,0,0],[65300,2,0,0],[65628,1,0,0],[65800,3,0,0],[66128,0,0,0],[66300,1,1,0],[66628,1,0,0],[66800,0,0,0],[67128,0,0,0],[67300,1,0,0],[67628,2,0,0],[68128,0,0,0],[68300,1,1,0],[68628,0,0,0],[68800,3,0,0],[69128,2,0,0],[69300,3,0,0],[69628,1,0,0],[69800,0,0,0],[70128,3,0,0],[70300,0,1,0],[70628,2,0,0],[70800,1,0,0],[71128,2,0,0],[71300,0,1,0],[71628,1,0,0],[71800,0,0,0],[72128,0,0,0],[72300,3,1,0],[72628,0,0,0],[72800,3,0,0],[73128,1,0,0],[73300,2,0,0],[73628,1,0,0],[73800,3,0,0],[74128,0,0,0],[74300,1,1,0],[74628,1,0,0],[74800,0,0,0],[75128,0,0,0],[75300,1,0,0],[75628,2,0,0],[76128,0,0,0],[76300,3,1,0],[76628,1,0,0],[76800,2,0,0],[77128,0,0,0],[77300,1,0,0],[77628,2,0,0],[77800,0,0,0],[78128,3,0,0],[78300,1,1,0],[78628,2,0,0],[78800,0,0,0],[79128,3,0,0],[79300,1,1,0],[79628,2,0,0],[80128,1,1,0],[80128,2,1,0],[80628,1,0,0],[80800,0,0,0],[81128,0,0,0],[81300,1,0,0],[81628,3,0,0],[81800,2,0,0],[82128,1,0,0],[82628,0,0,0],[82800,3,0,0],[83128,2,0,0],[83300,3,0,0],[83628,0,0,0],[84128,2,0,0],[84300,3,0,0],[84628,0,0,0],[85128,2,0,0],[85300,1,1,0],[85628,3,0,0],[86128,2,0,0],[86300,0,1,0]]},"audio":"audio/ringo.mp3","lv":{"easy":3,"normal":5,"hard":8,"expert":9},"n":{"easy":81,"normal":155,"hard":274,"expert":305},"holds":{"easy":6,"normal":8,"hard":3,"expert":3}},{"id":"moon","title":"おやすみムーンライト","sub":"Goodnight Moonlight","bpm":84,"dur":93.129,"t0":0.3,"beat":0.7142857142857143,"preview":34.536,"colors":["#8fb4ff","#ffe9a8"],"icon":"moon","gain":1,"boss":false,"charts":{"easy":[[300,3,2,1509],[1729,3,2,2937],[3157,3,2,4366],[4586,2,2,5794],[6014,3,2,7223],[7443,2,2,8651],[8871,1,2,11509],[11729,1,0,0],[13157,0,0,0],[13871,1,0,0],[14586,0,0,0],[16014,1,2,17223],[17443,2,0,0],[18871,1,0,0],[19586,0,0,0],[20300,0,0,0],[21014,1,0,0],[21729,3,2,22937],[23157,1,0,0],[24586,3,0,0],[25300,2,0,0],[26014,1,0,0],[27443,0,2,28651],[28871,0,0,0],[29586,1,0,0],[30300,2,0,0],[31014,3,0,0],[31729,2,2,34366],[34586,3,0,0],[35300,2,0,0],[36014,0,2,37223],[37443,2,0,0],[38157,1,0,0],[38871,0,2,40080],[40300,0,0,0],[41014,1,0,0],[41729,2,0,0],[42443,3,0,0],[43157,2,2,45080],[45300,1,0,0],[46014,3,0,0],[46729,2,0,0],[47443,0,2,48651],[48871,2,0,0],[49586,1,0,0],[50300,0,2,51509],[51729,0,0,0],[52443,1,0,0],[53157,2,0,0],[53871,3,0,0],[54586,3,2,57223],[57443,1,0,0],[58157,3,0,0],[59586,2,0,0],[61014,1,0,0],[62443,1,0,0],[63157,2,0,0],[64586,1,0,0],[65300,0,0,0],[66014,0,0,0],[66729,1,0,0],[67443,3,2,68651],[68871,1,0,0],[69586,3,0,0],[71014,2,0,0],[72443,1,0,0],[73871,1,0,0],[74586,0,0,0],[75300,1,0,0],[76014,2,0,0],[76729,3,0,0],[77443,2,2,80080],[80300,3,2,81509],[81729,3,2,82937],[83157,3,2,84366],[84586,2,2,85794],[86014,3,2,87223],[87443,2,2,88651],[88871,1,2,91509]],"normal":[[300,3,2,1509],[1729,3,2,2937],[3157,3,2,4366],[4586,2,2,5794],[6014,3,2,7223],[7443,2,2,8651],[8871,1,2,11509],[11729,1,2,12580],[12800,0,0,0],[13871,1,0,0],[14586,0,2,15437],[15657,0,0,0],[16014,2,2,17223],[17443,2,2,18294],[18514,1,0,0],[18871,0,0,0],[19586,0,0,0],[20300,0,0,0],[21014,1,0,0],[21729,3,2,22937],[23157,1,2,24009],[24229,2,0,0],[24586,3,0,0],[25300,2,0,0],[26014,1,2,26866],[27086,0,0,0],[28871,0,0,0],[29586,1,0,0],[30300,2,0,0],[31014,3,0,0],[31729,2,2,34366],[34586,3,0,0],[35300,2,0,0],[35657,1,0,0],[36014,0,2,37223],[37443,2,0,0],[38157,1,0,0],[38514,0,0,0],[40300,0,0,0],[41014,1,0,0],[41729,2,0,0],[42443,3,0,0],[43157,2,2,45080],[45300,1,0,0],[46014,3,0,0],[46729,2,0,0],[47086,1,0,0],[47443,0,2,48651],[48871,2,0,0],[49586,1,0,0],[49943,0,0,0],[51729,0,0,0],[52443,1,0,0],[53157,2,0,0],[53871,3,0,0],[54586,3,2,57223],[57443,1,0,0],[57800,2,0,0],[58157,3,0,0],[58746,2,0,0],[59229,1,0,0],[59586,0,0,0],[60300,2,0,0],[60657,0,0,0],[61014,1,0,0],[61371,2,0,0],[61961,1,0,0],[62443,0,0,0],[63157,1,2,64009],[64229,0,0,0],[65300,0,0,0],[66014,0,0,0],[66729,1,0,0],[67443,3,2,68651],[68871,1,0,0],[69229,2,0,0],[69586,3,0,0],[70175,2,0,0],[70657,1,0,0],[71014,0,0,0],[71729,3,0,0],[72086,0,0,0],[72443,1,0,0],[72800,2,0,0],[73389,1,0,0],[73871,0,0,0],[74586,0,0,0],[75300,1,0,0],[76014,2,0,0],[76729,3,0,0],[77443,2,2,80080],[80300,3,2,81509],[81729,3,2,82937],[83157,3,2,84366],[84586,2,2,85794],[86014,3,2,87223],[87443,2,2,88651],[88871,1,2,91509]],"hard":[[300,3,2,1509],[1729,3,2,2937],[2086,1,0,0],[3157,3,2,4366],[4586,2,2,5794],[4943,0,0,0],[6014,3,2,7223],[7443,2,2,8651],[7800,1,0,0],[8871,1,2,11509],[10657,3,0,0],[11729,1,2,12580],[12443,3,0,0],[12800,0,0,0],[13157,0,0,0],[13514,2,0,0],[13871,1,0,0],[14586,0,2,15437],[15300,2,0,0],[15657,0,0,0],[16014,2,2,17223],[16371,0,0,0],[16729,0,0,0],[17443,3,2,18294],[18157,1,0,0],[18514,2,0,0],[18871,1,0,0],[19229,2,0,0],[19586,0,0,0],[20300,0,0,0],[21014,1,0,0],[21729,3,2,22937],[22086,0,0,0],[22443,0,0,0],[23157,2,2,24009],[23871,1,0,0],[24229,3,0,0],[24586,3,0,0],[24943,1,0,0],[25300,2,0,0],[26014,1,2,26866],[26729,3,0,0],[27086,0,0,0],[27443,0,2,28651],[27800,3,0,0],[28157,2,0,0],[28871,0,0,0],[29586,1,0,0],[30300,2,0,0],[30657,1,0,0],[31014,3,0,0],[31729,2,2,34366],[32443,0,0,0],[33514,0,0,0],[33871,1,0,0],[34586,3,0,0],[34943,0,0,0],[35300,2,0,0],[35657,1,0,0],[36014,0,2,37223],[36371,2,0,0],[36729,2,0,0],[37086,3,0,0],[37443,1,0,0],[37800,2,0,0],[38157,0,0,0],[38514,0,0,0],[38871,0,2,40080],[39229,3,0,0],[39586,3,0,0],[39943,2,0,0],[40300,1,0,0],[40657,3,0,0],[41014,2,0,0],[41371,1,0,0],[41729,3,0,0],[42086,1,0,0],[42443,3,0,0],[42800,0,0,0],[43157,2,2,45080],[43514,1,0,0],[43871,0,0,0],[44229,1,0,0],[44943,0,0,0],[45300,1,0,0],[45657,3,0,0],[46014,3,0,0],[46371,1,0,0],[46729,2,0,0],[47086,1,0,0],[47443,0,2,48651],[47800,2,0,0],[48157,3,0,0],[48514,2,0,0],[48871,1,0,0],[49229,3,0,0],[49586,0,0,0],[49943,0,0,0],[50300,0,2,51509],[50657,3,0,0],[51014,2,0,0],[51371,3,0,0],[51729,1,0,0],[52086,2,0,0],[52443,2,0,0],[52800,0,0,0],[53157,3,0,0],[53514,1,0,0],[53871,3,0,0],[54229,3,0,0],[54586,0,1,0],[54586,3,1,0],[54943,1,0,0],[55300,0,0,0],[55657,1,0,0],[56371,0,0,0],[56729,0,0,0],[57086,1,0,0],[57443,1,0,0],[57800,2,0,0],[58157,3,0,0],[58746,2,0,0],[59229,1,0,0],[59586,0,0,0],[59943,0,0,0],[60300,2,0,0],[60657,0,0,0],[61014,1,0,0],[61371,2,0,0],[61604,0,0,0],[61961,1,0,0],[62443,0,0,0],[62800,0,0,0],[63157,1,2,64009],[63871,3,0,0],[64229,0,0,0],[64586,0,0,0],[64943,2,0,0],[65300,0,0,0],[66014,0,0,0],[66729,1,0,0],[67443,3,2,68651],[67800,0,0,0],[68157,1,0,0],[68871,2,0,0],[69229,3,0,0],[69586,3,0,0],[70175,2,0,0],[70657,1,0,0],[71014,0,0,0],[71371,0,0,0],[71729,2,0,0],[72086,0,0,0],[72443,1,0,0],[72800,2,0,0],[73032,0,0,0],[73389,1,0,0],[73871,0,0,0],[74229,0,0,0],[74586,0,0,0],[75300,1,0,0],[76014,2,0,0],[76371,1,0,0],[76729,3,0,0],[77443,2,2,80080],[78157,0,0,0],[78746,0,0,0],[79229,1,0,0],[79586,1,0,0],[80300,3,2,81509],[81729,3,2,82937],[82086,0,0,0],[83157,3,2,84366],[84586,2,2,85794],[84943,1,0,0],[86014,3,2,87223],[87443,2,2,88651],[87800,0,0,0],[88871,1,2,91509]],"expert":[[300,3,2,1509],[1729,3,2,2937],[2086,1,0,0],[3157,3,2,4366],[4586,2,2,5794],[4943,0,0,0],[6014,3,2,7223],[7443,2,2,8651],[7800,1,0,0],[8871,1,2,11509],[10657,3,0,0],[11729,1,2,12580],[12086,3,0,0],[12443,2,0,0],[12800,0,0,0],[13157,0,0,0],[13514,2,0,0],[13871,1,0,0],[14229,3,0,0],[14586,0,2,15437],[14943,2,0,0],[15300,3,0,0],[15657,0,0,0],[16014,2,2,17223],[16371,0,0,0],[16729,1,0,0],[17086,0,0,0],[17443,3,2,18294],[17800,1,0,0],[18157,0,0,0],[18514,2,0,0],[18871,1,0,0],[19229,2,0,0],[19586,0,0,0],[19943,2,0,0],[20300,0,0,0],[20657,3,0,0],[21014,1,0,0],[21371,2,0,0],[21729,3,2,22937],[22086,0,0,0],[22443,0,0,0],[22800,1,0,0],[23157,2,2,24009],[23514,0,0,0],[23871,1,0,0],[24229,3,0,0],[24586,3,0,0],[24943,1,0,0],[25300,2,0,0],[25657,0,0,0],[26014,1,2,26866],[26371,2,0,0],[26729,3,0,0],[27086,0,0,0],[27443,0,2,28651],[27800,3,0,0],[28157,2,0,0],[28514,3,0,0],[28871,0,0,0],[29229,2,0,0],[29586,1,0,0],[29943,3,0,0],[30300,2,0,0],[30657,1,0,0],[31014,3,0,0],[31371,1,0,0],[31729,2,2,34366],[32086,0,0,0],[32443,1,0,0],[32800,0,0,0],[33157,1,0,0],[33514,0,0,0],[33871,0,0,0],[34229,1,0,0],[34586,0,1,0],[34586,3,1,0],[34943,0,0,0],[35300,2,0,0],[35657,1,0,0],[36014,0,2,37223],[36371,2,0,0],[36729,2,0,0],[37086,3,0,0],[37443,1,1,0],[37443,2,1,0],[37800,2,0,0],[38157,0,0,0],[38514,0,0,0],[38871,0,2,40080],[39229,3,0,0],[39586,3,0,0],[39943,2,0,0],[40300,1,1,0],[40300,2,1,0],[40657,3,0,0],[41014,2,0,0],[41371,1,0,0],[41729,3,0,0],[42086,1,0,0],[42443,3,0,0],[42800,0,0,0],[43157,1,1,0],[43157,2,1,0],[43514,1,0,0],[43871,0,0,0],[44229,1,0,0],[44586,0,0,0],[44943,0,0,0],[45300,1,0,0],[45657,2,0,0],[46014,0,1,0],[46014,3,1,0],[46371,0,0,0],[46729,2,0,0],[47086,1,0,0],[47443,0,2,48651],[47800,2,0,0],[48157,2,0,0],[48514,3,0,0],[48871,1,1,0],[48871,2,1,0],[49229,2,0,0],[49586,0,0,0],[49943,0,0,0],[50300,0,2,51509],[50657,3,0,0],[51014,3,0,0],[51371,2,0,0],[51729,1,1,0],[51729,2,1,0],[52086,3,0,0],[52443,2,0,0],[52800,1,0,0],[53157,3,0,0],[53514,1,0,0],[53871,3,0,0],[54229,3,0,0],[54586,0,1,0],[54586,3,1,0],[54943,0,0,0],[55300,1,0,0],[55657,0,0,0],[56014,1,0,0],[56371,0,0,0],[56729,0,0,0],[57086,1,0,0],[57443,1,0,0],[57800,2,0,0],[58157,3,0,0],[58514,0,0,0],[58746,2,0,0],[59229,1,0,0],[59586,0,0,0],[59943,0,0,0],[60300,2,0,0],[60657,0,0,0],[61014,1,0,0],[61371,2,0,0],[61604,0,0,0],[61961,1,0,0],[62443,0,0,0],[62800,0,0,0],[63157,1,2,64009],[63514,2,0,0],[63871,3,0,0],[64229,0,0,0],[64586,0,0,0],[64943,2,0,0],[65300,0,0,0],[65657,2,0,0],[66014,0,0,0],[66371,3,0,0],[66729,1,0,0],[67086,2,0,0],[67443,3,2,68651],[67800,0,0,0],[68157,0,0,0],[68514,1,0,0],[68871,2,0,0],[69229,3,0,0],[69586,3,0,0],[69943,0,0,0],[70175,2,0,0],[70657,1,0,0],[71014,0,0,0],[71371,0,0,0],[71729,2,0,0],[72086,0,0,0],[72443,1,0,0],[72800,2,0,0],[73032,0,0,0],[73389,1,0,0],[73871,0,0,0],[74229,0,0,0],[74586,0,0,0],[74943,2,0,0],[75300,1,0,0],[75657,3,0,0],[76014,2,0,0],[76371,1,0,0],[76729,3,0,0],[77086,1,0,0],[77443,2,2,80080],[77800,0,0,0],[78157,1,0,0],[78514,0,0,0],[78746,0,0,0],[79229,1,0,0],[79586,1,0,0],[79943,0,0,0],[80300,3,2,81509],[81729,3,2,82937],[82086,0,0,0],[83157,3,2,84366],[84586,2,2,85794],[84943,1,0,0],[86014,3,2,87223],[87443,2,2,88651],[87800,0,0,0],[88871,1,2,91509]]},"audio":"audio/moon.mp3","lv":{"easy":3,"normal":4,"hard":5,"expert":6},"n":{"easy":79,"normal":98,"hard":179,"expert":221},"holds":{"easy":26,"normal":29,"hard":31,"expert":30}},{"id":"track1","title":"サンセット・ステップ","sub":"Sunset Step","bpm":124,"dur":93,"t0":0.503,"beat":0.4838709677419355,"preview":25.2,"colors":["#ffb547","#ff5a8a"],"icon":"wave","gain":1,"charts":{"easy":[[503,3,2,1471],[3406,3,0,0],[3890,0,2,4858],[5342,0,0,0],[5826,3,0,0],[7277,3,0,0],[7761,0,2,8729],[9213,0,0,0],[9697,3,0,0],[11148,3,0,0],[11632,0,2,12600],[13084,0,0,0],[13568,3,0,0],[15019,3,0,0],[15503,0,2,16471],[16955,0,0,0],[17439,3,0,0],[17922,0,0,0],[18890,3,2,19616],[19858,0,0,0],[20826,3,0,0],[22761,3,0,0],[23245,0,0,0],[24697,3,0,0],[25664,3,0,0],[26148,0,0,0],[26632,2,0,0],[27600,2,2,28326],[28568,3,0,0],[29051,0,0,0],[30503,3,0,0],[30987,0,2,31713],[31955,3,0,0],[32439,0,0,0],[33406,3,0,0],[33890,0,0,0],[34374,2,2,35100],[35342,0,0,0],[35826,2,0,0],[36310,1,0,0],[36793,3,0,0],[37761,0,0,0],[38245,2,2,38971],[39213,2,0,0],[39697,3,0,0],[40180,0,0,0],[41148,3,0,0],[41632,0,0,0],[42116,2,2,42842],[43084,0,0,0],[43568,2,0,0],[44051,1,0,0],[44535,3,0,0],[45503,0,0,0],[45987,2,2,46713],[46955,0,0,0],[47439,2,0,0],[47922,1,0,0],[48406,3,0,0],[49374,0,0,0],[49858,2,2,50584],[50826,0,0,0],[51310,2,0,0],[51793,1,0,0],[52277,3,0,0],[53245,0,0,0],[53729,2,2,54455],[54697,2,0,0],[55180,3,0,0],[55664,0,0,0],[56632,3,0,0],[57116,0,0,0],[57600,2,2,58326],[58568,0,0,0],[59051,2,0,0],[59535,1,0,0],[60019,3,0,0],[60987,0,0,0],[61471,2,2,62197],[62439,2,0,0],[62922,3,0,0],[63406,0,0,0],[64374,3,0,0],[64858,0,0,0],[65342,2,2,66068],[66310,0,0,0],[66793,2,0,0],[67277,1,0,0],[67761,3,0,0],[68729,0,0,0],[69213,2,0,0],[70180,2,0,0],[70664,3,0,0],[71148,0,2,71874],[72116,3,0,0],[72600,0,0,0],[73084,2,0,0],[74051,0,0,0],[74535,2,0,0],[75019,1,0,0],[75503,3,0,0],[76471,0,0,0],[76955,2,0,0],[77922,2,0,0],[78406,3,0,0],[78890,0,2,79616],[79858,3,0,0],[80342,0,0,0],[80826,2,0,0],[81793,0,0,0],[82277,2,0,0],[82761,1,0,0],[83245,3,0,0],[84213,0,0,0],[84697,2,0,0],[85664,2,0,0],[86148,3,0,0],[86632,0,2,87358],[87600,3,0,0],[88084,0,0,0],[88568,2,0,0]],"normal":[[503,0,2,1471],[2197,3,0,0],[2439,2,0,0],[3406,2,0,0],[3890,0,0,0],[4374,3,2,5100],[5342,0,0,0],[5826,2,0,0],[6310,2,0,0],[7277,2,0,0],[7761,0,0,0],[8245,3,2,8971],[9213,0,0,0],[9697,2,0,0],[10180,2,0,0],[11148,2,0,0],[11632,0,0,0],[12116,3,2,12842],[13084,0,0,0],[13568,2,0,0],[14051,2,0,0],[15019,2,0,0],[15503,0,0,0],[15987,3,2,16713],[16955,0,0,0],[17439,2,0,0],[17922,1,0,0],[18890,2,0,0],[19374,0,0,0],[19616,3,0,0],[19858,0,2,20584],[20826,2,0,0],[21551,3,0,0],[21793,2,0,0],[22761,2,0,0],[23245,0,0,0],[23729,0,2,24455],[24697,2,0,0],[25422,3,0,0],[25664,2,0,0],[26148,0,0,0],[26390,2,0,0],[26632,1,0,0],[27116,1,0,0],[27358,3,0,0],[27600,1,2,28084],[28326,2,0,0],[28568,3,0,0],[29051,0,0,0],[29293,3,0,0],[29535,0,0,0],[30019,1,0,0],[30503,3,0,0],[30987,2,2,31471],[31713,0,0,0],[31955,3,0,0],[32197,2,0,0],[32439,1,0,0],[33406,2,0,0],[33890,0,0,0],[34132,2,0,0],[34374,1,0,0],[34858,1,0,0],[35100,3,0,0],[35342,0,1,0],[35584,1,0,0],[36068,1,0,0],[36310,2,0,0],[36551,0,0,0],[36793,3,0,0],[37277,2,0,0],[37761,0,0,0],[38003,2,0,0],[38245,1,0,0],[38729,1,0,0],[38971,3,0,0],[39213,1,0,0],[39455,2,0,0],[39939,2,0,0],[40180,0,0,0],[40664,1,0,0],[41148,2,0,0],[41632,0,0,0],[41874,2,0,0],[42116,1,0,0],[42600,1,0,0],[42842,3,0,0],[43084,0,1,0],[43326,1,0,0],[43810,1,0,0],[44051,2,0,0],[44293,0,0,0],[44535,3,0,0],[45019,2,0,0],[45503,0,0,0],[45745,2,0,0],[45987,1,0,0],[46471,1,0,0],[46713,3,0,0],[46955,0,1,0],[47197,1,0,0],[47680,1,0,0],[47922,2,0,0],[48164,0,0,0],[48406,3,0,0],[48890,2,0,0],[49374,0,0,0],[49616,2,0,0],[49858,1,0,0],[50342,1,0,0],[50584,3,0,0],[50826,0,1,0],[51068,1,0,0],[51551,1,0,0],[51793,2,0,0],[52035,0,0,0],[52277,3,0,0],[52761,2,0,0],[53245,0,0,0],[53487,2,0,0],[53729,1,0,0],[54213,1,0,0],[54455,3,0,0],[54697,1,0,0],[54939,2,0,0],[55422,2,0,0],[55664,0,0,0],[56148,1,0,0],[56632,2,0,0],[57116,0,0,0],[57358,2,0,0],[57600,1,0,0],[58084,1,0,0],[58326,3,0,0],[58568,0,1,0],[58810,1,0,0],[59293,1,0,0],[59535,2,0,0],[59777,0,0,0],[60019,3,0,0],[60503,2,0,0],[60987,0,0,0],[61229,2,0,0],[61471,1,0,0],[61955,1,0,0],[62197,3,0,0],[62439,1,0,0],[62680,2,0,0],[63164,2,0,0],[63406,0,0,0],[63890,1,0,0],[64374,2,0,0],[64858,0,0,0],[65100,2,0,0],[65342,1,0,0],[65826,1,0,0],[66068,3,0,0],[66310,0,1,0],[66551,1,0,0],[67035,1,0,0],[67277,2,0,0],[67519,0,0,0],[67761,3,0,0],[68245,2,0,0],[68729,0,0,0],[68971,2,0,0],[69213,1,0,0],[69697,1,0,0],[69939,3,0,0],[70180,1,0,0],[70422,2,0,0],[70906,2,0,0],[71148,0,0,0],[71632,1,0,0],[72116,2,0,0],[72600,0,0,0],[72842,2,0,0],[73084,1,0,0],[73568,1,0,0],[73810,3,0,0],[74051,0,1,0],[74293,1,0,0],[74777,1,0,0],[75019,2,0,0],[75261,0,0,0],[75503,3,0,0],[75987,2,0,0],[76471,0,0,0],[76713,2,0,0],[76955,1,0,0],[77439,1,0,0],[77680,3,0,0],[77922,1,0,0],[78164,2,0,0],[78648,2,0,0],[78890,0,0,0],[79374,1,0,0],[79858,2,0,0],[80342,0,0,0],[80584,2,0,0],[80826,1,0,0],[81310,1,0,0],[81551,3,0,0],[81793,0,1,0],[82035,1,0,0],[82519,1,0,0],[82761,2,0,0],[83003,0,0,0],[83245,3,0,0],[83729,2,0,0],[84213,0,0,0],[84455,2,0,0],[84697,1,0,0],[85180,1,0,0],[85422,3,0,0],[85664,1,0,0],[85906,2,0,0],[86390,2,0,0],[86632,0,0,0],[87116,1,0,0],[87600,2,0,0],[88084,0,0,0],[88326,2,0,0],[88568,1,0,0],[89051,1,0,0],[89293,3,0,0]],"hard":[[503,2,2,987],[1229,0,0,0],[1471,1,0,0],[2197,3,0,0],[2922,2,0,0],[3406,1,0,0],[3890,0,0,0],[4374,3,0,0],[4858,1,0,0],[5342,0,0,0],[5826,2,0,0],[6310,3,0,0],[6793,2,0,0],[7277,1,0,0],[7761,0,0,0],[8245,3,0,0],[8729,1,0,0],[9213,0,0,0],[9697,2,0,0],[10180,3,0,0],[10664,2,0,0],[11148,1,0,0],[11632,0,0,0],[12116,3,0,0],[12600,1,0,0],[13084,0,0,0],[13568,2,0,0],[14051,3,0,0],[14535,2,0,0],[15019,1,0,0],[15503,0,0,0],[15987,3,0,0],[16471,1,0,0],[16955,0,0,0],[17439,2,0,0],[17922,2,0,0],[18406,0,0,0],[18890,2,0,0],[19374,1,0,0],[19616,3,0,0],[19858,2,0,0],[20342,0,0,0],[20826,2,0,0],[21310,1,0,0],[21551,3,0,0],[22277,2,0,0],[22761,1,0,0],[23245,0,0,0],[23729,2,0,0],[24213,0,0,0],[24697,2,0,0],[25180,1,0,0],[25422,3,0,0],[25664,1,1,0],[26027,2,0,0],[26390,3,0,0],[26632,1,0,0],[26995,2,0,0],[27358,3,0,0],[27600,1,1,0],[28084,0,0,0],[28326,2,0,0],[29051,1,0,0],[29293,3,0,0],[29535,0,0,0],[30019,1,0,0],[30261,3,0,0],[30503,2,0,0],[30987,2,0,0],[31471,0,0,0],[31713,1,0,0],[31955,3,0,0],[32197,2,0,0],[33406,1,1,0],[33406,3,1,0],[33769,2,0,0],[34132,3,0,0],[34374,1,0,0],[34737,2,0,0],[35100,3,0,0],[35342,0,1,0],[35584,2,0,0],[36068,1,0,0],[36310,0,1,0],[36672,1,0,0],[37035,3,0,0],[37277,1,1,0],[37640,2,0,0],[38003,3,0,0],[38245,1,0,0],[38608,2,0,0],[38971,3,0,0],[39213,0,1,0],[39455,2,0,0],[39939,3,0,0],[40180,0,0,0],[40543,2,0,0],[41148,1,1,0],[41148,3,1,0],[41511,2,0,0],[41874,3,0,0],[42116,1,0,0],[42479,2,0,0],[42842,3,0,0],[43084,0,1,0],[43326,2,0,0],[43810,1,0,0],[44051,0,1,0],[44414,1,0,0],[44777,3,0,0],[45019,1,1,0],[45382,2,0,0],[45745,3,0,0],[45987,1,0,0],[46350,2,0,0],[46713,3,0,0],[46955,0,1,0],[47197,2,0,0],[47680,1,0,0],[47922,0,1,0],[48285,1,0,0],[48648,3,0,0],[48890,1,1,0],[49253,2,0,0],[49616,3,0,0],[49858,1,0,0],[50221,2,0,0],[50584,3,0,0],[50826,0,1,0],[51068,2,0,0],[51551,1,0,0],[51793,0,1,0],[52156,1,0,0],[52519,3,0,0],[52761,1,1,0],[53124,2,0,0],[53487,3,0,0],[53729,1,0,0],[54092,2,0,0],[54455,3,0,0],[54697,0,1,0],[54939,2,0,0],[55422,3,0,0],[55664,0,0,0],[56027,2,0,0],[56632,1,1,0],[56632,3,1,0],[56995,2,0,0],[57358,3,0,0],[57600,1,0,0],[57963,2,0,0],[58326,3,0,0],[58568,0,1,0],[58810,2,0,0],[59293,1,0,0],[59535,0,1,0],[59898,1,0,0],[60261,3,0,0],[60503,1,1,0],[60866,2,0,0],[61229,3,0,0],[61471,1,0,0],[61834,2,0,0],[62197,3,0,0],[62439,0,1,0],[62680,2,0,0],[63164,3,0,0],[63406,0,0,0],[63769,2,0,0],[64374,1,1,0],[64374,3,1,0],[64737,2,0,0],[65100,3,0,0],[65342,1,0,0],[65705,2,0,0],[66068,3,0,0],[66310,0,1,0],[66551,2,0,0],[67035,1,0,0],[67277,0,1,0],[67640,1,0,0],[68003,3,0,0],[68245,1,1,0],[68608,2,0,0],[68971,3,0,0],[69213,1,0,0],[69576,2,0,0],[69939,3,0,0],[70180,0,1,0],[70422,2,0,0],[70906,3,0,0],[71148,0,0,0],[71511,2,0,0],[72116,1,1,0],[72116,3,1,0],[72479,2,0,0],[72842,3,0,0],[73084,1,0,0],[73447,2,0,0],[73810,3,0,0],[74051,0,1,0],[74293,2,0,0],[74777,1,0,0],[75019,0,1,0],[75382,1,0,0],[75745,3,0,0],[75987,1,1,0],[76350,2,0,0],[76713,3,0,0],[76955,1,0,0],[77318,2,0,0],[77680,3,0,0],[77922,0,1,0],[78164,2,0,0],[78648,3,0,0],[78890,0,0,0],[79253,2,0,0],[79858,1,1,0],[79858,3,1,0],[80221,2,0,0],[80584,3,0,0],[80826,1,0,0],[81189,2,0,0],[81551,3,0,0],[81793,0,1,0],[82035,2,0,0],[82519,1,0,0],[82761,0,1,0],[83124,1,0,0],[83487,3,0,0],[83729,1,1,0],[84092,2,0,0],[84455,3,0,0],[84697,1,0,0],[85060,2,0,0],[85422,3,0,0],[85664,0,1,0],[85906,2,0,0],[86390,3,0,0],[86632,0,0,0],[86995,2,0,0],[87600,1,1,0],[87600,3,1,0],[87963,2,0,0],[88326,3,0,0],[88568,1,0,0],[88930,2,0,0],[89293,3,0,0]],"expert":[[503,2,2,987],[1229,0,0,0],[1471,1,0,0],[1955,2,0,0],[2197,3,0,0],[2439,3,0,0],[2922,2,0,0],[3406,1,0,0],[3890,0,0,0],[4132,2,0,0],[4374,2,0,0],[4858,1,0,0],[5342,0,0,0],[5826,2,0,0],[6068,3,0,0],[6310,3,0,0],[6793,2,0,0],[7277,1,0,0],[7761,0,0,0],[8003,2,0,0],[8245,2,0,0],[8729,1,0,0],[9213,0,0,0],[9697,2,0,0],[9939,3,0,0],[10180,3,0,0],[10664,2,0,0],[11148,1,0,0],[11632,0,0,0],[11874,2,0,0],[12116,2,0,0],[12600,1,0,0],[13084,0,0,0],[13568,2,0,0],[13810,3,0,0],[14051,3,0,0],[14535,2,0,0],[15019,1,0,0],[15503,0,0,0],[15745,2,0,0],[15987,2,0,0],[16471,1,0,0],[16955,0,0,0],[17439,2,0,0],[17680,3,0,0],[17922,1,0,0],[18164,1,0,0],[18406,1,0,0],[18648,2,0,0],[18890,1,0,0],[19132,3,0,0],[19374,1,0,0],[19616,3,0,0],[19858,1,0,0],[20100,1,0,0],[20342,1,0,0],[20584,3,0,0],[20826,1,0,0],[21068,3,0,0],[21310,1,0,0],[21551,2,0,0],[21793,3,0,0],[22277,2,0,0],[22761,1,0,0],[23245,0,0,0],[23487,2,0,0],[23729,1,0,0],[23971,1,0,0],[24213,1,0,0],[24455,3,0,0],[24697,1,0,0],[24939,3,0,0],[25180,1,0,0],[25422,2,0,0],[25664,1,1,0],[25906,1,0,0],[26148,1,1,0],[26390,3,0,0],[26632,1,1,0],[26874,2,0,0],[27116,0,1,0],[27358,3,0,0],[27600,1,1,0],[27842,0,0,0],[28084,0,0,0],[28326,2,0,0],[28568,1,1,0],[28810,2,0,0],[29051,2,0,0],[29293,3,0,0],[29535,0,0,0],[29777,1,0,0],[30019,0,0,0],[30261,2,0,0],[30503,1,0,0],[30745,3,0,0],[30987,1,0,0],[31229,3,0,0],[31471,0,0,0],[31713,1,0,0],[31955,3,0,0],[32197,2,0,0],[32439,2,0,0],[32680,1,0,0],[32922,2,0,0],[33164,3,0,0],[33406,1,1,0],[33648,1,0,0],[33890,1,1,0],[34132,3,0,0],[34374,1,1,0],[34616,2,0,0],[34858,0,1,0],[35100,3,0,0],[35342,0,1,0],[35584,2,0,0],[35826,0,1,0],[36068,1,0,0],[36310,0,1,0],[36551,0,0,0],[36793,0,1,0],[37035,3,0,0],[37277,1,1,0],[37519,1,0,0],[37761,1,1,0],[38003,3,0,0],[38245,1,1,0],[38487,2,0,0],[38729,0,1,0],[38971,3,0,0],[39213,1,1,0],[39455,2,0,0],[39697,0,1,0],[39939,3,0,0],[40180,0,1,0],[40422,0,0,0],[40664,0,1,0],[40906,2,0,0],[41148,1,1,0],[41390,1,0,0],[41632,1,1,0],[41874,3,0,0],[42116,1,1,0],[42358,2,0,0],[42600,0,1,0],[42842,3,0,0],[43084,0,1,0],[43326,2,0,0],[43568,0,1,0],[43810,1,0,0],[44051,0,1,0],[44293,0,0,0],[44535,0,1,0],[44777,3,0,0],[45019,1,1,0],[45261,1,0,0],[45503,1,1,0],[45745,3,0,0],[45987,1,1,0],[46229,2,0,0],[46471,0,1,0],[46713,3,0,0],[46955,0,1,0],[47197,2,0,0],[47439,0,1,0],[47680,1,0,0],[47922,0,1,0],[48164,0,0,0],[48406,0,1,0],[48648,3,0,0],[48890,1,1,0],[49132,1,0,0],[49374,1,1,0],[49616,3,0,0],[49858,1,1,0],[50100,2,0,0],[50342,0,1,0],[50584,3,0,0],[50826,0,1,0],[51068,2,0,0],[51310,0,1,0],[51551,1,0,0],[51793,0,1,0],[52035,0,0,0],[52277,0,1,0],[52519,3,0,0],[52761,1,1,0],[53003,1,0,0],[53245,1,1,0],[53487,3,0,0],[53729,1,1,0],[53971,2,0,0],[54213,0,1,0],[54455,3,0,0],[54697,1,1,0],[54939,2,0,0],[55180,0,1,0],[55422,3,0,0],[55664,0,1,0],[55906,0,0,0],[56148,0,1,0],[56390,2,0,0],[56632,1,1,0],[56874,1,0,0],[57116,1,1,0],[57358,3,0,0],[57600,1,1,0],[57842,2,0,0],[58084,0,1,0],[58326,3,0,0],[58568,0,1,0],[58810,2,0,0],[59051,0,1,0],[59293,1,0,0],[59535,0,1,0],[59777,0,0,0],[60019,0,1,0],[60261,3,0,0],[60503,1,1,0],[60745,1,0,0],[60987,1,1,0],[61229,3,0,0],[61471,1,1,0],[61713,2,0,0],[61955,0,1,0],[62197,3,0,0],[62439,1,1,0],[62680,2,0,0],[62922,0,1,0],[63164,3,0,0],[63406,0,1,0],[63648,0,0,0],[63890,0,1,0],[64132,2,0,0],[64374,1,1,0],[64616,1,0,0],[64858,1,1,0],[65100,3,0,0],[65342,1,1,0],[65584,2,0,0],[65826,0,1,0],[66068,3,0,0],[66310,0,1,0],[66551,2,0,0],[66793,0,1,0],[67035,1,0,0],[67277,0,1,0],[67519,0,0,0],[67761,0,1,0],[68003,3,0,0],[68245,1,1,0],[68487,1,0,0],[68729,1,1,0],[68971,3,0,0],[69213,1,1,0],[69455,2,0,0],[69697,0,1,0],[69939,3,0,0],[70180,1,1,0],[70422,2,0,0],[70664,0,1,0],[70906,3,0,0],[71148,0,1,0],[71390,0,0,0],[71632,0,1,0],[71874,2,0,0],[72116,1,1,0],[72358,1,0,0],[72600,1,1,0],[72842,3,0,0],[73084,1,1,0],[73326,2,0,0],[73568,0,1,0],[73810,3,0,0],[74051,0,1,0],[74293,2,0,0],[74535,0,1,0],[74777,1,0,0],[75019,0,1,0],[75261,0,0,0],[75503,0,1,0],[75745,3,0,0],[75987,1,1,0],[76229,1,0,0],[76471,1,1,0],[76713,3,0,0],[76955,1,1,0],[77197,2,0,0],[77439,0,1,0],[77680,3,0,0],[77922,1,1,0],[78164,2,0,0],[78406,0,1,0],[78648,3,0,0],[78890,0,1,0],[79132,0,0,0],[79374,0,1,0],[79616,2,0,0],[79858,1,1,0],[80100,1,0,0],[80342,1,1,0],[80584,3,0,0],[80826,1,1,0],[81068,2,0,0],[81310,0,1,0],[81551,3,0,0],[81793,0,1,0],[82035,2,0,0],[82277,0,1,0],[82519,1,0,0],[82761,0,1,0],[83003,0,0,0],[83245,0,1,0],[83487,3,0,0],[83729,1,1,0],[83971,1,0,0],[84213,1,1,0],[84455,3,0,0],[84697,1,1,0],[84939,2,0,0],[85180,0,1,0],[85422,3,0,0],[85664,1,1,0],[85906,2,0,0],[86148,0,1,0],[86390,3,0,0],[86632,0,1,0],[86874,0,0,0],[87116,0,1,0],[87358,2,0,0],[87600,1,1,0],[87842,1,0,0],[88084,1,1,0],[88326,3,0,0],[88568,1,1,0],[88810,2,0,0],[89051,0,1,0],[89293,3,0,0]]},"audio":"audio/track1.mp3","lv":{"easy":4,"normal":6,"hard":7,"expert":9},"n":{"easy":121,"normal":226,"hard":248,"expert":338},"holds":{"easy":20,"normal":9,"hard":1,"expert":1}},{"id":"highway","title":"星くずハイウェイ","sub":"Stardust Highway","bpm":108,"dur":92.811,"t0":0.3,"beat":0.5555555555555556,"preview":44.694,"colors":["#b07cff","#4fd3f0"],"icon":"star","gain":1,"boss":false,"charts":{"easy":[[300,0,2,2302],[2522,0,2,4524],[4744,1,2,6747],[6967,1,2,7858],[8078,0,2,8969],[9189,0,0,0],[10300,1,2,11191],[11411,1,0,0],[12522,0,2,13413],[13633,1,0,0],[14744,0,2,15636],[15856,0,0,0],[16967,1,2,17858],[18078,0,0,0],[19189,1,2,20080],[20300,1,0,0],[21411,0,2,22302],[22522,1,0,0],[23633,3,2,24524],[24744,3,0,0],[25856,2,2,26747],[26967,1,0,0],[27522,0,0,0],[28633,0,0,0],[29189,1,0,0],[29744,0,0,0],[30856,0,0,0],[31411,1,0,0],[31967,2,0,0],[32522,3,0,0],[33633,3,2,35080],[35856,1,0,0],[36411,0,0,0],[37522,0,0,0],[38078,1,0,0],[38633,0,0,0],[39744,0,0,0],[40300,2,0,0],[40856,3,0,0],[41967,3,0,0],[42522,2,2,43969],[44189,1,0,0],[44744,3,0,0],[45300,2,0,0],[45856,3,2,46747],[46967,3,0,0],[47522,2,0,0],[48078,3,2,48969],[49189,3,0,0],[49744,2,0,0],[50300,0,2,51191],[51411,2,0,0],[51967,3,0,0],[52522,1,2,53413],[53633,2,0,0],[54189,1,0,0],[54744,3,2,55636],[55856,3,0,0],[56411,2,0,0],[56967,3,2,57858],[58078,3,0,0],[59189,2,2,60080],[60300,2,2,62302],[62522,1,2,63969],[64189,1,0,0],[64744,0,2,66191],[66411,0,0,0],[68078,0,2,68969],[69189,1,2,70080],[70300,0,2,71191],[71411,2,0,0],[71967,1,0,0],[72522,3,2,73413],[73633,3,0,0],[74189,2,0,0],[74744,3,2,75636],[75856,3,0,0],[76411,2,0,0],[76967,0,2,77858],[78078,2,0,0],[78633,3,0,0],[79189,1,2,80080],[80300,2,0,0],[80856,1,0,0],[81411,3,2,82302],[82522,3,0,0],[83078,2,0,0],[83633,3,2,84524],[84744,3,0,0],[85856,2,2,86747],[86967,2,2,88969]],"normal":[[300,0,2,2302],[2522,0,2,4524],[4744,1,2,6747],[6967,1,2,7858],[8078,0,2,8969],[9189,0,2,9814],[10022,1,0,0],[10300,2,2,11191],[11411,1,2,12036],[12244,0,0,0],[12522,1,2,13413],[13633,1,2,14258],[14467,0,0,0],[14744,1,2,15636],[15856,0,2,16481],[16689,1,0,0],[16967,2,2,17858],[18078,0,2,18703],[18911,1,0,0],[19189,2,2,20080],[20300,1,2,20925],[21133,0,0,0],[21411,1,2,22302],[22522,1,2,23147],[23356,2,0,0],[23633,3,2,24524],[24744,3,2,25369],[25578,2,0,0],[25856,1,2,26747],[26967,1,0,0],[27522,0,0,0],[28078,0,0,0],[28633,0,0,0],[29189,1,0,0],[29744,0,0,0],[30300,0,0,0],[30856,0,0,0],[31411,1,0,0],[31967,2,0,0],[32522,3,0,0],[33078,3,0,0],[33633,3,2,35080],[34744,1,0,0],[35856,1,0,0],[36411,0,0,0],[36967,0,0,0],[37522,0,0,0],[38078,1,0,0],[38633,0,0,0],[39189,0,0,0],[39744,0,0,0],[40300,2,0,0],[40856,3,0,0],[41411,3,0,0],[41967,3,0,0],[42522,2,2,43969],[43633,0,0,0],[44189,1,0,0],[44744,3,0,0],[45300,2,0,0],[45578,3,0,0],[45856,2,2,46747],[46967,3,0,0],[47522,2,0,0],[47800,3,0,0],[48078,2,2,48969],[49189,3,0,0],[49744,2,0,0],[50022,1,0,0],[50300,0,2,51191],[51411,2,0,0],[51967,3,0,0],[52244,2,0,0],[52522,1,2,53413],[53633,2,0,0],[54189,1,0,0],[54467,2,0,0],[54744,3,2,55636],[55856,3,0,0],[56411,2,0,0],[56689,3,0,0],[56967,2,2,57858],[58078,3,0,0],[58633,3,0,0],[58911,2,0,0],[59189,1,2,60080],[60300,2,2,62302],[61411,1,0,0],[62522,1,2,63969],[64189,1,0,0],[64744,0,2,66191],[66411,0,0,0],[66967,0,2,67858],[68078,0,2,68969],[69189,1,2,70080],[70300,0,2,71191],[71411,2,0,0],[71967,1,0,0],[72244,2,0,0],[72522,3,2,73413],[73633,3,0,0],[74189,2,0,0],[74467,3,0,0],[74744,2,2,75636],[75856,3,0,0],[76411,2,0,0],[76689,1,0,0],[76967,0,2,77858],[78078,2,0,0],[78633,3,0,0],[78911,2,0,0],[79189,1,2,80080],[80300,2,0,0],[80856,1,0,0],[81133,2,0,0],[81411,3,2,82302],[82522,3,0,0],[83078,2,0,0],[83356,3,0,0],[83633,2,2,84524],[84744,3,0,0],[85300,3,0,0],[85578,2,0,0],[85856,1,2,86747],[86967,2,2,88969],[88078,0,0,0],[89189,1,0,0]],"hard":[[300,0,2,2302],[2522,0,2,4524],[4744,1,2,6747],[6967,1,2,7858],[8078,0,2,8969],[9189,0,2,9814],[9744,2,0,0],[10022,1,0,0],[10300,2,2,11191],[10856,0,0,0],[11411,3,2,12036],[11967,1,0,0],[12244,2,0,0],[12522,1,2,13413],[13078,3,0,0],[13633,2,2,14258],[14189,1,0,0],[14467,1,0,0],[14744,0,2,15636],[15300,3,0,0],[15856,0,2,16481],[16411,2,0,0],[16689,1,0,0],[16967,2,2,17858],[17522,0,0,0],[18078,0,2,18703],[18633,2,0,0],[18911,1,0,0],[19189,2,2,20080],[19744,0,0,0],[20300,3,2,20925],[20856,1,0,0],[21133,2,0,0],[21411,1,2,22302],[21967,3,0,0],[22522,2,2,23147],[23078,1,0,0],[23356,3,0,0],[23633,3,2,24524],[24189,0,0,0],[24744,2,2,25369],[25300,1,0,0],[25578,1,0,0],[25856,0,2,26747],[26411,3,0,0],[26967,0,0,0],[27244,3,0,0],[27522,0,0,0],[27800,2,0,0],[28078,0,0,0],[28356,3,0,0],[28633,0,0,0],[28911,2,0,0],[29189,1,0,0],[29467,3,0,0],[29744,0,0,0],[30022,2,0,0],[30300,0,0,0],[30578,3,0,0],[30856,0,0,0],[31133,2,0,0],[31411,1,0,0],[31689,3,0,0],[31967,2,0,0],[32244,1,0,0],[32522,3,0,0],[32800,0,0,0],[33078,3,0,0],[33356,1,0,0],[33633,3,2,35080],[33911,0,0,0],[34189,1,0,0],[34467,1,0,0],[34744,0,0,0],[35022,0,0,0],[35300,1,0,0],[35578,1,0,0],[35856,2,0,0],[36133,0,0,0],[36411,1,0,0],[36689,2,0,0],[36967,0,0,0],[37244,3,0,0],[37522,0,0,0],[37800,2,0,0],[38078,1,0,0],[38356,3,0,0],[38633,0,0,0],[38911,2,0,0],[39189,0,0,0],[39467,3,0,0],[39744,0,0,0],[40022,2,0,0],[40300,2,0,0],[40578,0,0,0],[40856,3,0,0],[41133,1,0,0],[41411,3,0,0],[41689,0,0,0],[41967,3,0,0],[42244,1,0,0],[42522,2,2,43969],[43078,0,0,0],[43633,1,0,0],[43911,0,0,0],[44189,1,0,0],[44467,2,0,0],[44744,2,0,0],[45300,1,0,0],[45578,2,0,0],[45856,3,2,46747],[46411,0,0,0],[46967,2,0,0],[47522,1,0,0],[47800,2,0,0],[48078,3,2,48969],[48633,1,0,0],[49189,2,0,0],[49744,1,0,0],[50022,0,0,0],[50300,0,2,51191],[50856,3,0,0],[51411,1,0,0],[51967,2,0,0],[52244,1,0,0],[52522,0,2,53413],[53078,2,0,0],[53633,2,0,0],[54189,1,0,0],[54467,2,0,0],[54744,3,2,55636],[55300,0,0,0],[55856,2,0,0],[56411,1,0,0],[56689,2,0,0],[56967,3,2,57858],[57522,1,0,0],[58078,2,0,0],[58633,3,0,0],[58911,2,0,0],[59189,1,2,60080],[59744,3,0,0],[60300,1,1,0],[60300,2,1,0],[60856,1,0,0],[61411,0,0,0],[61967,1,0,0],[62522,0,2,63969],[64189,1,0,0],[64744,0,2,66191],[66411,0,0,0],[66967,0,2,67858],[68078,0,2,68969],[68633,2,0,0],[69189,1,2,70080],[70300,0,2,71191],[70856,3,0,0],[71411,2,0,0],[71967,1,0,0],[72244,2,0,0],[72522,3,2,73413],[73078,0,0,0],[73633,2,0,0],[74189,1,0,0],[74467,2,0,0],[74744,3,2,75636],[75300,1,0,0],[75856,2,0,0],[76411,1,0,0],[76689,0,0,0],[76967,0,2,77858],[77522,3,0,0],[78078,1,0,0],[78633,2,0,0],[78911,1,0,0],[79189,0,2,80080],[79744,2,0,0],[80300,2,0,0],[80856,1,0,0],[81133,2,0,0],[81411,3,2,82302],[81967,0,0,0],[82522,2,0,0],[83078,1,0,0],[83356,2,0,0],[83633,3,2,84524],[84189,1,0,0],[84744,2,0,0],[85300,3,0,0],[85578,2,0,0],[85856,1,2,86747],[86411,3,0,0],[86967,1,1,0],[86967,2,1,0],[87522,1,0,0],[88078,0,0,0],[88633,1,0,0],[89189,0,0,0]],"expert":[[300,0,2,2302],[2522,0,2,4524],[4744,1,2,6747],[6967,1,2,7858],[8078,0,2,8969],[9189,0,2,9814],[9467,3,0,0],[9744,2,0,0],[10022,1,0,0],[10300,2,2,11191],[10578,1,0,0],[10856,0,0,0],[11133,0,0,0],[11411,3,2,12036],[11689,1,0,0],[11967,1,0,0],[12244,2,0,0],[12522,1,2,13413],[12800,3,0,0],[13078,3,0,0],[13356,2,0,0],[13633,2,2,14258],[13911,0,0,0],[14189,1,0,0],[14467,1,0,0],[14744,0,2,15636],[15022,2,0,0],[15300,3,0,0],[15578,3,0,0],[15856,0,2,16481],[16133,2,0,0],[16411,2,0,0],[16689,1,0,0],[16967,2,2,17858],[17244,0,0,0],[17522,0,0,0],[17800,1,0,0],[18078,0,2,18703],[18356,3,0,0],[18633,2,0,0],[18911,1,0,0],[19189,2,2,20080],[19467,1,0,0],[19744,0,0,0],[20022,0,0,0],[20300,3,2,20925],[20578,1,0,0],[20856,1,0,0],[21133,2,0,0],[21411,1,2,22302],[21689,3,0,0],[21967,3,0,0],[22244,2,0,0],[22522,2,2,23147],[22800,0,0,0],[23078,1,0,0],[23356,3,0,0],[23633,3,2,24524],[23911,1,0,0],[24189,0,0,0],[24467,0,0,0],[24744,2,2,25369],[25022,1,0,0],[25300,1,0,0],[25578,1,0,0],[25856,0,2,26747],[26133,3,0,0],[26411,3,0,0],[26689,2,0,0],[26967,0,0,0],[27244,3,0,0],[27522,0,0,0],[27800,2,0,0],[28078,0,0,0],[28356,3,0,0],[28633,0,0,0],[28911,2,0,0],[29189,1,0,0],[29467,3,0,0],[29744,0,0,0],[30022,2,0,0],[30300,0,0,0],[30578,3,0,0],[30856,0,0,0],[31133,2,0,0],[31411,1,0,0],[31689,3,0,0],[31967,2,0,0],[32244,1,0,0],[32522,3,0,0],[32800,0,0,0],[33078,3,0,0],[33356,1,0,0],[33633,3,2,35080],[33911,0,0,0],[34189,1,0,0],[34467,1,0,0],[34744,0,0,0],[35022,0,0,0],[35300,1,0,0],[35578,1,0,0],[35856,2,0,0],[36133,0,0,0],[36411,1,0,0],[36689,2,0,0],[36967,0,0,0],[37244,3,0,0],[37522,0,0,0],[37800,2,0,0],[38078,1,0,0],[38356,3,0,0],[38633,0,0,0],[38911,2,0,0],[39189,0,0,0],[39467,3,0,0],[39744,0,0,0],[40022,2,0,0],[40300,2,0,0],[40578,0,0,0],[40856,3,0,0],[41133,1,0,0],[41411,3,0,0],[41689,0,0,0],[41967,3,0,0],[42244,1,0,0],[42522,2,2,43969],[43078,0,0,0],[43633,1,0,0],[43911,0,0,0],[44189,1,0,0],[44467,2,0,0],[44606,3,0,0],[44744,1,1,0],[45300,1,0,0],[45578,2,0,0],[45856,3,2,46747],[46411,0,0,0],[46967,1,1,0],[46967,2,1,0],[47522,1,0,0],[47800,2,0,0],[48078,3,2,48969],[48633,1,0,0],[49189,1,1,0],[49189,2,1,0],[49744,1,0,0],[50022,0,0,0],[50300,0,2,51191],[50856,3,0,0],[51411,1,1,0],[51411,2,1,0],[51967,2,0,0],[52244,1,0,0],[52522,0,2,53413],[53078,2,0,0],[53633,1,1,0],[53633,2,1,0],[54189,1,0,0],[54467,2,0,0],[54744,3,2,55636],[55300,0,0,0],[55856,1,1,0],[55856,2,1,0],[56411,1,0,0],[56689,2,0,0],[56967,3,2,57858],[57522,1,0,0],[58078,1,1,0],[58078,2,1,0],[58633,3,0,0],[58911,2,0,0],[59189,1,2,60080],[59744,3,0,0],[60300,1,1,0],[60300,2,1,0],[60856,1,0,0],[61411,0,0,0],[61967,1,0,0],[62522,0,2,63969],[64189,1,0,0],[64744,0,2,66191],[66411,0,0,0],[66967,0,2,67858],[68078,0,2,68969],[68633,2,0,0],[69189,1,2,70080],[70300,0,2,71191],[70856,3,0,0],[71411,1,1,0],[71411,2,1,0],[71967,1,0,0],[72244,2,0,0],[72522,3,2,73413],[73078,0,0,0],[73633,1,1,0],[73633,2,1,0],[74189,1,0,0],[74467,2,0,0],[74744,3,2,75636],[75300,1,0,0],[75856,1,1,0],[75856,2,1,0],[76411,1,0,0],[76689,0,0,0],[76967,0,2,77858],[77522,3,0,0],[78078,1,1,0],[78078,2,1,0],[78633,2,0,0],[78911,1,0,0],[79189,0,2,80080],[79744,2,0,0],[80300,1,1,0],[80300,2,1,0],[80856,1,0,0],[81133,2,0,0],[81411,3,2,82302],[81967,0,0,0],[82522,1,1,0],[82522,2,1,0],[83078,1,0,0],[83356,2,0,0],[83633,3,2,84524],[84189,1,0,0],[84744,1,1,0],[84744,2,1,0],[85300,3,0,0],[85578,2,0,0],[85856,1,2,86747],[86411,3,0,0],[86967,1,1,0],[86967,2,1,0],[87522,1,0,0],[88078,0,0,0],[88633,1,0,0],[89189,0,0,0]]},"audio":"audio/highway.mp3","lv":{"easy":3,"normal":4,"hard":6,"expert":7},"n":{"easy":91,"normal":127,"hard":198,"expert":236},"holds":{"easy":36,"normal":45,"hard":43,"expert":43}},{"id":"parade","title":"ねこねこパレード","sub":"Cat Parade","bpm":152,"dur":77.489,"t0":0.3,"beat":0.39473684210526316,"preview":31.829,"colors":["#7be0a0","#ffd98a"],"icon":"paw","gain":1,"boss":false,"charts":{"easy":[[300,1,0,0],[1089,0,0,0],[1879,1,0,0],[2668,1,0,0],[3458,2,0,0],[4247,2,0,0],[5037,3,0,0],[6616,1,0,0],[7405,2,0,0],[8195,1,0,0],[8984,0,0,0],[9774,1,0,0],[10563,1,0,0],[11353,1,0,0],[12142,2,0,0],[12932,1,0,0],[13721,2,0,0],[14511,1,0,0],[15300,0,0,0],[16089,0,0,0],[16879,2,0,0],[17668,1,0,0],[18458,1,0,0],[19247,2,0,0],[20234,1,0,0],[20826,3,0,0],[21813,2,0,0],[22405,3,0,0],[23392,2,0,0],[23984,3,0,0],[24774,0,0,0],[25563,3,0,0],[26353,2,0,0],[27142,0,0,0],[27932,2,0,0],[28721,3,0,0],[29511,1,0,0],[30300,3,0,0],[31879,3,0,0],[32668,1,0,0],[33458,2,0,0],[34247,1,0,0],[35037,2,0,0],[35826,0,0,0],[36616,2,0,0],[37405,0,0,0],[38195,3,0,0],[38984,1,0,0],[39774,2,0,0],[40563,1,0,0],[41353,1,0,0],[42142,3,0,0],[42932,2,2,44291],[44511,1,0,0],[45300,0,0,0],[46089,1,0,0],[46879,1,0,0],[47668,2,0,0],[48458,2,0,0],[49247,3,0,0],[50826,1,0,0],[51616,2,0,0],[52405,3,0,0],[53195,2,0,0],[53984,3,0,0],[54774,3,0,0],[55563,3,0,0],[56353,1,0,0],[57142,3,0,0],[57932,1,0,0],[58721,2,0,0],[59511,1,0,0],[60300,2,0,0],[61089,0,0,0],[61879,2,0,0],[62668,0,0,0],[63458,3,0,0],[64247,1,0,0],[65037,2,0,0],[65826,1,0,0],[66616,1,0,0],[67405,3,0,0],[68195,2,2,69554],[69774,3,0,0],[70563,1,0,0],[71353,1,0,0],[72142,3,0,0],[72932,3,0,0],[73721,1,0,0],[74511,2,2,75869]],"normal":[[300,0,0,0],[1089,0,0,0],[1879,0,0,0],[2274,1,0,0],[2668,0,2,3261],[3458,1,0,0],[4247,2,0,0],[5037,3,2,5629],[5826,1,0,0],[6616,0,0,0],[7011,0,0,0],[7405,2,0,0],[7800,1,0,0],[8195,1,0,0],[8589,0,0,0],[8984,0,2,9576],[9774,1,0,0],[10168,2,0,0],[10563,1,0,0],[10958,0,0,0],[11353,1,0,0],[11747,2,0,0],[12142,3,2,12734],[12932,0,0,0],[13326,0,0,0],[13721,2,0,0],[14116,1,0,0],[14511,1,0,0],[14905,0,0,0],[15300,0,2,15892],[16089,0,0,0],[16484,1,0,0],[16879,3,0,0],[17274,2,0,0],[17668,0,0,0],[18063,1,0,0],[18458,0,2,19050],[19247,2,0,0],[19642,0,0,0],[20037,3,0,0],[20432,2,0,0],[20826,3,0,0],[21221,1,0,0],[21616,2,0,0],[22011,3,0,0],[22405,3,0,0],[22800,1,0,0],[23195,3,0,0],[23589,3,0,0],[23984,2,0,0],[24379,1,0,0],[24774,0,2,25366],[25563,3,0,0],[25958,1,0,0],[26353,3,0,0],[26747,1,0,0],[27142,3,0,0],[27537,1,0,0],[27932,3,0,0],[28326,1,0,0],[28721,2,0,0],[29116,1,0,0],[29511,0,0,0],[29905,2,0,0],[30300,3,2,30892],[31089,1,0,0],[31879,3,0,0],[32274,1,0,0],[32668,0,0,0],[33063,2,0,0],[33458,3,0,0],[33853,1,0,0],[34247,0,2,34839],[35037,2,0,0],[35432,0,0,0],[35826,0,0,0],[36221,2,0,0],[36616,3,0,0],[37011,1,0,0],[37405,0,2,37997],[38195,3,0,0],[38589,1,0,0],[38984,0,0,0],[39379,2,0,0],[39774,3,0,0],[40168,1,0,0],[40563,0,2,41155],[41353,1,0,0],[41747,3,0,0],[42142,1,0,0],[42537,3,0,0],[42932,1,2,44291],[43721,3,0,0],[44511,0,0,0],[45300,0,0,0],[46089,0,0,0],[46484,1,0,0],[46879,0,2,47471],[47668,1,0,0],[48458,2,0,0],[49247,3,2,49839],[50037,1,0,0],[50826,1,0,0],[51616,2,0,0],[52405,3,0,0],[53195,2,0,0],[53984,3,0,0],[54379,2,0,0],[54774,1,0,0],[55168,0,0,0],[55563,1,0,0],[55958,3,0,0],[56353,1,0,0],[56747,3,0,0],[57142,1,0,0],[57537,3,0,0],[57932,1,0,0],[58326,3,0,0],[58721,3,0,0],[59116,1,0,0],[59511,0,2,60103],[60300,2,0,0],[60695,0,0,0],[61089,0,0,0],[61484,2,0,0],[61879,3,0,0],[62274,1,0,0],[62668,0,2,63261],[63458,3,0,0],[63853,1,0,0],[64247,0,0,0],[64642,2,0,0],[65037,3,0,0],[65432,1,0,0],[65826,0,2,66418],[66616,1,0,0],[67011,3,0,0],[67405,1,0,0],[67800,3,0,0],[68195,1,2,69554],[68984,3,0,0],[69774,3,0,0],[70168,1,0,0],[70563,0,0,0],[70958,2,0,0],[71353,1,0,0],[71747,3,0,0],[72142,3,2,72734],[72932,3,0,0],[73326,1,0,0],[73721,0,0,0],[74116,2,0,0],[74511,1,2,75869]],"hard":[[300,0,2,744],[695,3,0,0],[1089,0,2,1534],[1484,2,0,0],[1879,1,0,0],[2274,2,0,0],[2668,1,2,3261],[3063,3,0,0],[3458,2,2,3902],[3853,1,0,0],[4247,3,2,4691],[4642,0,0,0],[5037,0,1,0],[5037,3,1,0],[5432,1,0,0],[5826,1,0,0],[6221,0,0,0],[6616,1,0,0],[7011,1,0,0],[7405,3,0,0],[7800,2,0,0],[7997,1,0,0],[8195,2,0,0],[8589,0,0,0],[8984,0,2,9576],[9379,3,0,0],[9774,2,0,0],[10168,3,0,0],[10563,2,0,0],[10958,1,0,0],[11353,2,0,0],[11747,3,0,0],[12142,3,2,12734],[12537,1,0,0],[12932,1,0,0],[13326,1,0,0],[13721,3,0,0],[14116,2,0,0],[14313,1,0,0],[14511,2,0,0],[14905,0,0,0],[15300,0,2,15892],[15695,3,0,0],[16089,2,0,0],[16484,3,0,0],[16879,3,0,0],[17274,2,0,0],[17471,1,0,0],[17668,0,0,0],[18063,1,0,0],[18458,0,2,19050],[18853,2,0,0],[19247,2,0,0],[19445,1,0,0],[19642,0,0,0],[20037,3,0,0],[20234,1,0,0],[20432,2,0,0],[20826,3,0,0],[21024,2,0,0],[21221,1,0,0],[21616,2,0,0],[22011,3,0,0],[22405,3,0,0],[22603,2,0,0],[22800,1,0,0],[23195,3,0,0],[23392,2,0,0],[23589,3,0,0],[23984,2,0,0],[24379,1,0,0],[24774,0,2,25366],[25168,2,0,0],[25563,2,0,0],[25761,1,0,0],[25958,0,0,0],[26155,3,0,0],[26353,2,0,0],[26747,0,0,0],[26945,3,0,0],[27142,2,0,0],[27339,3,0,0],[27537,0,0,0],[27932,2,0,0],[28129,3,0,0],[28326,0,0,0],[28721,1,0,0],[29116,0,0,0],[29511,0,0,0],[29905,1,1,0],[29905,2,1,0],[30300,0,1,0],[30300,3,1,0],[30695,0,0,0],[31089,1,0,0],[31484,0,0,0],[31879,2,0,0],[32076,1,0,0],[32274,0,0,0],[32668,0,0,0],[33063,2,0,0],[33458,3,0,0],[33655,2,0,0],[33853,1,0,0],[34247,0,2,34839],[34642,2,0,0],[35037,2,0,0],[35234,1,0,0],[35432,0,0,0],[35826,0,0,0],[36221,2,0,0],[36616,3,0,0],[36813,2,0,0],[37011,1,0,0],[37405,0,2,37997],[37800,3,0,0],[38195,2,0,0],[38392,1,0,0],[38589,0,0,0],[38984,0,0,0],[39379,2,0,0],[39774,3,0,0],[39971,2,0,0],[40168,1,0,0],[40563,0,2,41155],[40958,2,0,0],[41353,1,0,0],[41550,2,0,0],[41747,3,0,0],[41945,0,0,0],[42142,1,0,0],[42537,3,0,0],[42932,1,1,0],[42932,2,1,0],[43326,3,0,0],[43721,2,0,0],[44116,3,0,0],[44511,0,2,44955],[44905,2,0,0],[45300,0,2,45744],[45695,3,0,0],[46089,1,0,0],[46484,2,0,0],[46879,1,2,47471],[47274,2,0,0],[47668,2,2,48113],[48063,0,0,0],[48458,3,2,48902],[48853,1,0,0],[49247,0,1,0],[49247,3,1,0],[49642,0,0,0],[50037,1,0,0],[50432,0,0,0],[50826,1,0,0],[51221,2,0,0],[51616,2,0,0],[52011,0,0,0],[52405,3,0,0],[52800,1,0,0],[53195,1,0,0],[53589,3,0,0],[53984,3,0,0],[54379,2,0,0],[54774,1,0,0],[55168,0,0,0],[55563,1,0,0],[55761,0,0,0],[55958,3,0,0],[56155,2,0,0],[56353,1,0,0],[56747,3,0,0],[56945,0,0,0],[57142,1,0,0],[57339,0,0,0],[57537,3,0,0],[57932,1,0,0],[58326,3,0,0],[58721,3,0,0],[58918,2,0,0],[59116,1,0,0],[59511,0,2,60103],[59905,2,0,0],[60300,2,0,0],[60497,1,0,0],[60695,0,0,0],[61089,0,0,0],[61484,2,0,0],[61879,3,0,0],[62076,2,0,0],[62274,1,0,0],[62668,0,2,63261],[63063,3,0,0],[63458,2,0,0],[63655,1,0,0],[63853,0,0,0],[64247,0,0,0],[64642,2,0,0],[65037,3,0,0],[65234,2,0,0],[65432,1,0,0],[65826,0,2,66418],[66221,2,0,0],[66616,1,0,0],[66813,2,0,0],[67011,3,0,0],[67208,0,0,0],[67405,1,0,0],[67800,3,0,0],[68195,1,1,0],[68195,2,1,0],[68589,3,0,0],[68984,2,0,0],[69379,3,0,0],[69774,2,0,0],[69971,1,0,0],[70168,0,0,0],[70563,0,0,0],[70958,2,0,0],[71353,1,0,0],[71550,2,0,0],[71747,3,0,0],[72142,3,2,72734],[72537,1,0,0],[72932,2,0,0],[73129,1,0,0],[73326,0,0,0],[73721,0,0,0],[74116,2,0,0],[74511,1,1,0],[74511,2,1,0]],"expert":[[300,0,2,744],[497,3,0,0],[695,2,0,0],[892,3,0,0],[1287,1,0,0],[1484,0,0,0],[1780,1,0,0],[2076,0,0,0],[2274,3,0,0],[2471,1,0,0],[2668,2,2,3261],[2866,0,0,0],[3063,1,0,0],[3359,0,0,0],[3655,1,0,0],[3853,0,0,0],[4050,1,0,0],[4247,0,2,4691],[4445,3,0,0],[4642,2,0,0],[4938,3,0,0],[5234,2,0,0],[5432,3,0,0],[5629,2,0,0],[6024,3,0,0],[6221,2,0,0],[6517,3,0,0],[6912,0,0,0],[7405,3,0,0],[7800,2,0,0],[7997,1,0,0],[8195,2,0,0],[8491,1,0,0],[8984,0,2,9576],[9379,3,0,0],[9774,2,0,0],[10070,3,0,0],[10563,1,0,0],[10958,0,0,0],[11353,1,0,0],[11649,2,0,0],[12142,3,2,12734],[12537,1,0,0],[12932,1,0,0],[13228,0,0,0],[13721,3,0,0],[14116,2,0,0],[14313,1,0,0],[14511,2,0,0],[14807,1,0,0],[15300,0,2,15892],[15695,3,0,0],[16089,2,0,0],[16386,3,0,0],[16879,3,0,0],[17274,2,0,0],[17471,1,0,0],[17668,0,0,0],[18063,1,0,0],[18458,0,2,19050],[18853,2,0,0],[19247,2,0,0],[19445,1,0,0],[19642,0,0,0],[20037,3,0,0],[20234,1,0,0],[20432,2,0,0],[20629,1,0,0],[20826,3,0,0],[21024,2,0,0],[21221,1,0,0],[21616,2,0,0],[22011,3,0,0],[22208,0,0,0],[22603,1,0,0],[22800,0,0,0],[23195,3,0,0],[23392,1,0,0],[23589,2,0,0],[23787,1,0,0],[24379,0,0,0],[24774,0,2,25366],[25168,2,0,0],[25366,3,0,0],[25563,1,0,0],[25761,0,0,0],[25958,3,0,0],[26155,2,0,0],[26353,1,0,0],[26550,0,0,0],[26747,3,0,0],[26945,2,0,0],[27142,1,0,0],[27339,2,0,0],[27537,3,0,0],[27734,0,0,0],[27932,1,0,0],[28129,2,0,0],[28326,3,0,0],[28524,1,0,0],[28721,0,0,0],[29116,0,0,0],[29511,0,0,0],[29905,1,1,0],[29905,2,1,0],[30103,0,0,0],[30300,3,1,0],[30695,0,0,0],[31089,1,0,0],[31287,0,0,0],[31583,0,0,0],[31879,1,1,0],[31879,2,1,0],[32274,0,0,0],[32668,0,0,0],[33063,2,0,0],[33458,0,1,0],[33458,3,1,0],[33655,2,0,0],[33853,1,0,0],[34247,0,2,34839],[34642,2,0,0],[35037,1,1,0],[35037,2,1,0],[35432,0,0,0],[35826,0,0,0],[36221,2,0,0],[36616,0,1,0],[36616,3,1,0],[36813,2,0,0],[37011,1,0,0],[37405,0,2,37997],[37800,3,0,0],[38195,1,1,0],[38195,2,1,0],[38589,0,0,0],[38984,0,0,0],[39379,2,0,0],[39774,0,1,0],[39774,3,1,0],[39971,2,0,0],[40168,1,0,0],[40563,0,2,41155],[40958,2,0,0],[41353,1,1,0],[41353,2,1,0],[41747,3,0,0],[41945,0,0,0],[42142,1,0,0],[42339,2,0,0],[42537,3,0,0],[42932,1,1,0],[42932,2,1,0],[43326,3,0,0],[43721,2,0,0],[44116,3,0,0],[44511,0,2,44955],[44905,2,0,0],[45300,0,2,45744],[45695,3,0,0],[46089,1,0,0],[46484,2,0,0],[46879,1,2,47471],[47274,2,0,0],[47668,2,2,48113],[48063,0,0,0],[48458,3,2,48902],[48853,1,0,0],[49247,0,1,0],[49247,3,1,0],[49642,0,0,0],[50037,1,0,0],[50432,0,0,0],[50826,1,0,0],[51122,2,0,0],[51418,3,0,0],[51616,2,0,0],[51813,1,0,0],[52011,0,0,0],[52405,3,0,0],[52701,1,0,0],[52997,0,0,0],[53195,2,0,0],[53392,1,0,0],[53589,0,0,0],[53984,3,0,0],[54280,1,0,0],[54576,0,0,0],[54774,1,0,0],[54971,2,0,0],[55168,0,0,0],[55563,1,0,0],[55761,0,0,0],[55958,3,0,0],[56155,2,0,0],[56353,1,0,0],[56550,2,0,0],[56747,3,0,0],[56945,2,0,0],[57142,0,1,0],[57339,2,0,0],[57537,1,0,0],[57932,0,0,0],[58326,2,0,0],[58721,0,1,0],[58721,3,1,0],[58918,2,0,0],[59116,1,0,0],[59511,0,2,60103],[59905,2,0,0],[60300,1,1,0],[60300,2,1,0],[60695,0,0,0],[61089,0,0,0],[61484,2,0,0],[61879,0,1,0],[61879,3,1,0],[62076,2,0,0],[62274,1,0,0],[62668,0,2,63261],[63063,3,0,0],[63458,1,1,0],[63458,2,1,0],[63853,0,0,0],[64247,0,0,0],[64642,2,0,0],[65037,0,1,0],[65037,3,1,0],[65234,2,0,0],[65432,1,0,0],[65826,0,2,66418],[66221,2,0,0],[66616,1,1,0],[66616,2,1,0],[67011,3,0,0],[67208,0,0,0],[67405,1,0,0],[67603,2,0,0],[67800,3,0,0],[68195,1,1,0],[68195,2,1,0],[68589,3,0,0],[68984,2,0,0],[69379,3,0,0],[69774,2,0,0],[69971,1,0,0],[70168,0,0,0],[70563,0,0,0],[70958,2,0,0],[71353,1,0,0],[71550,2,0,0],[71747,3,0,0],[72142,3,2,72734],[72537,1,0,0],[72932,2,0,0],[73129,1,0,0],[73326,0,0,0],[73721,0,0,0],[74116,2,0,0],[74511,1,1,0],[74511,2,1,0]]},"audio":"audio/parade.mp3","lv":{"easy":4,"normal":5,"hard":8,"expert":9},"n":{"easy":90,"normal":153,"hard":231,"expert":261},"holds":{"easy":3,"normal":20,"hard":22,"expert":20}},{"id":"track2","title":"てってってー","sub":"Tettettee","bpm":100,"dur":91.4,"t0":1.968,"beat":0.6,"preview":20.4,"colors":["#4fd3f0","#7be0a0"],"icon":"note","gain":1.8,"charts":{"easy":[[1968,3,0,0],[2568,1,0,0],[3168,2,0,0],[3768,0,0,0],[4368,2,0,0],[4968,0,0,0],[5568,1,0,0],[6168,3,0,0],[7368,1,0,0],[7968,2,0,0],[8568,0,0,0],[9168,1,0,0],[9768,0,0,0],[10368,2,0,0],[10968,3,0,0],[12168,1,0,0],[12768,2,0,0],[13368,0,0,0],[13968,2,0,0],[14568,0,0,0],[15168,1,0,0],[15768,3,0,0],[16968,1,0,0],[17568,2,0,0],[18168,0,0,0],[18768,1,0,0],[19368,0,0,0],[19968,2,0,0],[20568,3,2,21468],[21768,0,0,0],[22368,3,0,0],[22968,2,0,0],[23568,1,0,0],[24168,0,0,0],[24768,2,0,0],[25368,3,0,0],[26568,1,0,0],[27168,2,0,0],[27768,0,0,0],[28368,1,0,0],[28968,0,0,0],[29568,2,0,0],[30168,3,0,0],[31368,1,0,0],[31968,2,0,0],[32568,0,0,0],[33168,2,0,0],[33768,0,0,0],[34368,1,0,0],[34968,3,0,0],[36168,1,0,0],[36768,2,0,0],[37368,0,0,0],[37968,1,0,0],[38568,0,0,0],[39168,2,0,0],[39768,3,0,0],[40968,1,0,0],[41568,2,0,0],[42168,0,0,0],[42768,2,0,0],[43368,0,0,0],[43968,1,0,0],[44568,3,2,45468],[45768,0,0,0],[46368,3,0,0],[46968,2,0,0],[47568,1,0,0],[48168,0,0,0],[48768,2,0,0],[49368,3,0,0],[50568,1,0,0],[51168,2,0,0],[51768,0,0,0],[52368,2,0,0],[52968,0,0,0],[53568,1,0,0],[54168,3,0,0],[55368,1,0,0],[55968,2,0,0],[56568,0,0,0],[57168,1,0,0],[57768,0,0,0],[58368,2,0,0],[58968,3,0,0],[60168,1,0,0],[60768,2,0,0],[61368,0,0,0],[61968,2,0,0],[62568,0,0,0],[63168,1,0,0],[63768,3,0,0],[64968,1,0,0],[65568,2,0,0],[66168,0,0,0],[66768,1,0,0],[67368,0,0,0],[67968,2,0,0],[68568,3,2,69468],[69768,0,0,0],[70368,3,0,0],[70968,2,0,0],[71568,1,0,0],[72168,0,0,0],[72768,2,0,0],[73368,3,0,0],[74568,1,0,0],[75168,2,0,0],[75768,0,0,0],[76368,1,0,0],[76968,0,0,0],[77568,2,0,0],[78168,3,0,0],[79368,2,0,0],[79968,1,0,0],[80568,0,0,0],[81168,2,0,0],[81768,0,0,0],[82368,1,0,0],[82968,3,0,0],[84168,1,0,0],[84768,2,0,0],[85368,0,0,0],[85968,1,0,0],[86568,0,0,0],[87168,2,0,0],[87768,3,0,0]],"normal":[[2268,0,0,0],[2568,2,0,0],[2868,1,0,0],[3168,2,0,0],[3468,0,0,0],[3768,2,0,0],[4068,3,0,0],[4368,2,0,0],[4668,0,0,0],[4968,1,0,0],[5268,0,0,0],[5568,2,0,0],[6168,2,0,0],[6468,3,0,0],[7068,0,0,0],[7368,2,0,0],[7668,1,0,0],[7968,2,0,0],[8268,0,0,0],[8568,2,0,0],[8868,3,0,0],[9168,2,0,0],[9468,0,0,0],[9768,1,0,0],[10368,2,0,0],[10668,0,0,0],[10968,3,0,0],[11268,2,0,0],[11868,0,0,0],[12168,2,0,0],[12468,1,0,0],[12768,2,0,0],[13068,0,0,0],[13368,2,0,0],[13668,3,0,0],[13968,2,0,0],[14268,0,0,0],[14568,1,0,0],[14868,0,0,0],[15168,2,0,0],[15768,2,0,0],[16068,3,0,0],[16668,0,0,0],[16968,2,0,0],[17268,1,0,0],[17568,2,0,0],[17868,0,0,0],[18168,2,0,0],[18468,3,0,0],[18768,2,0,0],[19068,0,0,0],[19368,1,0,0],[19968,2,0,0],[20268,0,0,0],[20568,3,0,0],[20868,2,0,0],[21468,1,0,0],[22068,0,0,0],[22368,3,0,0],[22668,1,0,0],[22968,2,0,0],[23568,3,0,0],[23868,0,0,0],[24168,1,0,0],[24468,0,0,0],[25068,2,0,0],[25368,3,0,0],[25668,2,0,0],[26268,0,0,0],[26568,2,0,0],[26868,1,0,0],[27168,2,0,0],[27468,0,0,0],[27768,2,0,0],[28068,3,0,0],[28368,2,0,0],[28668,0,0,0],[28968,1,0,0],[29568,2,0,0],[29868,0,0,0],[30168,3,0,0],[30468,2,0,0],[31068,0,0,0],[31368,2,0,0],[31668,1,0,0],[31968,2,0,0],[32268,0,0,0],[32568,2,0,0],[32868,3,0,0],[33168,2,0,0],[33468,0,0,0],[33768,1,0,0],[34068,0,0,0],[34368,2,0,0],[34968,2,0,0],[35268,3,0,0],[35868,0,0,0],[36168,2,0,0],[36468,1,0,0],[36768,2,0,0],[37068,0,0,0],[37368,2,0,0],[37668,3,0,0],[37968,2,0,0],[38268,0,0,0],[38568,1,0,0],[39168,2,0,0],[39468,0,0,0],[39768,3,0,0],[40068,2,0,0],[40668,0,0,0],[40968,2,0,0],[41268,1,0,0],[41568,2,0,0],[41868,0,0,0],[42168,2,0,0],[42468,3,0,0],[42768,2,0,0],[43068,0,0,0],[43368,1,0,0],[43668,0,0,0],[43968,2,0,0],[44568,2,0,0],[44868,3,0,0],[45468,1,0,0],[45768,2,0,0],[46068,0,0,0],[46368,3,0,0],[46668,1,0,0],[47268,2,0,0],[47868,0,0,0],[48168,2,0,0],[48468,0,0,0],[49068,2,0,0],[49368,3,0,0],[49668,1,0,0],[50268,0,0,0],[50568,2,0,0],[50868,1,0,0],[51168,2,0,0],[51468,0,0,0],[51768,2,0,0],[52068,3,0,0],[52368,2,0,0],[52668,0,0,0],[52968,1,0,0],[53268,0,0,0],[53568,2,0,0],[54168,2,0,0],[54468,3,0,0],[55068,0,0,0],[55368,2,0,0],[55668,1,0,0],[55968,2,0,0],[56268,0,0,0],[56568,2,0,0],[56868,3,0,0],[57168,2,0,0],[57468,0,0,0],[57768,1,0,0],[58368,2,0,0],[58668,0,0,0],[58968,3,0,0],[59268,2,0,0],[59868,0,0,0],[60168,2,0,0],[60468,1,0,0],[60768,2,0,0],[61068,0,0,0],[61368,2,0,0],[61668,3,0,0],[61968,2,0,0],[62268,0,0,0],[62568,1,0,0],[62868,0,0,0],[63168,2,0,0],[63768,2,0,0],[64068,3,0,0],[64668,0,0,0],[64968,2,0,0],[65268,1,0,0],[65568,2,0,0],[65868,0,0,0],[66168,2,0,0],[66468,3,0,0],[66768,2,0,0],[67068,0,0,0],[67368,1,0,0],[67968,2,0,0],[68268,0,0,0],[68568,3,0,0],[68868,2,0,0],[69468,1,0,0],[69768,2,0,0],[70068,0,0,0],[70368,3,0,0],[70668,1,0,0],[71268,2,0,0],[71568,3,0,0],[71868,0,0,0],[72168,1,0,0],[72468,0,0,0],[73068,2,0,0],[73368,3,0,0],[73668,2,0,0],[74268,0,0,0],[74568,2,0,0],[74868,1,0,0],[75168,2,0,0],[75468,0,0,0],[75768,2,0,0],[76068,3,0,0],[76368,2,0,0],[76668,0,0,0],[76968,1,0,0],[77568,2,0,0],[77868,0,0,0],[78168,3,0,0],[78468,2,0,0],[78768,1,1,0],[79068,0,0,0],[79368,2,0,0],[79668,1,0,0],[79968,2,0,0],[80268,0,0,0],[80568,1,0,0],[80868,3,0,0],[81168,2,0,0],[81468,0,0,0],[81768,1,0,0],[82068,0,0,0],[82368,2,0,0],[82668,1,0,0],[82968,3,0,0],[83268,2,0,0],[83868,0,0,0],[84168,2,0,0],[84468,1,0,0],[84768,2,0,0],[85068,0,0,0],[85368,2,0,0],[85668,3,0,0],[85968,2,0,0],[86268,0,0,0],[86568,1,0,0],[87168,2,0,0],[87468,0,0,0],[87768,3,0,0],[88068,2,0,0]],"hard":[[2268,1,0,0],[2568,2,0,0],[2868,1,0,0],[3168,1,1,0],[3168,3,1,0],[3468,0,0,0],[3768,2,0,0],[4068,3,0,0],[4368,0,1,0],[4368,2,1,0],[4668,0,0,0],[4968,1,0,0],[5268,1,0,0],[5568,0,1,0],[5868,0,0,0],[6168,3,0,0],[6468,3,0,0],[7068,1,0,0],[7368,2,0,0],[7668,1,0,0],[7968,1,1,0],[8268,0,0,0],[8568,2,0,0],[8868,3,0,0],[9168,0,1,0],[9468,1,0,0],[9768,1,0,0],[10068,1,0,0],[10368,1,1,0],[10368,3,1,0],[10668,0,0,0],[10968,2,0,0],[11268,2,0,0],[11868,1,0,0],[12168,2,0,0],[12468,1,0,0],[12768,1,1,0],[12768,3,1,0],[13068,0,0,0],[13368,2,0,0],[13668,3,0,0],[13968,0,1,0],[13968,2,1,0],[14268,0,0,0],[14568,1,0,0],[14868,1,0,0],[15168,0,1,0],[15468,0,0,0],[15768,3,0,0],[16068,3,0,0],[16668,1,0,0],[16968,2,0,0],[17268,1,0,0],[17568,1,1,0],[17568,3,1,0],[17868,0,0,0],[18168,2,0,0],[18468,3,0,0],[18768,0,1,0],[18768,2,1,0],[19068,1,0,0],[19368,1,0,0],[19668,1,0,0],[19968,1,1,0],[19968,3,1,0],[20268,0,0,0],[20568,2,0,0],[20868,2,0,0],[21468,0,0,0],[21768,2,0,0],[22068,0,0,0],[22368,2,0,0],[22668,2,0,0],[22968,2,0,0],[23268,1,0,0],[23568,0,1,0],[23568,2,1,0],[23868,0,0,0],[24168,1,0,0],[24468,0,0,0],[24918,3,0,0],[25368,3,0,0],[25668,1,0,0],[26268,1,0,0],[26568,2,0,0],[26868,1,0,0],[27168,1,1,0],[27168,3,1,0],[27468,0,0,0],[27768,2,0,0],[28068,3,0,0],[28368,0,1,0],[28668,1,0,0],[28968,1,0,0],[29268,1,0,0],[29568,1,1,0],[29568,3,1,0],[29868,0,0,0],[30168,2,0,0],[30468,2,0,0],[31068,1,0,0],[31368,2,0,0],[31668,1,0,0],[31968,1,1,0],[31968,3,1,0],[32268,0,0,0],[32568,2,0,0],[32868,3,0,0],[33168,0,1,0],[33468,0,0,0],[33768,1,0,0],[34068,1,0,0],[34368,0,1,0],[34368,2,1,0],[34668,0,0,0],[34968,3,0,0],[35268,3,0,0],[35868,1,0,0],[36168,2,0,0],[36468,1,0,0],[36768,1,1,0],[37068,0,0,0],[37368,2,0,0],[37668,3,0,0],[37968,0,1,0],[37968,2,1,0],[38268,1,0,0],[38568,1,0,0],[38868,1,0,0],[39168,1,1,0],[39468,0,0,0],[39768,2,0,0],[40068,2,0,0],[40668,1,0,0],[40968,2,0,0],[41268,1,0,0],[41568,1,1,0],[41868,0,0,0],[42168,2,0,0],[42468,3,0,0],[42768,0,1,0],[43068,0,0,0],[43368,1,0,0],[43668,1,0,0],[43968,0,1,0],[43968,2,1,0],[44268,0,0,0],[44568,3,0,0],[44868,3,0,0],[45468,1,0,0],[45768,1,0,0],[46068,0,0,0],[46368,2,0,0],[46668,2,0,0],[46968,2,0,0],[47268,1,0,0],[47568,0,1,0],[47868,0,0,0],[48168,1,0,0],[48468,0,0,0],[48918,3,0,0],[49368,3,0,0],[49668,1,0,0],[50268,1,0,0],[50568,2,0,0],[50868,1,0,0],[51168,1,1,0],[51468,0,0,0],[51768,2,0,0],[52068,3,0,0],[52368,0,1,0],[52368,2,1,0],[52668,0,0,0],[52968,1,0,0],[53268,1,0,0],[53568,0,1,0],[53868,0,0,0],[54168,3,0,0],[54468,3,0,0],[55068,1,0,0],[55368,2,0,0],[55668,1,0,0],[55968,1,1,0],[55968,3,1,0],[56268,0,0,0],[56568,2,0,0],[56868,3,0,0],[57168,0,1,0],[57468,1,0,0],[57768,1,0,0],[58068,1,0,0],[58368,1,1,0],[58368,3,1,0],[58668,0,0,0],[58968,2,0,0],[59268,2,0,0],[59868,1,0,0],[60168,2,0,0],[60468,1,0,0],[60768,1,1,0],[61068,0,0,0],[61368,2,0,0],[61668,3,0,0],[61968,0,1,0],[61968,2,1,0],[62268,0,0,0],[62568,1,0,0],[62868,1,0,0],[63168,0,1,0],[63468,0,0,0],[63768,3,0,0],[64068,3,0,0],[64668,1,0,0],[64968,2,0,0],[65268,1,0,0],[65568,1,1,0],[65868,0,0,0],[66168,2,0,0],[66468,3,0,0],[66768,0,1,0],[67068,1,0,0],[67368,1,0,0],[67668,1,0,0],[67968,1,1,0],[68268,0,0,0],[68568,2,0,0],[68868,2,0,0],[69468,1,0,0],[69768,1,0,0],[70068,0,0,0],[70368,3,0,0],[70668,1,0,0],[70968,3,0,0],[71268,1,0,0],[71568,0,1,0],[71868,0,0,0],[72168,1,0,0],[72468,0,0,0],[72918,3,0,0],[73368,3,0,0],[73668,1,0,0],[74268,1,0,0],[74568,2,0,0],[74868,1,0,0],[75168,1,1,0],[75168,3,1,0],[75468,0,0,0],[75768,2,0,0],[76068,3,0,0],[76368,0,1,0],[76668,1,0,0],[76968,1,0,0],[77268,1,0,0],[77568,1,1,0],[77868,0,0,0],[78168,2,0,0],[78468,2,0,0],[78768,0,1,0],[79068,1,0,0],[79368,3,0,0],[79668,1,0,0],[79968,1,1,0],[80268,0,0,0],[80568,1,0,0],[80868,3,0,0],[81168,0,1,0],[81168,2,1,0],[81468,0,0,0],[81768,1,0,0],[82068,1,0,0],[82368,1,1,0],[82668,1,0,0],[82968,1,0,0],[83268,3,0,0],[83868,1,0,0],[84168,2,0,0],[84468,1,0,0],[84768,1,1,0],[85068,0,0,0],[85368,2,0,0],[85668,3,0,0],[85968,0,1,0],[86268,1,0,0],[86568,1,0,0],[86868,1,0,0],[87168,1,1,0],[87168,3,1,0],[87468,0,0,0],[87768,2,0,0],[88068,2,0,0]],"expert":[[1968,1,1,0],[1968,3,1,0],[2268,1,0,0],[2418,2,0,0],[2568,0,1,0],[2868,1,0,0],[3018,0,0,0],[3168,1,1,0],[3468,0,0,0],[3618,1,0,0],[3768,3,1,0],[4068,2,0,0],[4368,0,1,0],[4368,2,1,0],[4668,0,0,0],[4818,1,0,0],[4968,3,1,0],[5268,1,0,0],[5418,2,0,0],[5568,1,1,0],[5718,2,0,0],[5868,1,0,0],[6168,0,1,0],[6168,2,1,0],[6468,3,0,0],[6768,1,1,0],[6768,3,1,0],[7068,1,0,0],[7218,2,0,0],[7368,0,1,0],[7668,1,0,0],[7818,0,0,0],[7968,1,1,0],[8268,0,0,0],[8418,1,0,0],[8568,3,1,0],[8868,2,0,0],[9168,0,1,0],[9168,2,1,0],[9468,1,0,0],[9618,2,0,0],[9768,1,0,0],[10068,1,0,0],[10218,2,0,0],[10668,0,0,0],[10968,1,0,0],[11268,2,0,0],[11568,1,1,0],[11568,3,1,0],[11868,1,0,0],[12018,2,0,0],[12168,0,1,0],[12468,1,0,0],[12618,0,0,0],[12768,1,1,0],[13068,0,0,0],[13218,1,0,0],[13368,3,1,0],[13668,2,0,0],[13968,0,1,0],[13968,2,1,0],[14268,0,0,0],[14418,1,0,0],[14568,3,1,0],[14868,1,0,0],[15018,2,0,0],[15168,1,1,0],[15318,2,0,0],[15468,1,0,0],[15768,0,1,0],[15768,2,1,0],[16068,3,0,0],[16368,1,1,0],[16368,3,1,0],[16668,1,0,0],[16818,2,0,0],[16968,0,1,0],[17268,1,0,0],[17418,0,0,0],[17568,1,1,0],[17868,0,0,0],[18018,1,0,0],[18168,3,1,0],[18468,2,0,0],[18768,0,1,0],[18768,2,1,0],[19068,1,0,0],[19218,2,0,0],[19368,1,0,0],[19668,1,0,0],[19818,2,0,0],[20268,0,0,0],[20568,1,0,0],[20868,2,0,0],[21168,0,1,0],[21168,2,1,0],[21468,0,0,0],[21618,1,0,0],[22068,0,0,0],[22368,0,1,0],[22368,2,1,0],[22668,1,0,0],[22818,2,0,0],[23268,1,0,0],[23568,1,1,0],[23568,3,1,0],[23868,0,0,0],[24018,1,0,0],[24468,0,0,0],[24618,1,0,0],[24768,2,0,0],[24918,3,0,0],[25068,2,0,0],[25368,0,1,0],[25368,2,1,0],[25668,1,0,0],[25968,1,1,0],[25968,3,1,0],[26268,1,0,0],[26418,2,0,0],[26568,0,1,0],[26868,1,0,0],[27018,0,0,0],[27168,1,1,0],[27468,0,0,0],[27618,1,0,0],[27768,3,1,0],[28068,2,0,0],[28368,0,1,0],[28368,2,1,0],[28668,1,0,0],[28818,2,0,0],[28968,1,0,0],[29268,1,0,0],[29418,2,0,0],[29868,0,0,0],[30168,1,0,0],[30468,2,0,0],[30768,1,1,0],[30768,3,1,0],[31068,1,0,0],[31218,2,0,0],[31368,0,1,0],[31668,1,0,0],[31818,0,0,0],[31968,1,1,0],[32268,0,0,0],[32418,1,0,0],[32568,3,1,0],[32868,2,0,0],[33168,0,1,0],[33168,2,1,0],[33468,0,0,0],[33618,1,0,0],[33768,3,1,0],[34068,1,0,0],[34218,2,0,0],[34368,1,1,0],[34518,2,0,0],[34668,1,0,0],[34968,0,1,0],[34968,2,1,0],[35268,3,0,0],[35568,1,1,0],[35568,3,1,0],[35868,1,0,0],[36018,2,0,0],[36168,0,1,0],[36468,1,0,0],[36618,0,0,0],[36768,1,1,0],[37068,0,0,0],[37218,1,0,0],[37368,3,1,0],[37668,2,0,0],[37968,0,1,0],[37968,2,1,0],[38268,1,0,0],[38418,2,0,0],[38568,1,0,0],[38868,1,0,0],[39018,2,0,0],[39468,0,0,0],[39768,1,0,0],[40068,2,0,0],[40368,1,1,0],[40368,3,1,0],[40668,1,0,0],[40818,2,0,0],[40968,0,1,0],[41268,1,0,0],[41418,0,0,0],[41568,1,1,0],[41868,0,0,0],[42018,1,0,0],[42168,3,1,0],[42468,2,0,0],[42768,0,1,0],[42768,2,1,0],[43068,0,0,0],[43218,1,0,0],[43368,3,1,0],[43668,1,0,0],[43818,2,0,0],[43968,1,1,0],[44118,2,0,0],[44268,1,0,0],[44568,0,1,0],[44568,2,1,0],[44868,3,0,0],[45168,1,1,0],[45168,3,1,0],[45468,1,0,0],[45618,2,0,0],[45768,1,0,0],[46068,0,0,0],[46368,0,1,0],[46368,2,1,0],[46668,1,0,0],[46818,2,0,0],[46968,1,0,0],[47268,1,0,0],[47418,2,0,0],[47568,1,1,0],[47868,0,0,0],[48018,1,0,0],[48468,0,0,0],[48618,1,0,0],[48768,2,0,0],[48918,3,0,0],[49068,2,0,0],[49368,1,1,0],[49368,3,1,0],[49668,1,0,0],[49968,1,1,0],[49968,3,1,0],[50268,1,0,0],[50418,2,0,0],[50568,0,1,0],[50868,1,0,0],[51018,0,0,0],[51168,1,1,0],[51468,0,0,0],[51618,1,0,0],[51768,3,1,0],[52068,2,0,0],[52368,0,1,0],[52368,2,1,0],[52668,0,0,0],[52818,1,0,0],[52968,3,1,0],[53268,1,0,0],[53418,2,0,0],[53568,1,1,0],[53718,2,0,0],[53868,1,0,0],[54168,0,1,0],[54168,2,1,0],[54468,3,0,0],[54768,1,1,0],[54768,3,1,0],[55068,1,0,0],[55218,2,0,0],[55368,0,1,0],[55668,1,0,0],[55818,0,0,0],[55968,1,1,0],[56268,0,0,0],[56418,1,0,0],[56568,3,1,0],[56868,2,0,0],[57168,0,1,0],[57168,2,1,0],[57468,1,0,0],[57618,2,0,0],[57768,1,0,0],[58068,1,0,0],[58218,2,0,0],[58668,0,0,0],[58968,1,0,0],[59268,2,0,0],[59568,1,1,0],[59568,3,1,0],[59868,1,0,0],[60018,2,0,0],[60168,0,1,0],[60468,1,0,0],[60618,0,0,0],[60768,1,1,0],[61068,0,0,0],[61218,1,0,0],[61368,3,1,0],[61668,2,0,0],[61968,0,1,0],[61968,2,1,0],[62268,0,0,0],[62418,1,0,0],[62568,3,1,0],[62868,1,0,0],[63018,2,0,0],[63168,1,1,0],[63318,2,0,0],[63468,1,0,0],[63768,0,1,0],[63768,2,1,0],[64068,3,0,0],[64368,1,1,0],[64368,3,1,0],[64668,1,0,0],[64818,2,0,0],[64968,0,1,0],[65268,1,0,0],[65418,0,0,0],[65568,1,1,0],[65868,0,0,0],[66018,1,0,0],[66168,3,1,0],[66468,2,0,0],[66768,0,1,0],[66768,2,1,0],[67068,1,0,0],[67218,2,0,0],[67368,1,0,0],[67668,1,0,0],[67818,2,0,0],[68268,0,0,0],[68568,1,0,0],[68868,2,0,0],[69168,0,1,0],[69168,2,1,0],[69468,1,0,0],[69618,2,0,0],[69768,1,0,0],[70068,0,0,0],[70368,3,0,0],[70518,2,0,0],[70668,1,0,0],[70818,2,0,0],[70968,1,0,0],[71268,1,0,0],[71418,2,0,0],[71568,1,1,0],[71868,0,0,0],[72018,1,0,0],[72468,0,0,0],[72618,1,0,0],[72768,2,0,0],[72918,3,0,0],[73068,2,0,0],[73368,1,1,0],[73368,3,1,0],[73668,1,0,0],[73968,1,1,0],[73968,3,1,0],[74268,1,0,0],[74418,2,0,0],[74568,0,1,0],[74868,1,0,0],[75018,0,0,0],[75168,1,1,0],[75468,0,0,0],[75618,1,0,0],[75768,3,1,0],[76068,2,0,0],[76368,0,1,0],[76368,2,1,0],[76668,1,0,0],[76818,2,0,0],[76968,1,0,0],[77268,1,0,0],[77418,2,0,0],[77868,0,0,0],[78168,1,0,0],[78468,2,0,0],[78768,0,1,0],[78768,2,1,0],[79068,1,0,0],[79218,2,0,0],[79668,1,0,0],[79818,0,0,0],[79968,1,1,0],[80268,0,0,0],[80568,1,0,0],[80868,3,0,0],[81168,0,1,0],[81168,2,1,0],[81468,0,0,0],[81618,1,0,0],[82068,1,0,0],[82218,2,0,0],[82668,1,0,0],[82818,0,0,0],[82968,1,0,0],[83268,2,0,0],[83568,1,1,0],[83568,3,1,0],[83868,1,0,0],[84018,2,0,0],[84168,0,1,0],[84468,1,0,0],[84618,0,0,0],[84768,1,1,0],[85068,0,0,0],[85218,1,0,0],[85368,3,1,0],[85668,2,0,0],[85968,0,1,0],[85968,2,1,0],[86268,1,0,0],[86418,2,0,0],[86568,1,0,0],[86868,1,0,0],[87018,2,0,0],[87468,0,0,0],[87768,1,0,0],[88068,2,0,0]]},"audio":"audio/track2.mp3","lv":{"easy":4,"normal":7,"hard":8,"expert":11},"n":{"easy":127,"normal":249,"hard":290,"expert":416},"holds":{"easy":3,"normal":0,"hard":0,"expert":0}},{"id":"neon","title":"ネオンスプリント","sub":"Neon Sprint","bpm":174,"dur":78.941,"t0":0.3,"beat":0.3448275862068966,"preview":33.353,"colors":["#ff4fa3","#4fd3f0"],"icon":"bolt","gain":1,"boss":true,"charts":{"easy":[[300,1,0,0],[1679,0,0,0],[3059,1,0,0],[4438,0,0,0],[5817,1,0,0],[7197,0,0,0],[8576,1,0,0],[9955,0,0,0],[11334,0,0,0],[12024,2,0,0],[12714,2,0,0],[13403,0,0,0],[14093,0,0,0],[14783,2,0,0],[15472,1,0,0],[16162,0,0,0],[16852,0,0,0],[17541,2,0,0],[18231,2,0,0],[18921,0,0,0],[19610,0,0,0],[20300,3,0,0],[20990,0,0,0],[21679,2,0,0],[22369,1,0,0],[23059,1,0,0],[23748,0,0,0],[24438,0,0,0],[25128,1,0,0],[25817,1,0,0],[26507,3,0,0],[27197,3,0,0],[27886,1,0,0],[28576,1,0,0],[29266,0,0,0],[29955,0,0,0],[30645,3,0,0],[31334,0,0,0],[32024,3,0,0],[32714,1,0,0],[33403,3,0,0],[34093,3,0,0],[34783,3,0,0],[35472,3,0,0],[36162,2,0,0],[36852,0,0,0],[37541,1,0,0],[38231,3,0,0],[38921,3,0,0],[39610,3,0,0],[40300,3,0,0],[40990,3,0,0],[41679,3,0,0],[42369,0,0,0],[43059,3,0,0],[43748,3,0,0],[44438,0,2,45597],[45817,1,2,46977],[47197,1,0,0],[47886,3,0,0],[48576,1,2,49735],[49955,1,0,0],[50645,1,0,0],[51334,0,0,0],[52024,0,0,0],[52714,1,0,0],[53403,1,0,0],[54093,3,0,0],[54783,3,0,0],[55472,1,0,0],[56162,1,0,0],[56852,0,0,0],[57541,0,0,0],[58231,3,0,0],[58921,0,0,0],[59610,3,0,0],[60300,1,0,0],[60990,3,0,0],[61679,3,0,0],[62369,3,0,0],[63059,3,0,0],[63748,2,0,0],[64438,0,0,0],[65128,1,0,0],[65817,3,0,0],[66507,3,0,0],[67197,3,0,0],[67886,3,0,0],[68576,3,0,0],[69266,3,0,0],[69955,0,0,0],[70645,3,0,0],[71334,3,0,0],[72024,3,0,0],[72714,3,0,0],[73403,3,2,74563]],"normal":[[300,1,0,0],[1679,0,0,0],[3059,1,0,0],[4438,0,0,0],[5817,1,0,0],[6162,2,0,0],[6852,3,0,0],[7197,0,0,0],[7541,2,0,0],[8231,3,0,0],[8576,1,0,0],[8921,2,0,0],[9610,3,0,0],[9955,0,0,0],[10300,2,0,0],[10990,3,0,0],[11334,0,0,0],[11679,2,0,0],[12024,3,0,0],[12369,1,0,0],[12714,3,0,0],[13059,2,0,0],[13403,1,0,0],[13748,0,0,0],[14438,2,0,0],[14783,3,0,0],[15128,1,0,0],[15472,2,0,0],[15817,1,0,0],[16162,0,0,0],[16507,1,0,0],[16852,0,0,0],[17197,2,0,0],[17541,3,0,0],[17886,1,0,0],[18231,3,0,0],[18576,2,0,0],[18921,1,0,0],[19266,0,0,0],[19955,2,0,0],[20300,3,0,0],[20645,1,0,0],[20990,0,0,0],[21334,1,0,0],[21679,3,2,22197],[22369,1,0,0],[23059,1,0,0],[23403,3,0,0],[23748,1,0,0],[24438,1,0,0],[24783,3,0,0],[25128,1,0,0],[25472,0,0,0],[25817,2,0,0],[26162,3,0,0],[26852,1,0,0],[27197,3,0,0],[27886,1,0,0],[28576,1,0,0],[28921,3,0,0],[29266,1,0,0],[29955,1,0,0],[30300,3,0,0],[30990,1,0,0],[31679,3,0,0],[32369,2,0,0],[32714,1,2,33231],[33403,3,0,0],[33748,1,0,0],[34093,3,0,0],[34438,1,0,0],[34783,3,0,0],[35128,2,0,0],[35472,3,0,0],[35817,1,0,0],[36162,3,0,0],[36507,1,0,0],[37197,3,0,0],[37541,1,0,0],[37886,3,0,0],[38576,1,0,0],[38921,3,0,0],[39266,1,0,0],[39610,3,0,0],[39955,1,0,0],[40300,3,0,0],[40645,2,0,0],[40990,3,0,0],[41334,1,0,0],[41679,3,0,0],[42024,2,0,0],[42369,0,0,0],[42714,2,0,0],[43059,3,0,0],[43403,2,0,0],[43748,3,2,44266],[44438,0,2,45597],[45817,1,2,46977],[47197,1,2,47714],[47886,3,2,48403],[48576,1,2,49735],[49955,1,0,0],[50645,1,0,0],[50990,3,0,0],[51334,1,0,0],[52024,1,0,0],[52369,3,0,0],[52714,1,0,0],[53059,0,0,0],[53403,2,0,0],[53748,3,0,0],[54438,1,0,0],[54783,3,0,0],[55472,1,0,0],[56162,1,0,0],[56507,3,0,0],[56852,1,0,0],[57541,1,0,0],[57886,3,0,0],[58576,1,0,0],[59266,3,0,0],[59955,2,0,0],[60300,1,2,60817],[60990,3,0,0],[61334,1,0,0],[61679,3,0,0],[62024,1,0,0],[62369,3,0,0],[62714,2,0,0],[63059,3,0,0],[63403,1,0,0],[63748,3,0,0],[64093,1,0,0],[64783,3,0,0],[65128,1,0,0],[65472,3,0,0],[66162,1,0,0],[66507,3,0,0],[66852,1,0,0],[67197,3,0,0],[67541,1,0,0],[67886,3,0,0],[68231,2,0,0],[68576,3,0,0],[68921,1,0,0],[69266,3,0,0],[69610,2,0,0],[69955,0,0,0],[70300,2,0,0],[70645,3,0,0],[70990,2,0,0],[71334,3,2,71852],[72024,3,0,0],[72369,1,0,0],[72714,3,0,0],[73059,1,0,0],[73403,3,2,74563],[74783,1,0,0],[76162,0,0,0]],"hard":[[300,1,0,0],[1679,0,0,0],[3059,1,0,0],[4438,0,0,0],[5817,1,0,0],[6162,2,0,0],[6679,0,0,0],[6852,3,0,0],[7197,1,0,0],[7541,2,0,0],[8059,0,0,0],[8231,3,0,0],[8576,1,0,0],[8921,2,0,0],[9438,0,0,0],[9610,3,0,0],[9955,1,0,0],[10300,2,0,0],[10817,0,0,0],[10990,3,0,0],[11334,0,0,0],[11507,1,0,0],[11679,2,0,0],[11852,3,0,0],[12024,2,0,0],[12369,0,0,0],[12541,1,0,0],[12714,2,0,0],[13059,1,0,0],[13403,0,0,0],[13748,0,0,0],[14093,0,0,0],[14266,1,0,0],[14438,2,0,0],[14610,3,0,0],[14783,2,0,0],[15128,0,0,0],[15300,1,0,0],[15472,0,0,0],[15817,0,0,0],[16162,0,0,0],[16507,1,0,0],[16852,0,0,0],[17024,1,0,0],[17197,2,0,0],[17369,3,0,0],[17541,2,0,0],[17886,0,0,0],[18059,1,0,0],[18231,2,0,0],[18576,1,0,0],[18921,0,0,0],[19266,0,0,0],[19610,0,0,0],[19783,1,0,0],[19955,2,0,0],[20128,3,0,0],[20300,0,0,0],[20645,2,0,0],[20817,1,0,0],[20990,0,0,0],[21334,1,0,0],[21679,0,1,0],[21679,3,1,0],[22024,0,0,0],[22369,1,0,0],[22541,2,0,0],[22714,1,0,0],[22886,0,0,0],[23059,1,0,0],[23403,3,0,0],[23748,1,0,0],[23921,2,0,0],[24093,1,0,0],[24266,0,0,0],[24438,1,0,0],[24783,3,0,0],[25128,1,0,0],[25300,0,0,0],[25472,3,0,0],[25645,0,0,0],[25817,1,0,0],[26162,1,0,0],[26334,0,0,0],[26507,1,0,0],[26679,0,0,0],[26852,3,0,0],[27197,1,0,0],[27541,2,0,0],[27886,0,0,0],[28059,1,0,0],[28231,0,0,0],[28403,3,0,0],[28576,0,0,0],[28921,2,0,0],[29266,0,0,0],[29438,1,0,0],[29610,0,0,0],[29783,3,0,0],[29955,0,0,0],[30300,2,0,0],[30645,2,0,0],[30817,1,0,0],[30990,0,0,0],[31162,3,0,0],[31334,0,0,0],[31679,2,0,0],[31852,3,0,0],[32024,2,0,0],[32369,1,0,0],[32714,0,1,0],[32714,3,1,0],[33059,2,0,0],[33403,2,0,0],[33748,0,0,0],[33921,3,0,0],[34093,0,0,0],[34266,3,0,0],[34438,2,0,0],[34783,3,0,0],[35128,2,0,0],[35300,1,0,0],[35472,2,0,0],[35645,1,0,0],[35817,0,0,0],[36162,2,0,0],[36507,0,0,0],[36679,3,0,0],[36852,0,0,0],[37024,1,0,0],[37197,2,0,0],[37541,0,0,0],[37886,2,0,0],[38059,3,0,0],[38231,2,0,0],[38403,1,0,0],[38576,0,0,0],[38921,2,0,0],[39266,0,0,0],[39438,3,0,0],[39610,0,0,0],[39783,3,0,0],[39955,2,0,0],[40300,3,0,0],[40645,2,0,0],[40817,1,0,0],[40990,2,0,0],[41162,1,0,0],[41334,0,0,0],[41679,2,0,0],[41852,1,0,0],[42024,0,0,0],[42197,3,0,0],[42369,2,0,0],[42714,0,0,0],[43059,1,0,0],[43231,2,0,0],[43403,1,0,0],[43576,2,0,0],[43748,0,1,0],[44093,0,0,0],[44438,1,2,45597],[45128,2,0,0],[45817,1,2,46977],[46507,3,0,0],[47197,2,2,47714],[47886,3,2,48403],[48576,2,2,49735],[49266,1,0,0],[49955,1,0,0],[50128,2,0,0],[50300,1,0,0],[50472,0,0,0],[50645,1,0,0],[50990,3,0,0],[51334,1,0,0],[51507,2,0,0],[51679,1,0,0],[51852,0,0,0],[52024,1,0,0],[52369,3,0,0],[52714,1,0,0],[52886,0,0,0],[53059,3,0,0],[53231,0,0,0],[53403,1,0,0],[53748,1,0,0],[53921,0,0,0],[54093,1,0,0],[54266,0,0,0],[54438,3,0,0],[54783,1,0,0],[55128,2,0,0],[55472,0,0,0],[55645,1,0,0],[55817,0,0,0],[55990,3,0,0],[56162,0,0,0],[56507,2,0,0],[56852,0,0,0],[57024,1,0,0],[57197,0,0,0],[57369,3,0,0],[57541,0,0,0],[57886,2,0,0],[58231,2,0,0],[58403,1,0,0],[58576,0,0,0],[58748,3,0,0],[58921,0,0,0],[59266,2,0,0],[59438,3,0,0],[59610,2,0,0],[59955,1,0,0],[60300,0,1,0],[60300,3,1,0],[60645,3,0,0],[60990,2,0,0],[61334,0,0,0],[61507,3,0,0],[61679,0,0,0],[61852,3,0,0],[62024,2,0,0],[62369,3,0,0],[62714,2,0,0],[62886,1,0,0],[63059,2,0,0],[63231,1,0,0],[63403,0,0,0],[63748,2,0,0],[64093,0,0,0],[64266,3,0,0],[64438,0,0,0],[64610,1,0,0],[64783,2,0,0],[65128,0,0,0],[65472,2,0,0],[65645,3,0,0],[65817,2,0,0],[65990,1,0,0],[66162,0,0,0],[66507,2,0,0],[66852,0,0,0],[67024,3,0,0],[67197,0,0,0],[67369,3,0,0],[67541,2,0,0],[67886,3,0,0],[68231,2,0,0],[68403,1,0,0],[68576,2,0,0],[68748,1,0,0],[68921,0,0,0],[69266,2,0,0],[69438,1,0,0],[69610,0,0,0],[69783,3,0,0],[69955,2,0,0],[70300,0,0,0],[70645,1,0,0],[70817,2,0,0],[70990,1,0,0],[71162,2,0,0],[71334,0,1,0],[71679,1,0,0],[72024,2,0,0],[72369,0,0,0],[72541,3,0,0],[72714,0,0,0],[72886,3,0,0],[73059,2,0,0],[73403,0,1,0],[73403,3,1,0],[73748,0,0,0],[74438,1,0,0],[74783,1,0,0],[75128,0,0,0],[75817,1,0,0],[76162,0,0,0]],"expert":[[300,1,0,0],[472,2,0,0],[645,3,0,0],[817,2,0,0],[990,3,0,0],[1162,2,0,0],[1334,3,0,0],[1507,2,0,0],[1679,0,0,0],[1852,3,0,0],[2024,2,0,0],[2197,3,0,0],[2369,2,0,0],[2541,3,0,0],[2714,2,0,0],[2886,3,0,0],[3059,1,0,0],[3231,2,0,0],[3403,3,0,0],[3576,2,0,0],[3748,3,0,0],[3921,2,0,0],[4093,3,0,0],[4266,2,0,0],[4438,0,0,0],[4610,3,0,0],[4783,2,0,0],[4955,3,0,0],[5128,2,0,0],[5300,3,0,0],[5472,2,0,0],[5645,3,0,0],[5817,1,0,0],[5990,2,0,0],[6162,3,0,0],[6334,2,0,0],[6507,3,0,0],[6679,0,0,0],[6852,2,0,0],[7024,3,0,0],[7197,1,0,0],[7369,2,0,0],[7541,3,0,0],[7714,2,0,0],[7886,3,0,0],[8059,0,0,0],[8231,2,0,0],[8403,3,0,0],[8576,1,0,0],[8748,2,0,0],[8921,3,0,0],[9093,2,0,0],[9266,3,0,0],[9438,0,0,0],[9610,2,0,0],[9783,3,0,0],[9955,1,0,0],[10128,2,0,0],[10300,3,0,0],[10472,2,0,0],[10645,3,0,0],[10817,0,0,0],[10990,2,0,0],[11162,3,0,0],[11334,0,0,0],[11507,1,0,0],[11679,2,0,0],[11852,3,0,0],[12024,2,0,0],[12197,1,0,0],[12369,0,0,0],[12541,1,0,0],[12714,2,0,0],[13059,1,0,0],[13403,0,0,0],[13576,2,0,0],[13748,3,0,0],[14093,2,0,0],[14266,3,0,0],[14438,0,0,0],[14610,1,0,0],[14783,0,0,0],[14955,3,0,0],[15128,2,0,0],[15300,3,0,0],[15472,2,0,0],[15817,1,0,0],[16162,0,0,0],[16334,3,0,0],[16507,1,0,0],[16852,0,0,0],[17024,1,0,0],[17197,2,0,0],[17369,3,0,0],[17541,2,0,0],[17714,1,0,0],[17886,0,0,0],[18059,1,0,0],[18231,2,0,0],[18576,1,0,0],[18921,0,0,0],[19093,2,0,0],[19266,3,0,0],[19610,2,0,0],[19783,3,0,0],[19955,0,0,0],[20128,1,0,0],[20300,2,0,0],[20472,1,0,0],[20645,0,0,0],[20817,3,0,0],[20990,2,0,0],[21334,3,0,0],[21679,0,1,0],[21679,3,1,0],[22024,0,0,0],[22369,1,0,0],[22541,3,0,0],[22714,1,0,0],[22886,0,0,0],[23059,1,0,0],[23231,2,0,0],[23403,3,0,0],[23576,1,0,0],[23748,2,0,0],[24007,1,0,0],[24266,3,0,0],[24438,0,0,0],[24610,1,0,0],[24783,2,0,0],[24955,0,0,0],[25128,1,0,0],[25386,0,0,0],[25645,2,0,0],[25817,3,0,0],[25990,0,0,0],[26162,3,0,0],[26334,2,0,0],[26507,3,0,0],[26679,2,0,0],[26852,1,0,0],[27024,2,0,0],[27197,3,0,0],[27369,1,0,0],[27541,0,0,0],[27714,2,0,0],[27886,3,0,0],[28145,2,0,0],[28403,0,0,0],[28576,1,0,0],[28748,2,0,0],[28921,3,0,0],[29093,0,0,0],[29266,2,0,0],[29524,1,0,0],[29783,3,0,0],[29955,0,0,0],[30128,1,0,0],[30300,2,0,0],[30472,1,0,0],[30817,0,0,0],[30990,3,0,0],[31162,2,0,0],[31334,3,0,0],[31507,0,0,0],[31679,1,0,0],[31852,2,0,0],[32024,1,0,0],[32369,0,0,0],[32714,0,1,0],[32714,3,1,0],[32972,2,0,0],[33231,3,0,0],[33403,1,1,0],[33576,3,0,0],[33748,1,0,0],[33921,0,0,0],[34093,1,0,0],[34266,0,0,0],[34438,3,0,0],[34610,1,0,0],[34783,0,1,0],[34955,3,0,0],[35128,0,0,0],[35300,3,0,0],[35472,0,0,0],[35645,3,0,0],[35817,2,0,0],[35990,1,0,0],[36162,0,1,0],[36421,2,0,0],[36679,0,0,0],[36852,1,0,0],[37024,2,0,0],[37197,3,0,0],[37369,1,0,0],[37541,2,1,0],[37714,0,0,0],[37886,2,0,0],[38059,3,0,0],[38231,2,0,0],[38403,1,0,0],[38576,0,0,0],[38748,2,0,0],[38921,1,1,0],[39093,3,0,0],[39266,1,0,0],[39438,0,0,0],[39610,1,0,0],[39783,0,0,0],[39955,3,0,0],[40128,1,0,0],[40300,0,1,0],[40472,3,0,0],[40645,0,0,0],[40817,3,0,0],[40990,0,0,0],[41162,3,0,0],[41334,2,0,0],[41507,1,0,0],[41679,0,1,0],[41852,2,0,0],[42024,1,0,0],[42197,0,0,0],[42369,3,0,0],[42541,0,0,0],[42714,1,0,0],[42886,3,0,0],[43059,1,1,0],[43231,3,0,0],[43403,2,0,0],[43576,3,0,0],[43748,0,1,0],[43921,2,0,0],[44266,3,0,0],[45128,1,0,0],[45817,1,2,46977],[46507,3,0,0],[47197,2,2,47714],[47886,3,2,48403],[48576,2,2,49735],[49266,1,0,0],[49955,1,0,0],[50128,3,0,0],[50300,1,0,0],[50472,0,0,0],[50645,1,0,0],[50817,2,0,0],[50990,3,0,0],[51162,0,0,0],[51334,2,0,0],[51593,1,0,0],[51852,3,0,0],[52024,0,0,0],[52197,1,0,0],[52369,2,0,0],[52541,1,0,0],[52800,0,0,0],[53059,1,0,0],[53231,2,0,0],[53403,3,0,0],[53576,0,0,0],[53748,3,0,0],[53921,2,0,0],[54093,3,0,0],[54266,2,0,0],[54438,1,0,0],[54610,2,0,0],[54783,3,0,0],[54955,0,0,0],[55300,3,0,0],[55559,2,0,0],[55817,1,0,0],[55990,0,0,0],[56162,1,0,0],[56334,2,0,0],[56507,3,0,0],[56679,1,0,0],[56852,2,0,0],[57110,1,0,0],[57369,3,0,0],[57541,0,0,0],[57714,1,0,0],[57886,2,0,0],[58059,0,0,0],[58231,1,0,0],[58403,0,0,0],[58576,3,0,0],[58748,2,0,0],[58921,3,0,0],[59093,0,0,0],[59266,1,0,0],[59438,2,0,0],[59610,1,0,0],[59955,0,0,0],[60300,0,1,0],[60300,3,1,0],[60472,2,0,0],[60731,3,0,0],[60990,1,1,0],[61162,2,0,0],[61334,1,0,0],[61507,0,0,0],[61679,1,0,0],[61852,0,0,0],[62024,3,0,0],[62197,0,0,0],[62369,3,1,0],[62541,2,0,0],[62714,0,0,0],[62886,3,0,0],[63059,0,0,0],[63231,3,0,0],[63403,2,0,0],[63576,0,0,0],[63748,3,1,0],[63921,1,0,0],[64266,0,0,0],[64438,1,0,0],[64610,2,0,0],[64783,3,0,0],[64955,0,0,0],[65128,1,1,0],[65386,3,0,0],[65645,3,0,0],[65817,2,0,0],[65990,1,0,0],[66162,0,0,0],[66334,3,0,0],[66507,1,1,0],[66679,2,0,0],[66852,1,0,0],[67024,0,0,0],[67197,1,0,0],[67369,0,0,0],[67541,3,0,0],[67714,0,0,0],[67886,3,1,0],[68059,2,0,0],[68231,0,0,0],[68403,3,0,0],[68576,0,0,0],[68748,3,0,0],[68921,2,0,0],[69093,0,0,0],[69266,3,1,0],[69438,2,0,0],[69610,1,0,0],[69783,0,0,0],[69955,3,0,0],[70128,0,0,0],[70300,1,0,0],[70472,2,0,0],[70645,1,1,0],[70817,3,0,0],[70990,2,0,0],[71162,3,0,0],[71334,0,1,0],[71507,3,0,0],[71852,2,0,0],[72024,3,0,0],[72283,2,0,0],[72541,0,0,0],[72714,1,0,0],[72886,0,0,0],[73059,3,0,0],[73403,0,1,0],[73403,3,1,0],[73748,0,0,0],[74266,1,0,0],[74783,0,0,0],[75128,0,0,0],[75645,1,0,0],[76162,0,0,0]]},"audio":"audio/neon.mp3","lv":{"easy":4,"normal":5,"hard":10,"expert":12},"n":{"easy":96,"normal":159,"hard":279,"expert":374},"holds":{"easy":4,"normal":11,"hard":5,"expert":4}}];
+const SKINS=[
+  {id:'pill',name:'ノーマル',need:0},
+  {id:'star',name:'ほし',need:20},
+  {id:'heart',name:'ハート',need:60},
+  {id:'candy',name:'キャンディ',need:120},
+  {id:'gold',name:'ゴールド',need:220}
+];
+const VOL=[0,.4,.7,1];
+const SAVE_KEY='chappy-rhythm-save-v2';
+const save=(()=>{
+  let d={};try{d=JSON.parse(localStorage.getItem(SAVE_KEY)||'{}')||{}}catch(e){d={}}
+  d.settings=Object.assign({speed:5,offset:0,tapVol:3,musicVol:3,gameover:true,skin:'pill'},d.settings||{});
+  d.records=d.records||{};d.apples=d.apples||0;
+  d.sel=d.sel||{song:SONGS[0].id,diff:'normal'};
+  if(!SONGS.some(s=>s.id===d.sel.song))d.sel.song=SONGS[0].id;
+  if(!DIFFS.some(x=>x.k===d.sel.diff))d.sel.diff='normal';
+  return d;
+})();
+function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(e){}}
+const approachSec=()=>2.6*Math.pow(.86,save.settings.speed-1);
+const songById=id=>SONGS.find(s=>s.id===id)||SONGS[0];
+const fmtTime=s=>`${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=x=>x<0?0:x>1?1:x*x*(3-2*x);
+function hexA(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16},${(n>>8)&255},${n&255},${Math.max(0,Math.min(1,a))})`}
+function getRecord(id,diff){return (save.records[id]||{})[diff]||null}
+function putRecord(id,diff,r){
+  const rec=save.records[id]=save.records[id]||{};const old=rec[diff];
+  const lamp=!old||LAMP_ORDER.indexOf(r.lamp)>LAMP_ORDER.indexOf(old.lamp)?r.lamp:old.lamp;
+  const better=!old||r.score>old.score;
+  rec[diff]={score:better?r.score:old.score,acc:Math.max(r.acc,old?old.acc:0),rank:rankOf(Math.max(r.acc,old?old.acc:0)),lamp,combo:Math.max(r.maxCombo,old?old.combo:0)};
+  persist();return {newRecord:better&&!!(old||r.score>0),first:!old};
+}
+
+/* ---- audio.js ---- */
+/* ===== 音：曲の読みこみ・再生、試聴、タップ音、時計 ===== */
+let ac=null,SFX=null,musicOut=null;
+const bufCache=new Map(),loading=new Map();
+function initAudio(){
+  if(ac)return;
+  ac=new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+  SFX=createSynth(ac,{rev:.18,dly:0,thr:-8,revLen:1.2});
+  musicOut=ac.createGain();musicOut.connect(ac.destination);
+  applyVolumes();
+  setInterval(()=>{if(SFX)SFX.gc(ac.currentTime-.5)},2000);
+}
+function applyVolumes(){if(!ac)return;SFX.bus.fx.gain.value=VOL[save.settings.tapVol]*1.1;musicOut.gain.value=VOL[save.settings.musicVol]}
+function resumeAudio(){initAudio();if(ac.state!=='running')ac.resume().catch(()=>{})}
+// 曲ファイルを読みこむ（最近の数曲だけ覚えておく）
+function loadSong(song){
+  initAudio();
+  if(bufCache.has(song.id)){const b=bufCache.get(song.id);bufCache.delete(song.id);bufCache.set(song.id,b);return Promise.resolve(b)}
+  if(loading.has(song.id))return loading.get(song.id);
+  const p=fetch(song.audio).then(r=>{if(!r.ok)throw Error('http '+r.status);return r.arrayBuffer()})
+    .then(ab=>new Promise((ok,ng)=>{const q=ac.decodeAudioData(ab,ok,ng);if(q&&q.catch)q.catch(ng)}))
+    .then(b=>{bufCache.set(song.id,b);while(bufCache.size>3){const k=bufCache.keys().next().value;if(k===playingId)break;bufCache.delete(k)}loading.delete(song.id);return b})
+    .catch(e=>{loading.delete(song.id);throw e});
+  loading.set(song.id,p);return p;
+}
+// 音が実際に聞こえている時刻（AudioContextの時間）
+function heardAt(perf){
+  const now=performance.now(),ct=ac.currentTime;
+  if(ac.getOutputTimestamp&&ac.state==='running'){const ts=ac.getOutputTimestamp();
+    if(ts.contextTime>0&&ts.performanceTime>0){const est=ts.contextTime+(perf-ts.performanceTime)/1000;if(est<ct+.08&&est>ct-.6)return est}}
+  return ct-(ac.outputLatency||ac.baseLatency||0)+(perf-now)/1000;
+}
+/* ---------- 試聴（曲選択中） ---------- */
+let prev=null,playingId=null;
+function stopPreview(fade=.25){
+  if(!prev)return;const p=prev;prev=null;const t=ac.currentTime;
+  try{p.g.gain.cancelScheduledValues(t);p.g.gain.setValueAtTime(p.g.gain.value,t);p.g.gain.linearRampToValueAtTime(0,t+fade);p.src.stop(t+fade+.05)}catch(e){}
+}
+function startPreview(song){
+  stopPreview();if(!ac||ac.state!=='running')return;
+  const b=bufCache.get(song.id);if(!b)return;
+  const src=ac.createBufferSource();src.buffer=b;const g=ac.createGain();src.connect(g);g.connect(musicOut);
+  const t=ac.currentTime+.05,len=Math.min(16,b.duration-song.preview-.1),gain=song.gain||1;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.85*gain,t+.8);g.gain.setValueAtTime(.85*gain,t+len-1.2);g.gain.linearRampToValueAtTime(0,t+len);
+  src.start(t,song.preview,len);
+  const me={src,g,song,start:t,offset:song.preview};prev=me;
+  src.onended=()=>{if(prev===me){prev=null;if(state==='select'&&curSong()===song)startPreview(song)}};
+}
+// 試聴の拍（チャッピーのダンス用）
+function previewBeat(){
+  if(!prev||!ac)return null;const s=prev.song,t=prev.offset+(heardAt(performance.now())-prev.start);
+  return {t,bar0:s.t0,beat:s.beat};
+}
+/* ---------- プレイ中の曲 ---------- */
+let music=null;
+function startMusic(song,when){
+  stopMusic();const b=bufCache.get(song.id);if(!b)return false;
+  const src=ac.createBufferSource();src.buffer=b;const g=ac.createGain();g.gain.value=song.gain||1;src.connect(g);g.connect(musicOut);
+  src.start(when,0);music={src,g,when,song};playingId=song.id;return true;
+}
+function stopMusic(){if(!music)return;try{music.src.stop()}catch(e){}try{music.src.disconnect()}catch(e){}music=null}
+function failMusic(){ // ゲームオーバー：音がしぼむ
+  if(!music)return;const t=ac.currentTime;
+  try{music.src.playbackRate.setValueAtTime(1,t);music.src.playbackRate.linearRampToValueAtTime(.25,t+1.4);
+    music.g.gain.setValueAtTime(music.g.gain.value,t);music.g.gain.linearRampToValueAtTime(0,t+1.5)}catch(e){}
+}
+function playTap(kind){if(SFX&&save.settings.tapVol)SFX.tap(ac.currentTime,kind)}
+
+/* ---- render.js ---- */
+/* ===== 描画：背景・レーン・ノーツ・エフェクト・HUD ===== */
+const cvs=document.getElementById('game');let g=cvs.getContext('2d');
+let W=0,H=0,DPR=1,safeTop=0;
+function resize(){
+  DPR=Math.min(1.5,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;
+  cvs.width=Math.round(W*DPR);cvs.height=Math.round(H*DPR);g.setTransform(DPR,0,0,DPR,0,0);
+  safeTop=document.getElementById('safeTop').offsetHeight||0;
+}
+addEventListener('resize',resize);resize();
+const LANE_COL=['#4fd3f0','#bfefff','#bfefff','#4fd3f0'],GOLD='#ffd36b',APPLE='#ff5a4e';
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function geomPlay(){
+  const narrow=W<760,top=safeTop+8+(narrow?62:0),ch=narrow?Math.min(H*.17,W*.38):Math.min(H*.25,W*.28),chFoot=top+ch*1.14;
+  const hy=chFoot+H*.02,jy=H*.875,bot=Math.min(W*.42,W>H?H*.62:W*.47,420);
+  return {cx:W/2,hy,jy,bot,top:bot*.06,chx:W/2-ch*.06,chFoot,ch,narrow,ui:clamp(Math.min(H/600,W/640),1,1.6)};
+}
+const proj=z=>(1-z)/(1+z*1.3);
+function laneX(G,b,s){const half=G.top+(G.bot-G.top)*s;return G.cx+(b/2-1)*half}
+const laneY=(G,s)=>G.hy+(G.jy-G.hy)*s;
+function rrPath(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+
+/* ---------- ノーツの絵（きせかえ） ---------- */
+function mkSprite(w,h,fn){const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const x=c.getContext('2d');x.scale(2,2);fn(x);return c}
+function starPath(x,cx,cy,R,r){x.beginPath();for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r:R;x.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr)}x.closePath()}
+function heartPath(x,cx,cy,s){x.beginPath();x.moveTo(cx,cy+s*.75);x.bezierCurveTo(cx-s*1.25,cy-s*.1,cx-s*.6,cy-s*.95,cx,cy-s*.35);x.bezierCurveTo(cx+s*.6,cy-s*.95,cx+s*1.25,cy-s*.1,cx,cy+s*.75);x.closePath()}
+function drawAppleShape(x,cx,cy,r){
+  x.save();x.shadowColor=APPLE;x.shadowBlur=14;
+  const gr=x.createRadialGradient(cx-r*.35,cy-r*.35,r*.1,cx,cy,r);gr.addColorStop(0,'#ff9a8a');gr.addColorStop(.5,APPLE);gr.addColorStop(1,'#b8231b');
+  x.fillStyle=gr;x.beginPath();x.arc(cx-r*.28,cy,r*.78,0,7);x.arc(cx+r*.28,cy,r*.78,0,7);x.fill();x.shadowBlur=0;
+  x.strokeStyle='#5a3a22';x.lineWidth=Math.max(1,r*.12);x.beginPath();x.moveTo(cx,cy-r*.55);x.lineTo(cx+r*.08,cy-r*1.05);x.stroke();
+  x.fillStyle='#5aa04a';x.beginPath();x.ellipse(cx+r*.38,cy-r*.95,r*.32,r*.15,-.4,0,7);x.fill();
+  x.fillStyle='rgba(255,255,255,.7)';x.beginPath();x.ellipse(cx-r*.45,cy-r*.3,r*.16,r*.1,-.6,0,7);x.fill();x.restore();
+}
+const SPR={};
+function buildSprites(){
+  const pill=col=>mkSprite(200,64,x=>{x.shadowColor=col;x.shadowBlur=16;x.fillStyle=hexA(col,.94);rrPath(x,20,20,160,24,12);x.fill();
+    x.shadowBlur=0;x.fillStyle='rgba(255,255,255,.88)';rrPath(x,48,28,104,8,4);x.fill()});
+  const candy=col=>mkSprite(200,64,x=>{x.shadowColor='#ff8fc7';x.shadowBlur=14;x.fillStyle='#fff';rrPath(x,20,20,160,24,12);x.fill();x.shadowBlur=0;
+    x.save();rrPath(x,20,20,160,24,12);x.clip();x.fillStyle=col==='gold'?GOLD:'#ff6fae';for(let i=-2;i<12;i++){x.beginPath();x.moveTo(20+i*16,44);x.lineTo(30+i*16,44);x.lineTo(46+i*16,20);x.lineTo(36+i*16,20);x.fill()}x.restore();
+    x.strokeStyle='rgba(255,255,255,.9)';x.lineWidth=2;rrPath(x,21,21,158,22,11);x.stroke()});
+  const star=col=>mkSprite(120,120,x=>{x.shadowColor=col;x.shadowBlur=16;x.fillStyle=col;starPath(x,60,62,44,19);x.fill();x.shadowBlur=0;x.fillStyle='rgba(255,255,255,.75)';starPath(x,60,62,20,9);x.fill()});
+  const heart=col=>mkSprite(120,120,x=>{x.shadowColor=col;x.shadowBlur=16;x.fillStyle=col;heartPath(x,60,60,40);x.fill();x.shadowBlur=0;x.fillStyle='rgba(255,255,255,.7)';x.beginPath();x.ellipse(44,46,8,5,-.6,0,7);x.fill()});
+  const goldPill=()=>mkSprite(200,64,x=>{x.shadowColor=GOLD;x.shadowBlur=18;const gr=x.createLinearGradient(0,20,0,44);gr.addColorStop(0,'#fff3c4');gr.addColorStop(.5,GOLD);gr.addColorStop(1,'#d9962b');x.fillStyle=gr;rrPath(x,20,20,160,24,12);x.fill();
+    x.shadowBlur=0;x.fillStyle='rgba(255,255,255,.9)';rrPath(x,48,27,104,7,3.5);x.fill()});
+  const mk={pill,candy,star,heart,gold:()=>goldPill()};
+  for(const sk of SKINS){SPR[sk.id]={lane:LANE_COL.map(c=>sk.id==='gold'?mk.gold():mk[sk.id](sk.id==='heart'?(c==='#4fd3f0'?'#ff7fb6':'#ffb3d4'):c)),gold:sk.id==='candy'?mk.candy('gold'):sk.id==='star'?mk.star(GOLD):sk.id==='heart'?mk.heart(GOLD):mk.gold()}}
+  SPR.apple=mkSprite(120,120,x=>drawAppleShape(x,60,62,40));
+}
+buildSprites();
+function drawNoteShape(skin,lane,cx,y,w,h,alpha,fever){
+  const set=SPR[skin]||SPR.pill,img=fever?set.gold:set.lane[lane];g.globalAlpha=alpha;
+  if(skin==='star'||skin==='heart'){const sz=Math.min(w*.62,h*4.6);g.drawImage(img,cx-sz*.75,y-sz*.75,sz*1.5,sz*1.5)}
+  else{const kx=w/160,ky=h/24;g.drawImage(img,cx-100*kx,y-32*ky,200*kx,64*ky)}
+  g.globalAlpha=1;
+}
+
+/* ---------- 背景 ---------- */
+const stars=Array.from({length:220},()=>({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.random()}));
+let feverMix=0;
+function drawBackground(now,dt,pulse,cx,cy,calm){
+  const k=now/1000,f=feverMix;
+  g.globalCompositeOperation='source-over';g.fillStyle='#070b16';g.fillRect(0,0,W,H);
+  const a1=g.createRadialGradient(cx+Math.sin(k*.2)*W*.2,cy,0,cx,cy,Math.max(W,H)*.8);
+  a1.addColorStop(0,f>0?`rgba(${60+170*f|0},${170-30*f|0},${220-150*f|0},.42)`:'rgba(60,170,220,.40)');a1.addColorStop(.35,f>0?`rgba(${30+120*f|0},${70-20*f|0},${140-60*f|0},.2)`:'rgba(30,70,140,.18)');a1.addColorStop(1,'rgba(7,11,22,0)');
+  g.fillStyle=a1;g.fillRect(0,0,W,H);
+  const a2=g.createRadialGradient(cx-Math.cos(k*.15)*W*.3,H*.1,0,cx,H*.1,W*.7);
+  a2.addColorStop(0,`rgba(255,90,${78+100*f|0},${.12+.18*f})`);a2.addColorStop(1,'rgba(7,11,22,0)');
+  g.fillStyle=a2;g.fillRect(0,0,W,H);
+  g.globalCompositeOperation='lighter';
+  const spd=reduceMotion?.03:(calm?.06:(.12+pulse*.25))*(1+f*2.5);
+  for(const s of stars){
+    s.z-=dt*spd;if(s.z<.03){s.z=1;s.x=Math.random()*2-1;s.y=Math.random()*2-1}
+    const sx=cx+s.x/s.z*W*.18,sy=cy+s.y/s.z*H*.12;if(sx<0||sx>W||sy<0||sy>H)continue;
+    const al=(1-s.z)*.9,r=(1-s.z)*1.8+.3;
+    if(f>.05){const s2=s.z+dt*spd*6,px=cx+s.x/s2*W*.18,py=cy+s.y/s2*H*.12;g.strokeStyle=`rgba(255,${220-40*f|0},${200-100*f|0},${al*f})`;g.lineWidth=r;g.beginPath();g.moveTo(px,py);g.lineTo(sx,sy);g.stroke()}
+    g.fillStyle=`rgba(220,225,255,${al})`;g.beginPath();g.arc(sx,sy,r,0,7);g.fill();
+  }
+  g.globalCompositeOperation='source-over';
+}
+function drawRings(cx,cy,pulse,k,scale){
+  const R=Math.min(W,H)*.09*(1+pulse*.08)*scale;g.save();g.translate(cx,cy);g.lineWidth=1;g.globalCompositeOperation='lighter';
+  for(let i=0;i<4;i++){g.save();g.rotate(k*(i%2?-.12:.08)*(i+1));g.strokeStyle=feverMix>.05?`hsla(${(k*90+i*60)%360},90%,70%,${.25-i*.04})`:`rgba(170,225,250,${.22-i*.04})`;g.setLineDash(i%2?[2,9]:[18,6,2,6]);g.beginPath();g.arc(0,0,R*(1+i*.75),0,7);g.stroke();g.restore()}
+  g.setLineDash([]);g.save();g.rotate(-k*.1);g.strokeStyle='rgba(255,90,78,.3)';g.beginPath();
+  for(let i=0;i<=6;i++){const an=i/6*Math.PI*2;g[i?'lineTo':'moveTo'](Math.cos(an)*R*1.6,Math.sin(an)*R*1.6)}g.stroke();
+  g.beginPath();for(let i=0;i<=3;i++){const an=i/3*Math.PI*2-Math.PI/2;g[i?'lineTo':'moveTo'](Math.cos(an)*R*1.6,Math.sin(an)*R*1.6)}g.stroke();g.restore();
+  const core=g.createRadialGradient(0,0,0,0,0,R*1.2);core.addColorStop(0,`rgba(255,255,255,${.45+pulse*.3})`);core.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=core;g.beginPath();g.arc(0,0,R*1.2,0,7);g.fill();g.restore();
+}
+
+/* ---------- エフェクト ---------- */
+const bursts=[],sparks=[],floaters=[];
+const pressedAt=[-9e9,-9e9,-9e9,-9e9];
+function addHitFx(lane,kind,apple){
+  const now=performance.now();bursts.push({lane,at:now,kind});
+  const n=reduceMotion?4:(kind==='p'?16:9);
+  for(let i=0;i<n;i++)sparks.push({lane,a:Math.random()*Math.PI*2,v:80+Math.random()*240,at:now,c:apple||Math.random()<.25?APPLE:(feverMix>.5?GOLD:LANE_COL[lane])});
+}
+function drawEffects(G,now){
+  g.globalCompositeOperation='lighter';
+  for(let i=bursts.length-1;i>=0;i--){const b=bursts[i],age=(now-b.at)/380;if(age>1){bursts.splice(i,1);continue}
+    const cxn=(laneX(G,b.lane,1)+laneX(G,b.lane+1,1))/2;g.strokeStyle=hexA(feverMix>.5?GOLD:LANE_COL[b.lane],1-age);g.lineWidth=3*(1-age)*G.ui;
+    g.beginPath();g.ellipse(cxn,G.jy,(G.bot/4)*(.5+age*.9),(G.bot/4)*(.2+age*.35),0,0,7);g.stroke()}
+  for(let i=sparks.length-1;i>=0;i--){const p=sparks[i],age=(now-p.at)/520;if(age>1){sparks.splice(i,1);continue}
+    const cxn=(laneX(G,p.lane,1)+laneX(G,p.lane+1,1))/2,d=p.v*age*(1-age*.4)*G.ui;
+    g.fillStyle=hexA(p.c,1-age);g.beginPath();g.arc(cxn+Math.cos(p.a)*d,G.jy+Math.sin(p.a)*d*.5-age*30,(2.2*(1-age)+.5)*G.ui,0,7);g.fill()}
+  g.globalCompositeOperation='source-over';
+  for(let i=floaters.length-1;i>=0;i--){const f=floaters[i],age=(now-f.at)/f.life;if(age>1){floaters.splice(i,1);continue}
+    g.save();g.globalAlpha=Math.min(1,(1-age)*2.2);g.textAlign='center';g.textBaseline='middle';g.fillStyle=f.col;
+    const sc=f.pop?1+.35*Math.max(0,1-age*5):1;g.font=`400 ${Math.round(f.size*sc)}px "Dela Gothic One",sans-serif`;
+    if(f.glow){g.shadowColor=f.col;g.shadowBlur=18}g.fillText(f.text,f.x,f.y-age*(f.rise||16));g.restore()}
+}
+function floatText(text,x,y,size,col,opt={}){floaters.push(Object.assign({text,x,y,size,col,at:performance.now(),life:900},opt))}
+
+/* ---- chappy.js ---- */
+/* ===== チャッピー：いただいたキット（chappy.js）をそのまま使う。拍に合わせた動きは外側の箱でつける ===== */
+const mood={kind:'',at:-9999,lane:undefined};
+let appleAt=-9999,special={at:-9999,n:0},feverAt=-9999;
+const CH={box:null,wrap:null,svg:null,mood:'normal',lastAct:0,lastBar:-1,lastJumpKey:0};
+function chInit(){
+  CH.box=document.createElement('div');CH.box.id='chappyBox';
+  CH.wrap=document.createElement('div');CH.wrap.className='ch-wrap';CH.box.appendChild(CH.wrap);
+  document.body.appendChild(CH.box);
+  CH.svg=Chappy.mount(CH.wrap,{label:false});
+}
+function chMood(m){if(CH.mood===m||!CH.svg)return;CH.mood=m;CH.svg=Chappy.setMood(CH.svg,m)}
+function chPlay(m){if(CH.svg)Chappy.play(CH.svg,m)}
+function chLook(x,y){if(CH.svg)Chappy.lookAt(CH.svg,x,y)}
+function chHide(){if(CH.box)CH.box.style.display='none'}
+// 拍に合わせたゆれ（チャッピーの絵には手を入れず、入れている箱を動かす）
+function chBeat(o,h){
+  const k=h/300;
+  if(o.t==null||reduceMotion)return {x:0,y:0,rot:0,sx:1,sy:1};
+  const bp=(o.t-o.bar0)/o.beat,ph=((bp%1)+1)%1,bi=Math.floor(bp);
+  const amp=o.fever?1.5:.45+(o.inten||0)*.75;
+  const air=Math.sin(ph*Math.PI),hit=Math.exp(-ph*7),side=(bi&1)?1:-1;
+  return {x:Math.sin(bp*Math.PI)*7*amp*k,y:air*11*amp*k,rot:side*2.4*amp*air,sx:1+hit*.04*amp,sy:1-hit*.05*amp};
+}
+// 足もと (cx, footY)、高さ h の位置に置く
+function chPlace(cx,footY,h,P){
+  const w=h*846/934,b=CH.box.style;
+  b.display='block';b.width=w.toFixed(1)+'px';b.left=(cx-w*.378).toFixed(1)+'px';b.top=(footY-h*.985).toFixed(1)+'px';
+  CH.wrap.style.transform=`translate(${P.x.toFixed(1)}px,${(-P.y).toFixed(1)}px) rotate(${P.rot.toFixed(2)}deg) scale(${P.sx.toFixed(3)},${P.sy.toFixed(3)})`;
+}
+// 足もとのステージ（キャンバスに描く）
+function drawStage(cx,footY,h,col,pulse){
+  const R=h*.42;g.save();const sg=g.createRadialGradient(cx,footY,0,cx,footY,R);
+  sg.addColorStop(0,hexA(col||'#4fd3f0',.38));sg.addColorStop(.7,hexA(col||'#4fd3f0',.12));sg.addColorStop(1,hexA(col||'#4fd3f0',0));
+  g.fillStyle=sg;g.beginPath();g.ellipse(cx,footY,R,R*.2,0,0,7);g.fill();
+  g.strokeStyle=`rgba(170,230,255,${.3+(pulse||0)*.45})`;g.lineWidth=2;g.beginPath();g.ellipse(cx,footY,R*.8,R*.16,0,0,7);g.stroke();g.restore();
+}
+// ときどき・できごとに合わせた動き
+function chReact(now,o){
+  if(o.mode==='play'){
+    chMood(o.failing?'sleep':o.fever?'happy':'normal');
+    if(o.failing)return;
+    const sa=Math.max(special.at,feverAt);if(sa>CH.lastJumpKey&&now-sa<300){CH.lastJumpKey=sa;chPlay('jump')}
+    const ma=now-mood.at;
+    if(mood.kind==='m'&&ma<40&&now-CH.lastAct>500){CH.lastAct=now;chPlay('ears')}
+    if(now-appleAt<40&&now-CH.lastAct>500){CH.lastAct=now;chPlay('nod')}
+    if(mood.lane!==undefined)chLook(ma<700?(mood.lane-1.5)/1.5*(1-ma/700):0,0);
+    // もりあがっているときは4小節ごとに手をふる
+    if(o.t!=null&&o.inten>.6){const bar=Math.floor((o.t-o.bar0)/(o.beat*4));if(bar!==CH.lastBar&&bar%4===0&&now-CH.lastAct>1500){CH.lastAct=now;chPlay('wave')}CH.lastBar=bar}
+  }else if(o.mode==='select'){
+    chMood('normal');chLook(0,0);
+    if(now-CH.lastAct>6500){CH.lastAct=now;chPlay(Math.random()<.5?'wave':'ears')}
+  }else if(o.mode==='result'){
+    const good=o.rank&&['S+','S','A'].includes(o.rank)&&o.lamp!=='failed',bad=o.lamp==='failed'||o.rank==='D';
+    chMood(bad?'sleep':good?'happy':'normal');
+    if(!bad&&now-CH.lastAct>(good?1800:4000)){CH.lastAct=now;chPlay(good&&Math.random()<.6?'jump':'wave')}
+  }
+}
+
+/* ---- game.js ---- */
+/* ===== ゲームの進行：プレイ・入力・HUD ===== */
+const LEAD_IN=2.4;
+let state='select',cur=null,lastFrame=performance.now(),flash=null,dmgAt=-9e9,shownScore=0;
+let judgeShow=null; // {kind,at,delta}
+const curSong=()=>songById(save.sel.song);
+function songTime(perf){return heardAt(perf)-cur.when}
+function judgeTime(perf){return songTime(perf)-save.settings.offset/1000}
+function evTime(e){const ts=e&&e.timeStamp,now=performance.now();return ts&&ts>0&&Math.abs(now-ts)<1000?ts:now}
+
+/* ---------- プレイ開始 ---------- */
+async function startPlay(auto){
+  const song=curSong(),diff=save.sel.diff;if(!isOpen(song.id))return;
+  resumeAudio();stopPreview(.15);stopMusic();
+  setState('loading');
+  try{await loadSong(song)}catch(e){toast('曲を読みこめませんでした。通信を確認して、もう一度ためしてね');setState('select');return}
+  if(state!=='loading')return;
+  const chart=song.charts[diff],feverLen=clamp(16*song.beat,6.5,11);
+  cur={song,diff,auto:!!auto,approach:approachSec(),feverLen,keys:[0,0,0,0],chart,lastNote:0,frozenT:null,failAt:0,endAt:0,startPerf:performance.now()};
+  cur.lastNote=chart.reduce((m,n)=>Math.max(m,(n[2]===2?n[3]:n[0])/1000),0);
+  cur.S=createSession(chart,{diff,gameover:save.settings.gameover&&!auto,feverLen,onEvent:onGameEvent});
+  buildDensity(chart);
+  bursts.length=sparks.length=floaters.length=0;judgeShow=null;feverMix=0;shownScore=0;flash=null;
+  if(ac.state!=='running')await ac.resume().catch(()=>{});
+  cur.when=ac.currentTime+LEAD_IN;startMusic(song,cur.when);
+  setState('play');
+}
+let dens=[],densAvg=1;
+function buildDensity(chart){
+  const end=Math.ceil((chart.length?chart[chart.length-1][0]/1000:60)*2)+8;dens=new Array(end).fill(0);
+  for(const n of chart){const i=Math.floor(n[0]/500);for(let j=i-4;j<=i+4;j++)if(j>=0&&j<end)dens[j]++}
+  const nz=dens.filter(v=>v>0);densAvg=nz.length?nz.reduce((a,b)=>a+b,0)/nz.length:1;
+}
+const intensity=t=>Math.min(1,(dens[Math.floor(t*2)]||0)/(densAvg*1.25));
+
+/* ---------- 判定のできごと ---------- */
+let lastCrunch=0;
+function onGameEvent(e){
+  const now=performance.now();
+  if(e.type==='judge'){
+    const n=e.note;
+    if(e.kind==='m'){mood.kind='m';mood.at=now;mood.lane=n.lane;dmgAt=now;if(e.part==='head'||!judgeShow||now-judgeShow.at>200)judgeShow={kind:'m',at:now}}
+    else if(e.part==='head'){
+      if(e.kind==='p'){mood.kind='p';mood.at=now}mood.lane=n.lane;
+      judgeShow={kind:e.kind,at:now,delta:e.delta};
+      addHitFx(n.lane,e.kind,n.type===1);
+      if(n.type===1){appleAt=now;if(ac.currentTime-lastCrunch>.04){lastCrunch=ac.currentTime;SFX.crunch(ac.currentTime+.01,.9*VOL[save.settings.tapVol])}}
+      playTap(e.kind);
+      if(e.combo>0&&e.combo%50===0){special={at:now,n:e.combo};const G=geomPlay();floatText(`${e.combo} COMBO!`,G.cx,(G.hy+G.jy)*.5-60*G.ui,30*G.ui,GOLD,{life:1100,pop:1,glow:1})}
+    }else{ // ロングノーツの最後まで押せた
+      addHitFx(n.lane,'g',false);if(save.settings.tapVol)SFX.shimmer(ac.currentTime,.7*VOL[save.settings.tapVol]);
+    }
+  }else if(e.type==='fever'){
+    const G=geomPlay();
+    if(e.on){feverAt=now;flash={at:now,col:'255,236,170'};floatText('FEVER!',66+110*G.ui,safeTop+86*G.ui,22*G.ui,GOLD,{life:1100,pop:1,glow:1,rise:8});if(save.settings.tapVol)SFX.whoosh(ac.currentTime,.9)}
+  }else if(e.type==='fail'){
+    state='failing';cur.failAt=now;cur.frozenT=judgeTime(now);failMusic();flash={at:now,col:'255,70,90'};
+    for(let l=0;l<4;l++)cur.keys[l]=0;
+    setTimeout(()=>{if(state==='failing')finishPlay()},1700);
+  }
+}
+
+/* ---------- 入力 ---------- */
+function lanePress(l,perf){
+  pressedAt[l]=performance.now();
+  if(state!=='play'||cur.auto)return;
+  const t=judgeTime(perf);if(t<-1)return;
+  cur.S.press(l,t);
+}
+function laneRelease(l,perf){if(state!=='play'||cur.auto)return;cur.S.release(l,judgeTime(perf))}
+const KEYMAP={KeyD:0,KeyF:1,KeyJ:2,KeyK:3};
+const ptrLane=new Map();
+function laneAtX(x){const G=geomPlay();return clamp(Math.floor((x-(G.cx-G.bot))/(G.bot/2)),0,3)}
+cvs.addEventListener('pointerdown',e=>{
+  if(state!=='play'||!cur||cur.auto)return;e.preventDefault();
+  const l=laneAtX(e.clientX);ptrLane.set(e.pointerId,l);try{cvs.setPointerCapture(e.pointerId)}catch(_){}
+  cur.keys[l]++;lanePress(l,evTime(e));
+});
+const ptrUp=e=>{if(!ptrLane.has(e.pointerId))return;const l=ptrLane.get(e.pointerId);ptrLane.delete(e.pointerId);
+  if(!cur)return;cur.keys[l]=Math.max(0,cur.keys[l]-1);if(!cur.keys[l])laneRelease(l,evTime(e))};
+cvs.addEventListener('pointerup',ptrUp);cvs.addEventListener('pointercancel',ptrUp);
+addEventListener('keydown',e=>{
+  const l=KEYMAP[e.code];
+  if(l!==undefined&&(state==='play'||state==='failing')){e.preventDefault();if(e.repeat||!cur||cur.keys[l])return;cur.keys[l]=1;lanePress(l,evTime(e));return}
+  if(e.code==='Escape'||e.code==='KeyP'){if(state==='play'){e.preventDefault();pauseGame()}else if(state==='pause'&&e.code==='Escape'){e.preventDefault();resumeGame()}return}
+  menuKey(e);
+});
+addEventListener('keyup',e=>{const l=KEYMAP[e.code];if(l===undefined||!cur)return;if(cur.keys[l]){cur.keys[l]=0;laneRelease(l,evTime(e))}});
+addEventListener('blur',()=>{if(state==='play')pauseGame()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(state==='play')pauseGame();else if(state==='select')stopPreview(.05)}});
+
+/* ---------- ポーズ ---------- */
+let resumeTimer=null;
+function pauseGame(){
+  if(state!=='play')return;cur.frozenT=judgeTime(performance.now());state='pause';
+  ac.suspend().catch(()=>{});show('pauseModal');hide('pauseBtn');setTimeout(()=>$('btnResume').focus(),0);
+}
+function resumeGame(){
+  if(state!=='pause')return;hide('pauseModal');state='countdown';cur.countFrom=performance.now();
+  clearTimeout(resumeTimer);resumeTimer=setTimeout(async()=>{
+    if(state!=='countdown')return;
+    for(let l=0;l<4;l++)if(!cur.keys[l]&&cur.S.holding[l])cur.S.release(l,cur.frozenT); // 離していたロングはここで判定
+    await ac.resume().catch(()=>{});cur.frozenT=null;state='play';show('pauseBtn');
+  },1500);
+}
+function quitPlay(){clearTimeout(resumeTimer);stopMusic();if(ac&&ac.state!=='running')ac.resume().catch(()=>{});cur=null;setState('select')}
+function restartPlay(){clearTimeout(resumeTimer);const auto=cur&&cur.auto;stopMusic();if(ac&&ac.state!=='running')ac.resume().catch(()=>{});startPlay(auto)}
+
+/* ---------- 毎フレーム ---------- */
+function frame(now){
+  const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+  try{
+    if(cur&&(state==='play'||state==='pause'||state==='countdown'||state==='failing'))drawPlay(now,dt);
+    else drawMenu(now,dt);
+  }catch(err){console.error(err)}
+  requestAnimationFrame(frame);
+}
+function drawMenu(now,dt){
+  feverMix=Math.max(0,feverMix-dt*2);
+  const stageEl=$(state==='result'?'resStage':'selStage'),r=stageEl&&stageEl.offsetParent?stageEl.getBoundingClientRect():null;
+  const pb=state==='select'?previewBeat():null;
+  const pulse=pb&&!reduceMotion?Math.exp(-(((pb.t-pb.bar0)/pb.beat)%1+1)%1*5):0;
+  const cx=r&&r.width>100?r.left+r.width/2:W/2,cy=r&&r.width>100?r.top+r.height*.62:H*.4;
+  drawBackground(now,dt,pulse,cx,cy,true);
+  if(r&&r.width>120&&r.height>150&&(state==='select'||state==='result')){
+    const h=Math.min(r.height*.7,r.width*1.1,H*.66),fy=r.top+r.height*.5+h*.5;
+    const song=state==='result'&&lastResult?lastResult.song:curSong();
+    drawStage(cx,fy,h,song.colors[0],pulse);
+    const b=state==='select'&&pb?{t:pb.t,bar0:pb.bar0,beat:pb.beat,inten:.5}:{t:null};
+    chPlace(cx,fy,h,chBeat(b,h));
+    chReact(now,state==='result'&&lastResult?{mode:'result',rank:lastResult.rank,lamp:lastResult.lamp}:{mode:'select'});
+  }else chHide();
+}
+function drawPlay(now,dt){
+  const G=geomPlay(),S=cur.S,song=cur.song;
+  let t=cur.frozenT!=null?cur.frozenT:judgeTime(now);
+  if(state==='play'){
+    if(cur.auto){for(const n of S.notes){if(n.t>t)break;if(n.st===0&&t>=n.t){pressedAt[n.lane]=now;S.press(n.lane,n.t)}}}
+    S.update(t);
+    const audioEnd=music?music.src.buffer.duration:song.dur;
+    if(!cur.endAt&&((S.allDone()&&t>cur.lastNote+1.4)||t>audioEnd-.1))cur.endAt=now;
+    if(cur.endAt&&now-cur.endAt>600){finishPlay();return}
+  }
+  feverMix+=((S.feverOn?1:0)-feverMix)*Math.min(1,dt*4);
+  const bp=(t-song.t0)/song.beat,pulse=t>song.t0&&!reduceMotion?Math.exp(-((bp%1)+1)%1*5):0,k=now/1000;
+  drawBackground(now,dt,pulse,G.cx,G.hy,false);
+  drawRings(G.cx,G.hy,pulse,k,1);
+  drawLanes(G,t,now,pulse);
+  // チャッピー
+  drawStage(G.chx,G.chFoot,G.ch,song.colors[0],pulse);
+  const bo={t:state==='play'?t:null,bar0:song.t0,beat:song.beat,inten:intensity(t),fever:S.feverOn};
+  chPlace(G.chx,G.chFoot,G.ch*1.08,chBeat(bo,G.ch));
+  chReact(now,{mode:'play',failing:state==='failing',fever:S.feverOn,t:bo.t,bar0:song.t0,beat:song.beat,inten:bo.inten});
+  drawNotes(G,t);
+  drawEffects(G,now);
+  drawHUD(G,t,now);
+}
+function finishPlay(){
+  if(!cur)return;const S=cur.S;stopMusic();S.finalize(cur.frozenT!=null?cur.frozenT:judgeTime(performance.now()));
+  const r=S.result();r.song=cur.song;r.diff=cur.diff;r.auto=cur.auto;
+  cur=null;showResult(r);
+}
+
+/* ---------- レーン ---------- */
+function drawLanes(G,t,now,pulse){
+  const sBot=proj(-.25),yB=laneY(G,sBot);
+  const lg=g.createLinearGradient(0,G.hy,0,H);lg.addColorStop(0,'rgba(110,200,240,0)');lg.addColorStop(1,`rgba(110,200,240,${.14+feverMix*.06})`);
+  g.fillStyle=lg;g.beginPath();g.moveTo(laneX(G,0,0),G.hy);g.lineTo(laneX(G,4,0),G.hy);g.lineTo(laneX(G,4,sBot),yB);g.lineTo(laneX(G,0,sBot),yB);g.fill();
+  g.globalCompositeOperation='lighter';
+  for(let l=0;l<4;l++){ // 押しているレーンは光る
+    const held=cur&&cur.keys[l]>0||(cur&&cur.auto&&cur.S.holding[l]);
+    const age=held?0:(now-pressedAt[l])/220;if(age>1)continue;
+    const fg=g.createLinearGradient(0,G.hy,0,G.jy);fg.addColorStop(0,'rgba(0,0,0,0)');fg.addColorStop(1,hexA(feverMix>.5?GOLD:LANE_COL[l],(held?.3:.36)*(1-age)));
+    g.fillStyle=fg;g.beginPath();g.moveTo(laneX(G,l,0),G.hy);g.lineTo(laneX(G,l+1,0),G.hy);g.lineTo(laneX(G,l+1,1),G.jy);g.lineTo(laneX(G,l,1),G.jy);g.fill();
+  }
+  const hue=k=>`hsla(${(now/8+k*70)%360},95%,70%,`;
+  for(let b=0;b<=4;b++){
+    const edge=b%4===0;g.strokeStyle=feverMix>.05&&edge?hue(b)+(.4+.4*feverMix)+')':edge?'rgba(170,225,250,.5)':'rgba(170,225,250,.16)';g.lineWidth=edge?1.5+feverMix:1;
+    g.beginPath();g.moveTo(laneX(G,b,0),G.hy);g.lineTo(laneX(G,b,sBot),yB);g.stroke();
+  }
+  // 拍の線
+  const song=cur.song,A=cur.approach;
+  if(t>-LEAD_IN){const first=Math.max(0,Math.ceil((t-song.t0)/song.beat));
+    for(let i=first;i<first+16;i++){const z=(song.t0+i*song.beat-t)/A;if(z>1||z<0)continue;const s=proj(z),y=laneY(G,s);
+      g.strokeStyle=`rgba(170,225,250,${(i%4===0?.26:.08)*s})`;g.lineWidth=1;g.beginPath();g.moveTo(laneX(G,0,s),y);g.lineTo(laneX(G,4,s),y);g.stroke()}}
+  g.globalCompositeOperation='source-over';
+  // 判定ライン
+  g.save();g.shadowColor=feverMix>.5?GOLD:'#4fd3f0';g.shadowBlur=16;g.strokeStyle=feverMix>.05?hue(0)+(.8+.2*pulse)+')':`rgba(238,246,255,${.75+pulse*.25})`;g.lineWidth=3*G.ui;
+  g.beginPath();g.moveTo(laneX(G,0,1)-6,G.jy);g.lineTo(laneX(G,4,1)+6,G.jy);g.stroke();g.restore();
+  // キーの文字
+  const intro=Math.max(0,1-Math.max(0,(t-3))/3);
+  g.textAlign='center';g.textBaseline='middle';g.font=`600 ${Math.round(15*G.ui)}px "Chakra Petch",monospace`;
+  ['D','F','J','K'].forEach((c,l)=>{const x=(laneX(G,l,1.06)+laneX(G,l+1,1.06))/2,y=G.jy+22*G.ui,on=cur.keys[l]>0;
+    g.fillStyle=`rgba(238,246,255,${on?.9:.18+.5*intro})`;g.fillText(c,x,y)});
+}
+
+/* ---------- ノーツ ---------- */
+function drawNotes(G,t){
+  const S=cur.S,A=cur.approach,skin=save.settings.skin,fever=S.feverOn,notes=S.notes;
+  let first=cur.drawHead||0;while(first<notes.length&&notes[first].st===2&&(notes[first].type!==2||notes[first].tail<t-.5))first++;cur.drawHead=first;
+  // ロングの帯（先に描く）
+  for(let i=first;i<notes.length;i++){const n=notes[i];const zh=(n.t-t)/A;if(zh>1.02)break;if(n.type!==2)continue;
+    if(n.st===2&&n.tr==='p')continue;
+    const dead=n.hr==='m'||n.tr==='m',holding=n.st===1;
+    const z1=holding?0:Math.max(zh,-.25),z2=Math.min((n.tail-t)/A,1.02);if(z2<=z1||z2<-.25)continue;
+    const s1=proj(z1),s2=proj(z2),y1=laneY(G,s1),y2=laneY(G,s2);
+    const a=n.lane+.16,b=n.lane+.84;
+    const col=dead?'#5b6780':fever?GOLD:LANE_COL[n.lane];
+    const gr=g.createLinearGradient(0,y2,0,y1);gr.addColorStop(0,hexA(col,dead?.18:.25));gr.addColorStop(1,hexA(col,dead?.25:holding?.75:.5));
+    g.fillStyle=gr;g.beginPath();g.moveTo(laneX(G,a,s1),y1);g.lineTo(laneX(G,b,s1),y1);g.lineTo(laneX(G,b,s2),y2);g.lineTo(laneX(G,a,s2),y2);g.closePath();g.fill();
+    g.strokeStyle=hexA(dead?'#7f8ea6':'#ffffff',dead?.25:.55);g.lineWidth=1.2;g.stroke();
+    // おわりのしるし
+    const wE=laneX(G,b,s2)-laneX(G,a,s2);g.fillStyle=hexA(dead?'#7f8ea6':'#ffffff',dead?.35:.85);rrPath(g,laneX(G,a,s2),y2-Math.max(2,5*s2),wE,Math.max(3,8*s2),Math.max(1.5,4*s2));g.fill();
+    if(holding&&!reduceMotion&&Math.random()<.6){const cx=(laneX(G,n.lane,1)+laneX(G,n.lane+1,1))/2;sparks.push({lane:n.lane,a:-Math.PI/2+(Math.random()-.5)*1.4,v:60+Math.random()*120,at:performance.now(),c:fever?GOLD:LANE_COL[n.lane]})}
+  }
+  // ノーツの頭
+  for(let i=first;i<notes.length;i++){const n=notes[i];const z=(n.t-t)/A;if(z>1.02)break;if(n.st!==0)continue;
+    const s=proj(Math.max(z,-.25)),y=laneY(G,s),x0=laneX(G,n.lane,s),x1=laneX(G,n.lane+1,s),w=(x1-x0)*.86,h=Math.max(3,14*s*G.ui),cxn=(x0+x1)/2;
+    const al=Math.min(1,(1-z)*3)*(z<0?Math.max(0,1+z*5):1);
+    if(n.type===1){const r=Math.max(4,w*.3);g.globalAlpha=al;g.drawImage(SPR.apple,cxn-r*1.5,y-r*1.55,r*3,r*3);g.globalAlpha=1}
+    else drawNoteShape(skin,n.lane,cxn,y,w,h,al,fever);
+  }
+}
+
+/* ---------- HUD ---------- */
+const JUDGE_LAB={p:['PERFECT','#ffd36b'],g:['GREAT','#4fd3f0'],o:['GOOD','#bfefff'],m:['MISS','#8090a8']};
+function drawHUD(G,t,now){
+  const S=cur.S,song=cur.song,ui=G.ui,top=safeTop+12;
+  // 進みぐあい
+  const prog=clamp(t/(cur.lastNote+1),0,1);g.fillStyle='rgba(170,225,250,.12)';g.fillRect(0,safeTop,W,3);g.fillStyle=feverMix>.5?GOLD:'#4fd3f0';g.fillRect(0,safeTop,W*prog,3);
+  // 左上：曲名・ライフ・フィーバー
+  const x0=66,bw=Math.min(240*ui,W*.26);
+  g.textAlign='left';g.textBaseline='top';g.fillStyle='rgba(238,246,255,.92)';g.font=`700 ${Math.round(13*ui)}px "Zen Kaku Gothic New",sans-serif`;
+  const dn=DIFFS.find(d=>d.k===cur.diff);g.fillText(song.title,x0,top);
+  const tw=g.measureText(song.title).width;g.fillStyle=dn.col;g.font=`600 ${Math.round(11*ui)}px "Chakra Petch",monospace`;
+  if(!G.narrow)g.fillText(`${dn.name} Lv${song.lv[cur.diff]}${cur.auto?'  おてほん':''}`,x0+tw+10,top+2*ui);
+  const ly=top+22*ui,lh=9*ui,life=S.life/100,low=life<.25;
+  g.fillStyle='rgba(255,255,255,.08)';rrPath(g,x0,ly,bw,lh,lh/2);g.fill();
+  const lc=low?(Math.sin(now/90)>0?'#ff5a6e':'#ff9aa6'):life<.5?'#ffd36b':'#7be0a0';
+  g.fillStyle=lc;if(life>0){rrPath(g,x0,ly,Math.max(lh,bw*life),lh,lh/2);g.fill()}
+  g.font=`600 ${Math.round(10*ui)}px "Chakra Petch",monospace`;g.fillStyle='rgba(238,246,255,.7)';g.fillText('LIFE',x0+bw+8,ly-1);
+  const fy=ly+lh+7*ui,fh=7*ui;g.fillStyle='rgba(255,255,255,.08)';rrPath(g,x0,fy,bw,fh,fh/2);g.fill();
+  if(S.feverOn){const rem=clamp((S.feverEnd-t)/cur.feverLen,0,1),gr=g.createLinearGradient(x0,0,x0+bw,0);for(let i=0;i<=6;i++)gr.addColorStop(i/6,`hsl(${(now/6+i*55)%360},95%,68%)`);g.fillStyle=gr;rrPath(g,x0,fy,Math.max(fh,bw*rem),fh,fh/2);g.fill()}
+  else if(S.fever>0){g.fillStyle=S.fever>.85?'#ffe28a':'#e0b04a';rrPath(g,x0,fy,Math.max(fh,bw*S.fever),fh,fh/2);g.fill()}
+  g.fillStyle=S.feverOn?'#ffd36b':'rgba(238,246,255,.7)';g.fillText(S.feverOn?'FEVER!':'FEVER',x0+bw+8,fy-2);
+  // 右上：スコア
+  shownScore+=(S.score-shownScore)*Math.min(1,.25);if(Math.abs(S.score-shownScore)<1)shownScore=S.score;
+  g.textAlign='right';g.textBaseline='top';g.fillStyle='rgba(238,246,255,.96)';g.font=`600 ${Math.round(26*ui)}px "Chakra Petch",monospace`;
+  g.fillText(String(Math.round(shownScore)).padStart(7,'0'),W-16,top-4);
+  g.font=`500 ${Math.round(11*ui)}px "Chakra Petch",monospace`;g.fillStyle='rgba(143,166,196,.9)';g.fillText('SCORE',W-16,top+26*ui);
+  if(S.feverOn){g.fillStyle=GOLD;g.font=`400 ${Math.round(18*ui)}px "Dela Gothic One",sans-serif`;g.fillText('×2',W-16-60*ui,top+22*ui)}
+  // コンボ
+  const mid=(G.hy+G.jy)*.5;
+  if(S.combo>=3){g.textAlign='center';g.textBaseline='middle';const p=Math.exp(-((now-(judgeShow?judgeShow.at:0))/120));
+    g.fillStyle=S.feverOn?GOLD:'#4fd3f0';g.font=`400 ${Math.round((46+p*6)*ui)}px "Dela Gothic One",sans-serif`;g.globalAlpha=.9;g.fillText(S.combo,G.cx,mid);g.globalAlpha=1;
+    g.fillStyle='rgba(143,166,196,.9)';g.font=`500 ${Math.round(12*ui)}px "Chakra Petch",monospace`;g.fillText('COMBO',G.cx,mid+32*ui)}
+  // 判定の文字
+  if(judgeShow){const age=(now-judgeShow.at)/520;if(age<1){const [lab,col]=JUDGE_LAB[judgeShow.kind];
+    g.textAlign='center';g.textBaseline='middle';g.globalAlpha=1-age*age;g.fillStyle=S.feverOn&&judgeShow.kind!=='m'?GOLD:col;
+    g.font=`400 ${Math.round((24+(1-age)*6)*ui)}px "Dela Gothic One",sans-serif`;g.fillText(lab,G.cx,G.jy-50*ui-age*12);
+    if(judgeShow.delta!=null&&judgeShow.kind!=='p'){g.font=`600 ${Math.round(12*ui)}px "Chakra Petch",monospace`;g.fillStyle=judgeShow.delta<0?'#7fd0ff':'#ff9a7f';g.fillText(judgeShow.delta<0?'FAST':'SLOW',G.cx,G.jy-28*ui-age*12)}
+    g.globalAlpha=1}}
+  // はじまる前・ポーズからもどるとき
+  g.textAlign='center';g.textBaseline='middle';
+  if(state==='play'&&t<0){const lab=t<-.9?'READY':'GO!';g.fillStyle=`rgba(238,246,255,${t<-.9?.6+.4*Math.sin(now/200):1})`;g.font=`400 ${Math.round((t<-.9?24:40)*ui)}px "Dela Gothic One",sans-serif`;g.fillText(lab,G.cx,mid)}
+  if(state==='countdown'){const n=3-Math.floor((now-cur.countFrom)/500);g.fillStyle='#fff';g.font=`400 ${Math.round(56*ui)}px "Dela Gothic One",sans-serif`;g.fillText(Math.max(1,n),G.cx,mid)}
+  if(state==='failing'){g.fillStyle='#ff6b7d';g.font=`400 ${Math.round(40*ui)}px "Dela Gothic One",sans-serif`;g.fillText('ゲームオーバー',G.cx,mid)}
+  // ミスの赤いふち・フラッシュ
+  const da=(now-dmgAt)/320;if(da<1){const v=g.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.7);v.addColorStop(0,'rgba(255,40,70,0)');v.addColorStop(1,`rgba(255,40,70,${.28*(1-da)})`);g.fillStyle=v;g.fillRect(0,0,W,H)}
+  if(flash){const fa=(now-flash.at)/350;if(fa<1){g.fillStyle=`rgba(${flash.col},${.35*(1-fa)})`;g.fillRect(0,0,W,H)}else flash=null}
+}
+
+/* ---- ui.js ---- */
+/* ===== 画面：曲選択・結果・せってい・タイミング調整 ===== */
+const $=id=>document.getElementById(id);
+const show=id=>{$(id).hidden=false},hide=id=>{$(id).hidden=true};
+let lastResult=null;
+const ICONS={
+  apple:'<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 7.2c1.6-1.3 4.3-1.6 5.9.2 1.9 2.1 1.6 6.4-.6 9.6-1.2 1.7-2.4 3-3.9 3-1 0-1-.5-1.4-.5s-.4.5-1.4.5c-1.5 0-2.7-1.3-3.9-3-2.2-3.2-2.5-7.5-.6-9.6 1.6-1.8 4.3-1.5 5.9-.2z"/><path fill="#fff" d="M12 7c0-2 .6-3.6 2-4.6l.8.9C13.7 4.2 13.2 5.5 13.2 7z"/><path fill="#d4ffd0" d="M14 4.6c1.6-1.7 3.8-1.8 4.8-1.2-.6 1.7-2.6 2.8-4.8 1.2z"/></svg>',
+  roll:'<svg viewBox="0 0 24 24"><circle cx="14" cy="13" r="6.5" fill="#fff"/><path d="M14 6.5c.2-1.4.9-2.4 2-3" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/><path d="M2.5 10h4M1.5 13.5h4.5M2.5 17h4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" opacity=".85"/><circle cx="11.8" cy="11" r="1.6" fill="rgba(0,0,0,.18)"/></svg>',
+  star:'<svg viewBox="0 0 24 24"><path fill="#fff" d="M12 2.5l2.7 6.1 6.6.6-5 4.4 1.5 6.5L12 16.7l-5.8 3.4 1.5-6.5-5-4.4 6.6-.6z"/></svg>',
+  paw:'<svg viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="5.2" ry="4.4" fill="#fff"/><ellipse cx="5.6" cy="10.6" rx="2.1" ry="2.6" fill="#fff"/><ellipse cx="9.6" cy="6.6" rx="2.1" ry="2.7" fill="#fff"/><ellipse cx="14.4" cy="6.6" rx="2.1" ry="2.7" fill="#fff"/><ellipse cx="18.4" cy="10.6" rx="2.1" ry="2.6" fill="#fff"/></svg>',
+  moon:'<svg viewBox="0 0 24 24"><path fill="#fff" d="M15.5 3.2A8.8 8.8 0 1 0 20.8 16 7.2 7.2 0 0 1 15.5 3.2z"/><path fill="#fff" d="M18.5 4.2l.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z"/></svg>',
+  bolt:'<svg viewBox="0 0 24 24"><path fill="#fff" d="M13.5 2L4.5 13.5h6L9 22l10-12.5h-6.2z"/></svg>',
+  wave:'<svg viewBox="0 0 24 24"><g stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></g></svg>',
+  note:'<svg viewBox="0 0 24 24"><path fill="#fff" d="M9 4.5l11-2v13.2a3 3 0 1 1-2-2.8V6.7l-7 1.3v9.7a3 3 0 1 1-2-2.8z"/></svg>'
+};
+const APPLE_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#ff5a4e" d="M12 7.2c1.6-1.3 4.3-1.6 5.9.2 1.9 2.1 1.6 6.4-.6 9.6-1.2 1.7-2.4 3-3.9 3-1 0-1-.5-1.4-.5s-.4.5-1.4.5c-1.5 0-2.7-1.3-3.9-3-2.2-3.2-2.5-7.5-.6-9.6 1.6-1.8 4.3-1.5 5.9-.2z"/><path fill="#7a4a2a" d="M12 7c0-2 .6-3.6 2-4.6l.8.9C13.7 4.2 13.2 5.5 13.2 7z"/><path fill="#5aa04a" d="M14 4.6c1.6-1.7 3.8-1.8 4.8-1.2-.6 1.7-2.6 2.8-4.8 1.2z"/></svg>';
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.tm);toast.tm=setTimeout(()=>{t.hidden=true},2800)}
+function setState(s){
+  state=s;
+  $('selectScreen').hidden=s!=='select';$('resultScreen').hidden=s!=='result';
+  $('pauseBtn').hidden=s!=='play';$('loading').hidden=s!=='loading';
+  if(s!=='pause')hide('pauseModal');
+  if(s==='select'){renderSelect();ensurePreview()}
+}
+/* ---------- 曲選択 ---------- */
+function lampOf(id,d){const r=getRecord(id,d);return r?r.lamp:'none'}
+// 前の曲をどれかのむずかしさでクリアすると、次の曲が解放される
+const cleared=id=>DIFFS.some(d=>['clear','fc','ap'].includes(lampOf(id,d.k)));
+const isOpen=id=>{const i=SONGS.findIndex(s=>s.id===id);return i<=0||cleared(SONGS[i-1].id)};
+const LOCK_SVG='<svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="#fff"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" stroke="#fff" stroke-width="2.2" fill="none"/></svg>';
+function buildSongList(){
+  const box=$('songList');box.innerHTML='';
+  for(const s of SONGS){
+    const b=document.createElement('button');b.type='button';b.className='song';b.id='song-'+s.id;b.setAttribute('role','option');b.dataset.id=s.id;
+    b.innerHTML=`<span class="jk" style="--c1:${s.colors[0]};--c2:${s.colors[1]}">${ICONS[s.icon]||ICONS.note}</span>
+      <span class="st"><b>${s.title}${s.boss?'<span class="boss">BOSS</span>':''}</b><small>${Math.round(s.bpm)} BPM · ${fmtTime(s.dur)} · Lv${s.lv.easy}〜${s.lv.expert}</small></span>
+      <span class="dots">${DIFFS.map(d=>`<span class="dot ${lampOf(s.id,d.k)}" title="${d.name}"></span>`).join('')}</span>`;
+    b.addEventListener('click',()=>{selectSong(s.id);});
+    b.addEventListener('dblclick',()=>{if(isOpen(s.id))startPlay(false)});
+    box.appendChild(b);
+  }
+}
+function renderSelect(){
+  const s=curSong();$('appleCount').textContent=save.apples;
+  for(const el of document.querySelectorAll('.song')){const on=el.dataset.id===s.id;el.setAttribute('aria-selected',on);
+    const so=SONGS.find(x=>x.id===el.dataset.id),open=isOpen(so.id);el.classList.toggle('locked',!open);
+    el.querySelector('.jk').innerHTML=open?(ICONS[so.icon]||ICONS.note):LOCK_SVG;
+    el.querySelector('.st b').innerHTML=open?so.title+(so.boss?'<span class="boss">BOSS</span>':''):'？？？';
+    const dots=el.querySelectorAll('.dot');DIFFS.forEach((d,i)=>{dots[i].className='dot '+lampOf(el.dataset.id,d.k)})}
+  const jk=$('dJacket');jk.style.setProperty('--c1',s.colors[0]);jk.style.setProperty('--c2',s.colors[1]);jk.innerHTML=ICONS[s.icon]||ICONS.note;
+  const open=isOpen(s.id);$('detail').classList.toggle('locked',!open);
+  if(!open)jk.innerHTML=LOCK_SVG;
+  $('dTitle').textContent=open?s.title:'？？？';$('dSub').textContent=open?s.sub:`「${SONGS[SONGS.indexOf(s)-1].title}」をクリアすると解放されるよ`;
+  const d=save.sel.diff;
+  $('dMeta').innerHTML=`<span><b>${Math.round(s.bpm)}</b> BPM</span><span>ながさ <b>${fmtTime(s.dur)}</b></span><span>ノーツ <b>${s.n[d]}</b></span><span>ロング <b>${s.holds[d]}</b></span>`;
+  const box=$('diffs');box.innerHTML='';
+  for(const x of DIFFS){const b=document.createElement('button');b.type='button';b.className='diff';b.style.setProperty('--dc',x.col);b.setAttribute('aria-pressed',x.k===d);
+    b.innerHTML=`<span>${x.name}</span><b style="color:${x.col}">${s.lv[x.k]}</b>`;b.addEventListener('click',()=>{save.sel.diff=x.k;persist();renderSelect()});box.appendChild(b)}
+  const r=getRecord(s.id,d);
+  $('dBest').innerHTML=r?`<span class="rk">${r.rank}</span><span class="sc"><small>ベストスコア</small>${r.score.toLocaleString()}</span><span class="lampTag ${r.lamp}">${LAMP_LABEL[r.lamp]}</span>`
+    :`<span class="rk none">—</span><span class="sc"><small>ベストスコア</small>まだあそんでいないよ</span><span></span>`;
+  $('spdVal').textContent=save.settings.speed;
+  $('dRecs').innerHTML=DIFFS.map(x=>{const q=getRecord(s.id,x.k);return `<span class="rd" style="color:${x.col}">${x.name}</span><span class="rs">${q?q.score.toLocaleString():'—'}</span><span class="rn">${q?q.rank:''}</span><span class="lampTag ${q?q.lamp:''}" ${q&&q.lamp!=='none'?'':'style="visibility:hidden"'}>${q?LAMP_LABEL[q.lamp]||'-':'-'}</span>`}).join('');
+  const btn=$('btnPlay');btn.disabled=!open;btn.textContent=open?'あそぶ':'まだあそべないよ';$('btnDemo').disabled=!open;
+}
+const LAMP_LABEL={none:'',failed:'ゲームオーバー',clear:'クリア',fc:'フルコンボ',ap:'オールパーフェクト'};
+function selectSong(id,scroll){
+  if(save.sel.song===id&&!scroll){return}
+  save.sel.song=id;persist();renderSelect();ensurePreview();
+  const el=$('song-'+id);if(el&&scroll)el.scrollIntoView({block:'nearest'});
+}
+let previewFor=null;
+function ensurePreview(){
+  const s=curSong();if(!ac)initAudio();
+  if(!isOpen(s.id)){stopPreview();return}
+  loadSong(s).then(()=>{if(state==='select'&&curSong()===s&&ac.state==='running'&&(!prev||prev.song!==s)){previewFor=s;startPreview(s)}}).catch(()=>{});
+  if(prev&&prev.song!==s)stopPreview();
+}
+function menuKey(e){
+  if(!$('calibModal').hidden){if(e.code==='Space'||e.code==='Enter'&&cal&&!cal.res){e.preventDefault();calTap(evTime(e))}else if(e.code==='Escape')endCalib(false);return}
+  if(!$('settingsModal').hidden||!$('howModal').hidden){if(e.code==='Escape'){hide('settingsModal');hide('howModal');renderSelect()}return}
+  if(state==='select'){
+    const i=SONGS.findIndex(s=>s.id===save.sel.song),di=DIFFS.findIndex(d=>d.k===save.sel.diff);
+    if(e.code==='Enter'&&!isOpen(save.sel.song))return;
+    if(e.code==='ArrowDown'||e.code==='ArrowUp'){e.preventDefault();resumeAudio();selectSong(SONGS[(i+(e.code==='ArrowDown'?1:-1)+SONGS.length)%SONGS.length].id,true)}
+    else if(e.code==='ArrowRight'||e.code==='ArrowLeft'){e.preventDefault();save.sel.diff=DIFFS[clamp(di+(e.code==='ArrowRight'?1:-1),0,3)].k;persist();renderSelect()}
+    else if(e.code==='Enter'&&!(document.activeElement&&document.activeElement.tagName==='BUTTON'&&!document.activeElement.classList.contains('song'))){e.preventDefault();startPlay(false)}
+  }else if(state==='result'){
+    if(e.code==='Enter'&&document.activeElement===document.body){e.preventDefault();startPlay(false)}
+    else if(e.code==='Escape'||e.code==='Backspace'){e.preventDefault();setState('select')}
+  }
+}
+/* ---------- 結果 ---------- */
+function showResult(r){
+  lastResult=r;const s=r.song,dn=DIFFS.find(d=>d.k===r.diff);
+  let rec={newRecord:false},unlocked=[];
+  {const nx0=SONGS[SONGS.indexOf(s)+1];r.prevOpenNext=nx0?isOpen(nx0.id):true}
+  if(!r.auto){
+    rec=putRecord(s.id,r.diff,r);window.CGCBridge&&CGCBridge.report({board:s.id+'-'+r.diff,boardName:s.title+'（'+dn.name+'）',score:r.score});
+    const before=save.apples;save.apples+=r.apples;persist();
+    unlocked=SKINS.filter(k=>k.need>before&&k.need<=save.apples);
+  }
+  const nx=SONGS[SONGS.indexOf(s)+1],newSong=!r.auto&&nx&&['clear','fc','ap'].includes(r.lamp)&&!(r.prevOpenNext);
+  $('rSong').innerHTML=`<b>${s.title}</b><span style="color:${dn.col}">${dn.name} Lv${s.lv[r.diff]}</span>${r.auto?'<span>おてほん</span>':''}`;
+  const rk=$('rRank');rk.className='bigrank'+(r.lamp==='failed'?' dim':'');rk.textContent=r.lamp==='failed'?'FAILED':r.rank;
+  const badges=[];if(r.lamp!=='none')badges.push(`<span class="lampTag ${r.lamp}">${LAMP_LABEL[r.lamp]}</span>`);if(rec.newRecord)badges.push('<span class="newrec">NEW RECORD!</span>');
+  $('rBadges').innerHTML=badges.join('');
+  const pct=(r.acc*100).toFixed(2);
+  const rows=[['PERFECT',r.cnt.p],['最大コンボ',r.maxCombo],['GREAT',r.cnt.g],['せいかくさ',pct+'%'],['GOOD',r.cnt.o],['FAST / SLOW',`${r.fast} / ${r.slow}`],['MISS',r.cnt.m],['フィーバー',r.feverCount+'回'],['とったりんご',r.apples],['フィーバーボーナス','+'+r.bonus.toLocaleString()]];
+  $('rStats').innerHTML=rows.map(([a,b])=>`<div><dt>${a}</dt><dd>${b}</dd></div>`).join('');
+  const un=$('rUnlock');
+  let msg=[];
+  if(newSong)msg.push(`<span class="jk" style="--c1:${nx.colors[0]};--c2:${nx.colors[1]};width:40px;height:40px">${ICONS[nx.icon]||ICONS.note}</span><span>新しい曲「<b>${nx.title}</b>」が解放されたよ！</span>`);
+  if(unlocked.length){const k=unlocked[unlocked.length-1];msg.push(`<canvas width="104" height="52"></canvas><span>りんごが <b>${save.apples}</b> こになったよ！ きせかえ「<b>${k.name}</b>」がつかえるようになったよ</span>`)}
+  un.innerHTML=msg.map(m=>`<div style="display:flex;align-items:center;gap:12px">${m}</div>`).join('');un.style.flexDirection='column';un.style.alignItems='stretch';
+  const cv=un.querySelector('canvas');if(cv)paintSkin(cv,unlocked[unlocked.length-1].id);un.hidden=!msg.length;
+  $('btnRetry').textContent=r.auto?'自分であそぶ':'もう一度';
+  setState('result');setTimeout(()=>$('btnRetry').focus(),50);
+  // スコアを数えあげる
+  const el=$('rScore'),t0=performance.now();el.textContent='0';
+  (function tick(){const q=Math.min(1,(performance.now()-t0)/900);el.textContent=Math.round(r.score*ease(q)).toLocaleString();if(q<1&&state==='result')requestAnimationFrame(tick);else el.textContent=r.score.toLocaleString()})();
+  // 結果のジングル
+  if(SFX&&save.settings.tapVol){const t=ac.currentTime+.15,v=VOL[save.settings.tapVol];
+    const seq=r.lamp==='failed'?[[67,0],[63,.18],[60,.36]]:['S+','S','A'].includes(r.rank)?[[72,0],[76,.11],[79,.22],[84,.33]]:[[72,0],[76,.14],[79,.28]];
+    for(const [m,d] of seq)SFX.lead(t+d,m,.5,.8*v,{type:'bell'})}
+}
+/* ---------- せってい ---------- */
+function paintSkin(c,id){const x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);const img=SPR[id].lane[0];
+  if(id==='star'||id==='heart')x.drawImage(img,c.width/2-c.height*.55,-c.height*.05,c.height*1.1,c.height*1.1);else x.drawImage(img,0,0,img.width,img.height,-c.width*.06,0,c.width*1.12,c.height)}
+function segment(boxId,opts,get,set){
+  const box=$(boxId);box.innerHTML='';
+  opts.forEach(([v,label])=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-pressed',get()===v);
+    b.addEventListener('click',()=>{set(v);persist();for(const x of box.children)x.setAttribute('aria-pressed',x===b)});box.appendChild(b)});
+}
+function renderSettings(){
+  $('sSpdVal').textContent=save.settings.speed;const o=save.settings.offset;$('offVal').textContent=(o>0?'+':'')+o+'ms';
+  segment('tapVolSeg',[[0,'なし'],[1,'小'],[2,'中'],[3,'大']],()=>save.settings.tapVol,v=>{save.settings.tapVol=v;applyVolumes();resumeAudio();playTap('p')});
+  segment('musVolSeg',[[1,'小'],[2,'中'],[3,'大']],()=>save.settings.musicVol,v=>{save.settings.musicVol=v;applyVolumes()});
+  segment('goSeg',[[true,'あり'],[false,'なし']],()=>save.settings.gameover,v=>{save.settings.gameover=v});
+  const box=$('skinList');box.innerHTML='';
+  for(const k of SKINS){const ok=save.apples>=k.need;const b=document.createElement('button');b.type='button';b.className='skin';b.disabled=!ok;b.setAttribute('aria-pressed',save.settings.skin===k.id);
+    b.innerHTML=`<canvas width="104" height="52"></canvas><span>${k.name}</span>${ok?'':`<small>${APPLE_SVG}${k.need}</small>`}`;paintSkin(b.querySelector('canvas'),k.id);
+    b.addEventListener('click',()=>{save.settings.skin=k.id;persist();renderSettings()});box.appendChild(b)}
+}
+function setSpeed(v){save.settings.speed=clamp(v,1,10);persist();$('spdVal').textContent=$('sSpdVal').textContent=save.settings.speed}
+function setOffset(v){save.settings.offset=clamp(Math.round(v/5)*5,-200,200);persist();const o=save.settings.offset;$('offVal').textContent=(o>0?'+':'')+o+'ms'}
+/* ---------- タイミング調整 ---------- */
+let cal=null;
+function startCalib(){
+  resumeAudio();show('calibModal');hide('btnCalOk');$('calText').textContent='「コッ」という音に合わせて、スペースキーか画面をタップしてね（12回）';
+  const beat=.6,n=12,t0=ac.currentTime+.8;cal={t0,beat,n,taps:[],res:null};
+  for(let i=0;i<n;i++)SFX.click(t0+i*beat,i%4===0);
+  const ring=$('calRing');
+  (function loop(){if(!cal||$('calibModal').hidden)return;const ht=heardAt(performance.now()),i=Math.floor((ht-t0)/beat+.5),ph=(ht-t0)/beat-Math.floor((ht-t0)/beat);
+    ring.textContent=ht<t0-.1?'♪':Math.min(n,Math.max(1,i+1));ring.classList.toggle('beat',ht>t0-.05&&ph<.15);
+    if(ht>t0+n*beat+.3&&!cal.res)finishCalib();else requestAnimationFrame(loop)})();
+}
+function calTap(perf){if(!cal||cal.res)return;cal.taps.push(heardAt(perf));const r=$('calRing');r.style.borderColor='#ffd36b';setTimeout(()=>{r.style.borderColor=''},90)}
+function finishCalib(){
+  const d=[];for(const tp of cal.taps){const i=Math.round((tp-cal.t0)/cal.beat);if(i<2||i>=cal.n)continue;const x=tp-(cal.t0+i*cal.beat);if(Math.abs(x)<.25)d.push(x)}
+  d.sort((a,b)=>a-b);
+  if(d.length<5){$('calText').textContent='うまく測れなかったよ。もう一度ためしてね';cal.res='ng';$('calRing').textContent='?';return}
+  const med=d[Math.floor(d.length/2)]*1000;cal.res=Math.round(med/5)*5;
+  $('calRing').textContent=(cal.res>0?'+':'')+cal.res;$('calText').textContent=cal.res===0?'ぴったり！ このままで大丈夫だよ':`${Math.abs(cal.res)}ms ${cal.res>0?'おそめ':'はやめ'}にたたいていたよ。これに合わせる？`;show('btnCalOk');
+}
+function endCalib(ok){if(ok&&cal&&typeof cal.res==='number')setOffset(cal.res);cal=null;hide('calibModal');renderSettings()}
+
+/* ---------- ボタンなど ---------- */
+function bindUI(){
+  $('btnPlay').addEventListener('click',()=>startPlay(false));
+  $('btnDemo').addEventListener('click',()=>startPlay(true));
+  $('btnHow').addEventListener('click',()=>{show('howModal');$('btnHowClose').focus()});
+  $('btnHowClose').addEventListener('click',()=>hide('howModal'));
+  $('spdDown').addEventListener('click',()=>setSpeed(save.settings.speed-1));$('spdUp').addEventListener('click',()=>setSpeed(save.settings.speed+1));
+  $('sSpdDown').addEventListener('click',()=>setSpeed(save.settings.speed-1));$('sSpdUp').addEventListener('click',()=>setSpeed(save.settings.speed+1));
+  $('offDown').addEventListener('click',()=>setOffset(save.settings.offset-5));$('offUp').addEventListener('click',()=>setOffset(save.settings.offset+5));
+  $('btnSettings').addEventListener('click',()=>{renderSettings();show('settingsModal');$('btnSetClose').focus()});
+  $('btnSetClose').addEventListener('click',()=>{hide('settingsModal');renderSelect()});
+  $('btnCalib').addEventListener('click',startCalib);$('btnCalOk').addEventListener('click',()=>endCalib(true));$('btnCalCancel').addEventListener('click',()=>endCalib(false));
+  $('calibModal').addEventListener('pointerdown',e=>{if(e.target.tagName!=='BUTTON')calTap(evTime(e))});
+  $('pauseBtn').addEventListener('click',pauseGame);
+  $('btnResume').addEventListener('click',resumeGame);$('btnRestart').addEventListener('click',restartPlay);$('btnQuit').addEventListener('click',quitPlay);
+  $('btnRetry').addEventListener('click',()=>startPlay(false));
+  $('btnBack').addEventListener('click',()=>setState('select'));
+  for(const ev of ['pointerdown','keydown'])addEventListener(ev,()=>{if(state==='pause'||state==='countdown'||state==='failing')return;const was=ac&&ac.state==='running';resumeAudio();if(!was&&state==='select')setTimeout(ensurePreview,60)},{capture:true});
+}
+/* ---------- はじめ ---------- */
+document.querySelector('.apples').insertAdjacentHTML('afterbegin','');
+chInit();bindUI();buildSongList();initAudio();setState('select');
+requestAnimationFrame(frame);
+window.__game={get state(){return state},get cur(){return cur},startPlay,save,SONGS,finishPlay,pauseGame,resumeGame,judgeTime:p=>cur?judgeTime(p):null,get cal(){return cal},heard:()=>heardAt(performance.now())};
+
+})();
+</script>
+
+</body></html>

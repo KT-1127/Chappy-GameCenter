@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TGT2Y7KLF3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TGT2Y7KLF3');
+</script>
+
+<meta charset="utf-8">
+<script src="../../assets/config.js"></script><script src="../../assets/cgc.js"></script><script src="../../assets/bridge.js" data-game="link"></script>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>チャッピーリンク</title>
+<meta name="description" content="同じ色のチャッピーをなぞって消そう！制限時間20秒のつなげるパズル。">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{font-family:"M PLUS Rounded 1c",system-ui,sans-serif;color:#24364d;background:
+  radial-gradient(circle at 15% 20%,rgba(255,255,255,.5) 0 40px,transparent 41px),
+  radial-gradient(circle at 85% 75%,rgba(255,255,255,.4) 0 60px,transparent 61px),
+  linear-gradient(160deg,#ff9cc8,#ffc2dd 45%,#bfe8ff);display:flex;align-items:center;justify-content:center;
+  -webkit-user-select:none;user-select:none;touch-action:none}
+.app{position:relative;width:min(440px,100vw);height:min(820px,100dvh);display:flex;flex-direction:column;padding:16px}
+.panel{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px}
+[hidden]{display:none!important}
+h1{margin:0;font-family:"Mochiy Pop One",sans-serif;font-size:44px;color:#fff;text-shadow:0 4px 0 #e2548f,0 8px 0 rgba(120,0,60,.15)}
+.lead{margin:0;font-weight:800;line-height:1.7;background:rgba(255,255,255,.75);border-radius:18px;padding:10px 16px}
+.mascot{width:140px;animation:float 2.5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.btn{border:0;border-radius:999px;padding:16px 28px;font:900 22px "M PLUS Rounded 1c";color:#fff;background:#ff5a9a;box-shadow:0 6px 0 #c23a74;cursor:pointer;min-width:240px}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #c23a74}
+.btn.sub{background:#fff;color:#c23a74;font-size:17px;padding:12px 20px;box-shadow:0 5px 0 #f2a6c7}
+.hud{display:flex;gap:10px;margin-bottom:12px}
+.hud div{flex:1;background:#fff;border-radius:18px;padding:8px 14px;box-shadow:0 4px 0 rgba(194,58,116,.25)}
+.hud small{display:block;font-size:11px;font-weight:900;color:#8a9bb0;letter-spacing:.1em}
+.hud b{font:400 30px "Mochiy Pop One";color:#ff5a9a}
+.hud .t{text-align:right}
+.hud .t b{color:#24364d}
+.hud .t.danger b{color:#ef4444;animation:pulse .5s infinite alternate}
+@keyframes pulse{to{transform:scale(1.15)}}
+.board{position:relative;flex:1;background:rgba(255,255,255,.55);border-radius:24px;padding:6px;display:grid;grid-template:repeat(6,1fr)/repeat(6,1fr);gap:4px}
+.board.shake{animation:shake .15s}
+@keyframes shake{25%{transform:translate(-3px,-2px)}75%{transform:translate(3px,2px)}}
+.blk{position:relative;border-radius:14px;display:grid;place-items:center;box-shadow:inset 0 -4px 0 rgba(0,0,0,.18);transition:transform .08s}
+.blk svg{width:88%;height:88%;pointer-events:none}
+.blk.sel{transform:scale(.88);box-shadow:inset 0 0 0 4px #fff;filter:brightness(1.15)}
+.blk.pop{animation:pop .15s ease-out forwards}
+.blk.drop{animation:drop .22s cubic-bezier(.3,1.4,.5,1)}
+@keyframes pop{50%{transform:scale(1.3);opacity:.8}100%{transform:scale(0);opacity:0}}
+@keyframes drop{from{transform:translateY(-40%);opacity:.3}}
+.c-red{background:linear-gradient(135deg,#f87171,#dc2626)}
+.c-blue{background:linear-gradient(135deg,#60a5fa,#2563eb)}
+.c-green{background:linear-gradient(135deg,#34d399,#059669)}
+.c-yellow{background:linear-gradient(135deg,#fcd34d,#f59e0b)}
+svg.line{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.combo{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);font:400 34px "Mochiy Pop One";color:#fff;text-shadow:0 3px 0 #c23a74;pointer-events:none;z-index:6;animation:up .7s ease-out forwards}
+@keyframes up{from{opacity:1;transform:translate(-50%,-30%) scale(.8)}to{opacity:0;transform:translate(-50%,-110%) scale(1.2)}}
+.result{background:#fff;border-radius:26px;padding:22px 30px;box-shadow:0 8px 0 #f2a6c7}
+.result .s{font:400 54px "Mochiy Pop One";color:#ff5a9a;line-height:1.1}
+.result small{font-weight:800;color:#8a9bb0}
+.timeup{font:400 44px "Mochiy Pop One";color:#fff;text-shadow:0 4px 0 #e2548f;margin:0}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- メニュー -->
+  <section class="panel" id="menu">
+    <svg class="mascot" viewBox="0 0 100 100" id="mascot"></svg>
+    <h1>チャッピーリンク</h1>
+    <p class="lead">同じ色のチャッピーを <b>3つ以上</b> なぞって消そう！<br>ななめも つながるよ。5つ以上で ボーナス！<br>制限時間 <b>20秒</b></p>
+    <button class="btn" id="start">スタート</button>
+  </section>
+
+  <!-- プレイ中 -->
+  <section id="play" hidden style="flex:1;display:flex;flex-direction:column">
+    <div class="hud"><div><small>SCORE</small><b id="score">0</b></div><div class="t" id="tbox"><small>TIME</small><b id="time">20</b></div></div>
+    <div class="board" id="board"><svg class="line" id="line"></svg></div>
+  </section>
+
+  <!-- 結果 -->
+  <section class="panel" id="over" hidden>
+    <p class="timeup">TIME UP!</p>
+    <div class="result"><small>スコア</small><div class="s" id="final">0</div><small id="best"></small></div>
+    <button class="btn" id="again">もう一回</button>
+    <button class="btn sub" id="toMenu">メニューへ</button>
+  </section>
+</div>
+
+<script>
+"use strict";
+const ROWS = 6, COLS = 6, TIME = 20;
+const COLORS = [{ id: "red", accent: "#ef4444" }, { id: "blue", accent: "#3b82f6" }, { id: "green", accent: "#10b981" }, { id: "yellow", accent: "#f59e0b" }];
+const $ = id => document.getElementById(id);
+
+// チャッピーの顔（元のチャッピーリンクと同じ絵）
+const face = accent => `<path d="M15 40 L23 7 L47 32 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M85 40 L77 7 L53 32 Z" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M24 34 L27 17 L40 31 Z" fill="${accent}" opacity=".8"/><path d="M76 34 L73 17 L60 31 Z" fill="${accent}" opacity=".8"/>
+<rect x="11" y="26" width="78" height="62" rx="27" fill="#f8fafc" stroke="#cbd5e1" stroke-width="2.5"/>
+<rect x="19" y="33" width="62" height="45" rx="19" fill="#0f172a"/><ellipse cx="50" cy="42" rx="24" ry="6" fill="#fff" opacity=".1"/>
+<ellipse cx="38" cy="53" rx="6" ry="8" fill="#2dd4ec"/><ellipse cx="62" cy="53" rx="6" ry="8" fill="#2dd4ec"/>
+<ellipse cx="36" cy="50" rx="2" ry="2.6" fill="#fff" opacity=".85"/><ellipse cx="60" cy="50" rx="2" ry="2.6" fill="#fff" opacity=".85"/>
+<path d="M42 64 Q46.5 70 50 64 Q53.5 70 58 64" stroke="#2dd4ec" stroke-width="3.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+$("mascot").innerHTML = face("#7dd3fc");
+
+// ---------- 効果音 ----------
+let AC = null;
+function sound(type, n = 1) {
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === "suspended") AC.resume();
+    const t = AC.currentTime, g = AC.createGain(); g.connect(AC.destination);
+    if (type === "select") {
+      const o = AC.createOscillator(); o.type = "sine"; o.frequency.setValueAtTime(300 + n * 60, t);
+      g.gain.setValueAtTime(.15, t); g.gain.exponentialRampToValueAtTime(.01, t + .1); o.connect(g); o.start(t); o.stop(t + .1);
+    } else if (type === "pop") {
+      const a = AC.createOscillator(), b = AC.createOscillator();
+      a.type = "triangle"; a.frequency.setValueAtTime(200, t); a.frequency.exponentialRampToValueAtTime(50, t + .2);
+      b.type = "square"; b.frequency.setValueAtTime(600 + n * 20, t); b.frequency.exponentialRampToValueAtTime(100, t + .1);
+      g.gain.setValueAtTime(.3, t); g.gain.exponentialRampToValueAtTime(.01, t + .25);
+      a.connect(g); b.connect(g); a.start(t); b.start(t); a.stop(t + .25); b.stop(t + .25);
+    } else if (type === "fanfare") {
+      [523, 659, 784, 1046].forEach((f, i) => {
+        const o = AC.createOscillator(), h = AC.createGain(), s = t + i * .08; o.type = "triangle";
+        o.frequency.setValueAtTime(f, s); h.gain.setValueAtTime(.0001, s); h.gain.exponentialRampToValueAtTime(.2, s + .02); h.gain.exponentialRampToValueAtTime(.001, s + .3);
+        o.connect(h); h.connect(AC.destination); o.start(s); o.stop(s + .3);
+      });
+    }
+  } catch (e) {}
+}
+
+// ---------- ゲーム ----------
+let grid = [], sel = [], drawing = false, score = 0, timeLeft = TIME, timer = 0, playing = false;
+const rnd = () => COLORS[Math.random() * COLORS.length | 0];
+const board = $("board"), line = $("line");
+
+function show(id) { ["menu", "play", "over"].forEach(k => $(k).hidden = k !== id); }
+
+function start() {
+  score = 0; timeLeft = TIME; sel = []; drawing = false; playing = true;
+  grid = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, rnd));
+  $("score").textContent = "0"; $("time").textContent = TIME; $("tbox").classList.remove("danger");
+  show("play"); render(true);
+  clearInterval(timer);
+  timer = setInterval(() => {
+    timeLeft--; $("time").textContent = timeLeft;
+    if (timeLeft <= 5) $("tbox").classList.add("danger");
+    if (timeLeft <= 0) end();
+  }, 1000);
+}
+function end() {
+  clearInterval(timer); playing = false; drawing = false; sel = [];
+  sound("fanfare");
+  $("final").textContent = score.toLocaleString();
+  let best = 0; try { best = Math.max(score, +localStorage.getItem("chappy-link-best") || 0); localStorage.setItem("chappy-link-best", best); } catch (e) {}
+  $("best").textContent = "じぶんのベスト " + best.toLocaleString();
+  show("over");
+  window.CGCBridge && CGCBridge.report({ board: "main", boardName: "ハイスコア（20秒）", score });
+}
+
+function render(all, dropped) {
+  board.querySelectorAll(".blk").forEach(b => b.remove());
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const b = grid[r][c], el = document.createElement("div");
+    el.className = "blk c-" + b.id + (all || (dropped && dropped.has(r * COLS + c)) ? " drop" : "");
+    el.dataset.r = r; el.dataset.c = c;
+    el.innerHTML = `<svg viewBox="0 0 100 100">${face(b.accent)}</svg>`;
+    board.appendChild(el);
+  }
+  paintSel();
+}
+const cell = (r, c) => board.querySelector(`.blk[data-r="${r}"][data-c="${c}"]`);
+function paintSel() {
+  board.querySelectorAll(".blk.sel").forEach(e => e.classList.remove("sel"));
+  sel.forEach(p => { const e = cell(p.r, p.c); if (e) e.classList.add("sel"); });
+  const br = board.getBoundingClientRect();
+  line.setAttribute("viewBox", `0 0 ${br.width} ${br.height}`);
+  if (sel.length < 2) { line.innerHTML = ""; return; }
+  const pts = sel.map(p => { const r = cell(p.r, p.c).getBoundingClientRect(); return `${r.left - br.left + r.width / 2},${r.top - br.top + r.height / 2}`; }).join(" ");
+  line.innerHTML = `<polyline points="${pts}" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>`;
+}
+function posAt(x, y) {
+  const t = document.elementFromPoint(x, y), b = t && t.closest && t.closest(".blk");
+  return b ? { r: +b.dataset.r, c: +b.dataset.c } : null;
+}
+const adj = (a, b) => Math.abs(a.r - b.r) <= 1 && Math.abs(a.c - b.c) <= 1;
+
+board.addEventListener("pointerdown", e => {
+  if (!playing) return;
+  const p = posAt(e.clientX, e.clientY); if (!p) return;
+  drawing = true; sel = [p]; sound("select", 1); paintSel();
+  try { board.releasePointerCapture(e.pointerId); } catch (err) {}
+});
+addEventListener("pointermove", e => {
+  if (!drawing || !playing) return;
+  const p = posAt(e.clientX, e.clientY); if (!p) return;
+  const last = sel[sel.length - 1];
+  if (last.r === p.r && last.c === p.c) return;
+  if (grid[p.r][p.c].id !== grid[last.r][last.c].id || !adj(last, p)) return;
+  const prev = sel[sel.length - 2];
+  if (prev && prev.r === p.r && prev.c === p.c) { sel.pop(); sound("select", sel.length); paintSel(); return; }
+  if (!sel.some(q => q.r === p.r && q.c === p.c)) { sel.push(p); sound("select", sel.length); paintSel(); }
+});
+function release() {
+  if (!drawing) return;
+  drawing = false;
+  const s = sel; sel = [];
+  if (s.length >= 3 && playing) {
+    const n = s.length, pts = n * 100 + (n >= 5 ? 500 : 0);
+    sound("pop", n); score += pts; $("score").textContent = score.toLocaleString();
+    s.forEach(p => cell(p.r, p.c).classList.add("pop"));
+    board.classList.add("shake"); setTimeout(() => board.classList.remove("shake"), 150);
+    const fx = document.createElement("div"); fx.className = "combo"; fx.textContent = "+" + pts + (n >= 5 ? " ボーナス！" : "");
+    board.appendChild(fx); setTimeout(() => fx.remove(), 700);
+    line.innerHTML = "";
+    setTimeout(() => {
+      s.forEach(p => grid[p.r][p.c] = null);
+      const dropped = new Set();
+      for (let c = 0; c < COLS; c++) {
+        let empty = ROWS - 1;
+        for (let r = ROWS - 1; r >= 0; r--) if (grid[r][c]) { if (empty !== r) { grid[empty][c] = grid[r][c]; grid[r][c] = null; dropped.add(empty * COLS + c); } empty--; }
+        for (let r = empty; r >= 0; r--) { grid[r][c] = rnd(); dropped.add(r * COLS + c); }
+      }
+      render(false, dropped);
+    }, 150);
+  } else paintSel();
+}
+addEventListener("pointerup", release);
+addEventListener("pointercancel", release);
+
+$("start").onclick = start;
+$("again").onclick = start;
+$("toMenu").onclick = () => show("menu");
+</script>
+</body>
+</html>

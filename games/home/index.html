@@ -1,0 +1,409 @@
+<!doctype html><html><head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-TGT2Y7KLF3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-TGT2Y7KLF3');
+</script>
+<meta charset=utf8><script src="../../assets/config.js"></script><script src="../../assets/cgc.js"></script><script src="../../assets/bridge.js" data-game="home"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>チャッピーのおうち</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@500;700;800&display=swap">
+<style>
+/* Layout: one-screen phone game — header stats, rule chips, square board, Chappy guide with speech bubble, action bar */
+:root{
+  --night:#1a2742; --night2:#22345a; --panel:#2b4170; --ink:#f3f6ff; --muted:#a9b8dc;
+  --cyan:#3ec4d6; --apple:#e2453a; --gold:#ffcc4d; --line:#0f1830;
+  --r0:#8fd17a; --r1:#b79cf2; --r2:#6fc3f0; --r3:#f6a35c; --r4:#f28bb3; --r5:#f2dc6b; --r6:#7fe0c4; --r7:#e88a7a; --r8:#a8b6c9;
+  --display:"Mochiy Pop One","M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif;
+  --body:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN","Hiragino Sans",sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{background:radial-gradient(120% 70% at 50% 0%,var(--night2),var(--night) 70%);background-color:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+#app{height:100%;display:flex;flex-direction:column;align-items:center;gap:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px;box-sizing:border-box;max-width:560px;margin:0 auto}
+header{width:100%;display:flex;align-items:center;gap:8px}
+.logo{font-family:var(--display);font-size:18px;line-height:1.05;letter-spacing:.02em;flex:1;min-width:0}
+.logo small{display:block;font-family:var(--body);font-weight:700;font-size:11px;color:var(--muted);letter-spacing:.08em}
+.stat{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.07);border-radius:14px;padding:6px 10px;font-weight:800;font-size:16px;font-variant-numeric:tabular-nums}
+.stat img{width:24px;height:24px;object-fit:contain}
+#statIcon{width:28px;flex:none}
+.hearts{letter-spacing:1px;font-size:15px}
+.hearts .off{opacity:.22;filter:grayscale(1)}
+.rules{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.rules div{background:rgba(255,255,255,.06);border-radius:10px;padding:6px 4px;font-size:11.5px;font-weight:700;text-align:center;color:var(--muted);line-height:1.3}
+.rules b{color:var(--ink)}
+#boardWrap{width:100%;flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#board{display:grid;background:var(--line);padding:4px;border-radius:14px;gap:0;box-shadow:0 10px 30px rgba(0,0,0,.35);touch-action:none;aspect-ratio:1;max-width:100%;max-height:100%}
+.cell{position:relative;display:flex;align-items:center;justify-content:center;border:1px solid rgba(15,24,48,.35);box-sizing:border-box;cursor:pointer;transition:filter .15s}
+.cell.bt{border-top:3px solid var(--line)} .cell.bb{border-bottom:3px solid var(--line)} .cell.bl{border-left:3px solid var(--line)} .cell.br{border-right:3px solid var(--line)}
+.cell.done{filter:saturate(.55) brightness(.92)}
+.cell .x{width:34%;height:34%;opacity:.55;position:relative}
+.cell .x::before,.cell .x::after{content:"";position:absolute;left:45%;top:-5%;width:12%;height:110%;background:var(--line);border-radius:3px;transform:rotate(45deg)}
+.cell .x::after{transform:rotate(-45deg)}
+.cell .ch{width:88%;animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+.cell .ch svg{pointer-events:none}
+.cell.wrong{animation:shake .4s}
+.cell.wrong .ch{animation:none}
+.cell.hint{box-shadow:inset 0 0 0 4px var(--gold);animation:glow 1s infinite alternate}
+.cell.conf{box-shadow:inset 0 0 0 3px var(--apple)}
+@keyframes pop{0%{transform:scale(.2)}100%{transform:scale(1)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@keyframes glow{to{box-shadow:inset 0 0 0 4px rgba(255,204,77,.3)}}
+@keyframes jump{0%,100%{transform:translateY(0)}40%{transform:translateY(-22%) scale(1.05)}}
+.cell.party .ch{animation:jump .6s ease-in-out infinite}
+.guide{width:100%;display:flex;align-items:flex-end;gap:8px;min-height:70px}
+#guide{width:78px;flex:none;cursor:pointer}
+.bubble{position:relative;flex:1;min-width:0;background:#fff;color:#22304f;border-radius:16px 16px 16px 4px;padding:9px 13px;font-weight:700;font-size:14px;line-height:1.45;margin-bottom:14px}
+.bubble em{font-style:normal;color:var(--apple)}
+.bar{width:100%;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+button{font-family:var(--body);font-weight:800;font-size:14px;border:0;border-radius:14px;padding:11px 6px;background:var(--panel);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:active{transform:translateY(1px)}
+button img{width:20px;height:20px}
+button.big{background:linear-gradient(#ff7a52,#e2453a);font-family:var(--display);font-weight:400;font-size:20px;padding:14px 30px;box-shadow:0 5px 0 #a82a22;border-radius:20px}
+button[disabled]{opacity:.4}
+.screen{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:safe center;overflow-y:auto;gap:14px;text-align:center;background:rgba(16,24,44,.86);backdrop-filter:blur(4px);padding:max(20px,env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(20px,env(safe-area-inset-left,0px))}
+.screen h1,.screen h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance}
+.screen h1{font-size:34px;line-height:1.2}
+.screen h1 span{color:var(--cyan)}
+.screen h2{font-size:28px}
+.screen p{margin:0;color:var(--muted);font-weight:700;line-height:1.6;max-width:30ch}
+.screen .hero{width:min(170px,40vw);cursor:pointer;animation:float 2.4s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-8px) rotate(-2deg)}}
+.howto{display:grid;gap:6px;text-align:left;background:rgba(255,255,255,.06);border-radius:16px;padding:12px 16px;font-weight:700;font-size:14px;max-width:320px}
+.howto div{display:flex;gap:8px;align-items:center}
+.howto i{font-style:normal;flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:var(--panel);color:var(--gold);font-size:13px}
+.lvsel{display:flex;gap:8px;align-items:center;font-weight:800;color:var(--muted)}
+.lvsel button{padding:6px 12px}
+.res{font-size:15px;font-weight:800;color:var(--ink)!important}
+.res .new{color:var(--gold)}
+.fall{position:fixed;top:-60px;width:36px;z-index:30;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+.adj span{line-height:1.5}
+.howto .mini{display:grid;align-items:stretch;justify-items:stretch;grid-template-columns:repeat(5,22px);grid-template-rows:repeat(5,22px);gap:2px;justify-self:center;background:var(--line);padding:3px;border-radius:8px;position:relative}
+.howto .mini > div{background:var(--r2);border-radius:3px;display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--line)}
+.howto .mini > div.ng{background:#f08a8a}
+.howto .mini > div.ok{box-shadow:inset 0 0 0 2px #2fbf71}
+.howto .mini .mh{width:20px;display:block}
+.minicap{font-size:11px;color:var(--muted);text-align:center}
+.cell.ring{box-shadow:inset 0 0 0 4px #ff6b6b}
+.cell.okpair{box-shadow:inset 0 0 0 4px #2fbf71}
+.bubble .nextb{display:inline-flex;margin-top:6px;padding:6px 14px;font-size:13px;background:#22304f;color:#fff;border-radius:10px}
+.bubble small{display:block;color:var(--apple);font-weight:800;margin-top:2px}
+.tutTag{background:var(--gold);color:#22304f;border-radius:8px;padding:1px 6px;font-size:11px;margin-left:4px}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+@media (max-height:640px){.rules{display:none}.guide{min-height:56px}#guide{width:60px}}
+</style>
+
+<div id="app">
+  <header>
+    <div class="logo">チャッピーのおうち<small id="lvLabel">レベル 1</small></div>
+    <div class="stat hearts" id="hearts" aria-label="ライフ"></div>
+    <div class="stat"><div id="statIcon" aria-hidden="true"></div><span id="count">0/5</span></div>
+  </header>
+  <div class="rules">
+    <div><b>色のおうち</b>に<br>1ぴきずつ</div>
+    <div><b>たて・よこ</b>の列に<br>1ぴきずつ</div>
+    <div><b>くっつく</b>のはダメ<br>（ななめも）</div>
+  </div>
+  <div id="boardWrap"><div id="board" role="grid" aria-label="パズル盤面"></div></div>
+  <div class="guide"><div id="guide" aria-hidden="true"></div><div class="bubble" id="bubble">タップで×メモ、もう一回タップでチャッピーをおくよ！</div></div>
+  <div class="bar">
+    <button id="btnHint"><img id="hintImg" alt="">ヒント <span id="hintN">3</span></button>
+    <button id="btnUndo">↶ もどす</button>
+    <button id="btnReset">↻ やりなおし</button>
+  </div>
+</div>
+
+<div class="screen" id="title">
+  <div class="hero" id="titleChappy"></div>
+  <h1>チャッピーの<br><span>おうち</span></h1>
+  <div class="howto">
+    <div><i>色</i>おなじ色のおうちに、チャッピーは1ぴき</div>
+    <div><i>列</i>たての列・よこの列にも1ぴきずつ</div>
+    <div class="adj"><i>隣</i><span>チャッピーどうしは<b>くっつかない</b>。ななめにくっつくのもダメ。はなれていれば、ななめの線の上でもOK</span></div>
+    <div class="mini" aria-hidden="true" id="mini"></div>
+    <div><i>👆</i>1回タップで×、2回タップでチャッピー</div>
+  </div>
+  <div class="lvsel"><button id="lvDown" aria-label="レベルを下げる">◀</button><span id="lvPick">レベル 1</span><button id="lvUp" aria-label="レベルを上げる">▶</button></div>
+  <button class="big" id="btnStart">あそぶ！</button>
+  <button id="btnTut">あそびかたを見る</button>
+</div>
+
+<div class="screen" id="clear" hidden>
+  <div class="hero" id="clearChappy"></div>
+  <h2>やったね！</h2>
+  <p class="res" id="clearRes"></p>
+  <button class="big" id="btnNext">つぎのレベルへ</button>
+  <button id="btnMenu">タイトルへ</button>
+</div>
+
+<div class="screen" id="over" hidden>
+  <div class="hero" id="overChappy" style="width:min(150px,36vw)"></div>
+  <h2>ざんねん…</h2>
+  <p>ハートがなくなっちゃった。<br>ひと休みしたら、もう一回チャレンジしよう！</p>
+  <button class="big" id="btnRetry">もう一回</button>
+</div>
+
+<script src="chappy.js"></script>
+<script>
+const IMG={"apple": "data:image/webp;base64,UklGRsYIAABXRUJQVlA4WAoAAAAQAAAANwAAPwAAQUxQSJgDAAABoC3Jtmnbar2PbZxr27Zt+94n27Zt27Zt2zaPbXPN0Xt7WHPNOdc4PxARE4AqRbHGve8f2yqCxhpQvEVRDbb6g5x6NBqJAj3L73DM8cedePAmG268YjcgVShW+JNZjT8sAM1RYPVL3uo7mSRt7Ohxfd+8eClUs4dHd5u5V55ivnMGkaTVM/ertSuReZ5hZOTVEEAUG35EWjTzejOzWqztXQUClviOZvx0TggUuwykG4sb35y7Eig2G0bjpM2hiu2GMbJk5JgtUHELjq45eRhasMIvzFjSPTtTQkUi7c8z4+3Q1geYsaz5p3OKVgTFRqOMH82BHSe5l3KejoCqReQGst/yrc/RWNb48xKQyhCw0ShOWHfNCV7KPTsQgupVul7grH3OoLFsjU91SzMQcGS0b/rSy0T+siwCmrPWcJZ3Y9/NoWiqYq4vmFkxy8ivN4WiiZL7MI0FPWbkjPsWh6JqUQ2qqm1yNr0Iyalf7B+gqFYVRXeP9AITf3lgz/kggkpFAcy/3r5X3HfXvdcdvemJRZxPrt4KaItWIoqu3R74cYwzd9IEFh7z+RPHrtcJtFQgwBYvTydJNzNjlSNfPGAeqJRR9F4wiozmzHcv5mZGZu9tBkgxRc9dZOZsplt0jj0WIkUEvXfTIpvuGaedGII0Emm/leZMMXLK/tBGir1nmTFN44C1oHmCxb6jMdXIl3tEchSX0Zis2Yy9EeoCVuibEo1v9AgACbiYxoTdZ+wKAIp5P2dMiRnvbQXQgk3G0pKK/s+KAAKOc/OkjFP3AkRaHmLGtM3PAQQdz6fHq+q6X58NXgQUi/3JmNx7dUv+Mxu8U7fEv7PBe3UL/5yc825A0PlqcsYL6sIDzNJyztgPQMBxbp6UceBaOVtNpCUV+f2COUv8mtxzHQBE9WHGlDzjuagPOGCme0LmE7dvsGxft4Qy/rxQDkSupydkvClojmKVIbRkjMPXRsiByPWMyTgfCCJ5itWGeEzEfcwmUOSLysUePQ3jrSrSACrzfMQsich+q0BQULHhUFoCbrUjEVA44ICJbk3zjLd3iBQTwcnm1qzId+aDoqRox9UzaU1x44dLQFBeWo6awMyrM+P7SyIgt6WQArv+StbMK3CPkXb/QgjIn78QRLH8Q9NJN/Mi5mZGcuAZXQhouAOkCKBo2+eVfhkrnPDDdasCisbXqUghBKBr1WOvOO89eo5z2j33fXD7BbsvDARBQVZQOCAIBQAA0BcAnQEqOABAAD49GotDoiGhFwklxCADxLYAYoVCPgPRPNAqL9b/D3Bfmk7WJ6G3w8wH7Afrd7zno39AD+19Rbz6f7YfBb+1/o+//N4l+JUUV8XNG96DGfp6P/73uB/y7+m/73gKv2xa7k+TSPzZnxit3GZZvjxLe4aOBke+OcKtFL5jRIvEOeqZRmzYEV3AOjE5cVdlmNdQdcumjYMVthvQqDsSObxNPOzt3uj4HMsiYwPYBideYiseAVc+7XPJFdEenz10gAD+/2AaE9yGG7zG1cU93coZ35twH9B96NqUVf0U01UTf9rGiNc90uuOroXa/oOA77kL3biBELJ4yJJ8lWK7KzZNVFmJ8ZIc9Em5I4yia8V8Cy0XMzOQGwHRzktYX7rhGZ87ebXyRZRBdfXqksvl3yTeK1OqETGGp8jfm/0hq0dsEaGlx9GFVN3iU8elzVxKqWKa1WR9risp2ZslIbJMWLZAMWU3vePpzjRQfovqvbM34JrYvXCyqPlYr/Id87zMAZGU6WBYCUFI8t96FebkTWWPBUrq+WnGu8e9vRUx/9l9cBkAaEVDqg4xET6zrel75YbFv/7GqbHcH2OUHsoldcurYy2Y4I0LLus+BdBTFKsh3cX3/u6WjXGfe/1ah6+OXx8r+s30eU2ZskCVUX7Bvv2V1RnBM4dMdEv4Gg79A2gmKxwb2R1G9fHm+ytg12miQXkcefcASgpCqBoDKD+Ea+H8YX9LBf7tuXOZFYj56y/xYf39IA+8MJ5J9WAY+EfWoO+iCljKMCdkE/hP+Zd0ua1SD3IBb0NG/95b9mtjGymizKfiLguqk+QkhqEHpJxzWMOKG8pbDrNcJTG1jAso+2x/DJhUrFJ29CUlwsUCBjR7k4LsR1uv/TB0UT2HJBmFM+wixfF5mil9fVkvjbq3j+VNyjTBwmYFGLH8DD/Mr5eD1G97N6erFJjrQhktToSyvUvLooiiO1CSBduxm5n/3UsE7Nm/vqwsKDb+IU+E+PyMIv4IUIpSgDgFpR50x/sX10BzAORlRKN0K+k8f1nCiIIYBhp6NBPF2iYdG2cuhA7u6AP+ZLTr9+1e5XO/AwUQPi3LQV7xjk2nTpzzZfH4BefYBtRlfzaTpupP/icfo9F/Kwe/zh2xKyV80IMWZ/XjPltKe/TpgQcOCua7F33ZS7e09mdTF8OkyxQlYfc2REy8THo1usGf3aVPfg5jM59EJ3rdufStc3H5yPC9MA6GL0EC7X1f8a2Qk8SFf6QOMYRugUORFFK0HgAX0mtu80CTTbqEb+4E97neWxqt/5Gk1PmCL9kgEwsF//fDxp3OEWhg3CDS9obyeu1aXSENbEnuiN0d1fSa1rJGvbbNC7u9WvCxzt2lekh3/0Wn8vvjpmY4PFmExMkk+s99xe1Jpuo5Z5Zhh8ohceTlYC1K4j6vUOHmNgQjSl2qP7RazLjqLY3W4O2akthp8ab3d/z0aOqi+HFY7Eq6V91lubPYGHN6ev24YvDPtK+1rErpkt8pe2WkR4otQWCHImd83zHa5IbPiQSVzKpNTliubNxUVKgFWPQXKQmXPHFoym8oynitZzH4Apqf/qYkzssgOhjAj82LkCdieuH2FEtmwBfiO0DkmOvw/klvR1C4mzFU6nOPZn0wQiKgKvU4s9LATN+7FnewN1JAjIxXmvleBDjP5mi/r0Yrc8k+e6fk2uBXz6YUDgAAAA=="};
+// ---- puzzle generator (seeded) ----
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function shuffle(arr,r){for(let i=arr.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+function randomSolution(N,r){
+  const p=[];const used=new Array(N).fill(false);
+  (function bt(row){if(row===N)return true;
+    for(const c of shuffle([...Array(N).keys()],r)){
+      if(used[c])continue;if(row>0&&Math.abs(p[row-1]-c)<=1)continue;
+      used[c]=true;p[row]=c;if(bt(row+1))return true;used[c]=false}
+    return false})(0);
+  return p;
+}
+function growRegions(N,sol,r){
+  const g=Array.from({length:N},()=>new Array(N).fill(-1));
+  const frontier=[];
+  for(let i=0;i<N;i++){g[i][sol[i]]=i}
+  const weight=Array.from({length:N},()=>0.4+r()*1.6);
+  let left=N*N-N;
+  while(left>0){
+    // pick a region weighted, then a random frontier cell of it
+    const cand=[];
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(g[y][x]!==-1)continue;
+      for(const[dy,dx]of[[1,0],[-1,0],[0,1],[0,-1]]){const yy=y+dy,xx=x+dx;
+        if(yy>=0&&yy<N&&xx>=0&&xx<N&&g[yy][xx]!==-1)cand.push([y,x,g[yy][xx]])}}
+    let tot=0;for(const c of cand)tot+=weight[c[2]];
+    let t=r()*tot,pick=cand[0];for(const c of cand){t-=weight[c[2]];if(t<=0){pick=c;break}}
+    g[pick[0]][pick[1]]=pick[2];left--;
+  }
+  return g;
+}
+function countSolutions(N,g,limit){
+  let cnt=0;const colU=new Array(N).fill(false),regU=new Array(N).fill(false);const p=[];
+  (function bt(row){if(cnt>=limit)return;if(row===N){cnt++;return}
+    for(let c=0;c<N;c++){if(colU[c]||regU[g[row][c]])continue;if(row>0&&Math.abs(p[row-1]-c)<=1)continue;
+      colU[c]=regU[g[row][c]]=true;p[row]=c;bt(row+1);colU[c]=regU[g[row][c]]=false;if(cnt>=limit)return}})(0);
+  return cnt;
+}
+function makePuzzle(N,seed){
+  const r=mulberry(seed*7919+N*31);
+  for(let tries=0;tries<4000;tries++){
+    const sol=randomSolution(N,r);const g=growRegions(N,sol,r);
+    if(countSolutions(N,g,2)===1)return{N,g,sol,tries};
+  }
+  return null;
+}
+
+const $=id=>document.getElementById(id);
+const COLORS=['--r0','--r1','--r2','--r3','--r4','--r5','--r6','--r7','--r8'];
+const store={get(k,d){try{const v=localStorage.getItem('chappy-ouchi-'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('chappy-ouchi-'+k,JSON.stringify(v))}catch(e){}}};
+$('hintImg').src=IMG.apple;
+// ---- チャッピー（chappy.js キットをそのまま使用）----
+const MOOD={normal:'normal',happy:'happy',sad:'think',think:'think',sleep:'sleep'};
+function headEl(mood){const w=document.createElement('div');w.className='ch';w.appendChild(Chappy.create({head:true,mood:MOOD[mood]||'normal',label:false}));return w}
+Chappy.mount($('statIcon'),{head:true});
+let guideSvg=Chappy.mount($('guide'),{follow:true,label:false});
+let titleSvg=Chappy.mount($('titleChappy'),{follow:true});
+let clearSvg=Chappy.mount($('clearChappy'),{mood:'happy'});
+let overSvg=Chappy.mount($('overChappy'),{mood:'sleep'});
+const MOVESEQ=['jump','wave','ears','nod'];let mvI=0;
+$('titleChappy').onclick=()=>Chappy.play(titleSvg,MOVESEQ[mvI++%4]);
+$('guide').onclick=()=>Chappy.play(guideSvg,MOVESEQ[mvI++%4]);
+setTimeout(()=>Chappy.play(titleSvg,'wave'),600);
+(function(){const m=$('mini');for(let y=0;y<5;y++)for(let x=0;x<5;x++){const d=document.createElement('div');
+  if(y===2&&x===2){const h=document.createElement('div');h.className='mh';h.appendChild(Chappy.create({head:true,label:false}));d.appendChild(h)}
+  else if(y===0&&x===0){d.className='ok';const h=document.createElement('div');h.className='mh';h.appendChild(Chappy.create({head:true,mood:'happy',label:false}));d.appendChild(h)}
+  else if(Math.abs(y-2)<=1&&Math.abs(x-2)<=1){d.className='ng';d.textContent='×'}
+  m.appendChild(d)}
+  const cap=document.createElement('div');cap.className='minicap';cap.textContent='赤いマスはダメ ・ 左上のようにはなれていればOK';m.after(cap)})();
+
+// ---- sound ----
+let ac=null;
+function tone(f,d=.12,type='triangle',v=.18,when=0,slide){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();
+  const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);
+  g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.02)}catch(e){}}
+const sfx={x:()=>tone(520,.05,'sine',.08),place:(n)=>{tone(600+n*60,.1);tone(900+n*60,.14,'sine',.12,.06)},bad:()=>{tone(220,.25,'sawtooth',.12,0,110)},
+  clear:()=>[523,659,784,1047].forEach((f,i)=>tone(f,.22,'triangle',.16,i*.11)),hint:()=>tone(880,.2,'sine',.12,0,1320)};
+
+// ---- state ----
+let level=store.get('level',1),maxLevel=store.get('max',1),P,N,state,hearts,hints,history,startT,timerOn,done;
+function sizeFor(l){return l<=3?5:l<=8?6:l<=15?7:l<=25?8:9}
+function setPick(){$('lvPick').textContent='レベル '+level}
+setPick();
+$('lvDown').onclick=()=>{level=Math.max(1,level-1);setPick()};
+$('lvUp').onclick=()=>{level=Math.min(maxLevel,level+1);setPick()};
+
+function say(html,face='normal',move){ $('bubble').innerHTML=html;
+  const m=MOOD[face]||'normal'; if(guideSvg._opts.mood!==m)guideSvg=Chappy.setMood(guideSvg,m);
+  Chappy.play(guideSvg,move||(face==='happy'?'jump':face==='sad'?'ears':'nod')); }
+
+function startLevel(){
+  N=sizeFor(level);P=makePuzzle(N,level);
+  state=Array.from({length:N},()=>new Array(N).fill(0)); // 0 empty,1 x,2 chappy
+  hearts=3;hints=3;history=[];done=false;startT=Date.now();
+  $('lvLabel').textContent='レベル '+level+' ・ '+N+'×'+N;
+  buildBoard();render();
+  say(level===1?'まずは<em>1マスだけの色</em>や、せまいおうちをさがしてみよう！':'この'+N+'×'+N+'、ぼく'+N+'ひきのおうちを見つけてね！');
+}
+function buildBoard(){
+  const b=$('board');b.innerHTML='';b.style.gridTemplateColumns=`repeat(${N},1fr)`;b.style.gridTemplateRows=`repeat(${N},1fr)`;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const c=document.createElement('div');c.className='cell';c.dataset.y=y;c.dataset.x=x;c.setAttribute('role','gridcell');
+    const g=P.g[y][x];c.style.background=`var(${COLORS[g]})`;
+    if(y===0||P.g[y-1][x]!==g)c.classList.add('bt');if(y===N-1||P.g[y+1][x]!==g)c.classList.add('bb');
+    if(x===0||P.g[y][x-1]!==g)c.classList.add('bl');if(x===N-1||P.g[y][x+1]!==g)c.classList.add('br');
+    b.appendChild(c);
+  }
+  fitBoard();
+}
+function fitBoard(){const w=$('boardWrap'),s=Math.min(w.clientWidth,w.clientHeight);$('board').style.width=s+'px';$('board').style.height=s+'px'}
+addEventListener('resize',()=>N&&fitBoard());
+
+function count(){let n=0;for(const r of state)for(const v of r)if(v===2)n++;return n}
+function render(){
+  const cells=$('board').children;
+  const placed=new Set();for(let y=0;y<N;y++)for(let x=0;x<N;x++)if(state[y][x]===2)placed.add(P.g[y][x]);
+  for(const c of cells){const y=+c.dataset.y,x=+c.dataset.x,v=state[y][x];
+    const want=v===2?'ch':v===1?'x':'';
+    if(c.dataset.v!==want){c.dataset.v=want;c.innerHTML=v===1?'<span class="x"></span>':'';if(v===2)c.appendChild(headEl('normal'));}
+    c.classList.toggle('done',placed.has(P.g[y][x])&&v!==2);
+    c.setAttribute('aria-label',`${y+1}行${x+1}列 ${v===2?'チャッピー':v===1?'×':'空き'}`);
+  }
+  $('hearts').innerHTML=[0,1,2].map(i=>`<span class="${i<hearts?'':'off'}">❤️</span>`).join('');
+  $('count').textContent=count()+'/'+N;$('hintN').textContent=hints;$('btnHint').disabled=hints<=0||done||!!tut;$('btnUndo').disabled=$('btnReset').disabled=!!tut;
+}
+function cellEl(y,x){return $('board').children[y*N+x]}
+
+// ---- input: tap cycles; drag paints ×
+let drag=null;
+$('board').addEventListener('pointerdown',e=>{const c=e.target.closest('.cell');if(!c||done)return;
+  const y=+c.dataset.y,x=+c.dataset.x;drag={y,x,moved:false,mode:state[y][x]===0?1:null,painted:[]};
+  try{$('board').setPointerCapture(e.pointerId)}catch(_){}
+});
+$('board').addEventListener('pointermove',e=>{if(!drag||drag.mode==null||tut)return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);const c=el&&el.closest&&el.closest('.cell');if(!c)return;
+  const y=+c.dataset.y,x=+c.dataset.x;if(y===drag.y&&x===drag.x&&!drag.moved)return;
+  if(!drag.moved){drag.moved=true;paintX(drag.y,drag.x)}paintX(y,x);
+});
+function paintX(y,x){if(state[y][x]!==0)return;state[y][x]=1;drag.painted.push([y,x]);sfx.x();render()}
+addEventListener('pointerup',()=>{if(!drag)return;const d=drag;drag=null;
+  if(d.moved){if(d.painted.length)history.push({type:'paint',cells:d.painted});return}
+  tap(d.y,d.x)});
+addEventListener('pointercancel',()=>drag=null);
+
+function tap(y,x){
+  if(tut)return tutTap(y,x);
+  clearHint();
+  const v=state[y][x];
+  if(v===0){state[y][x]=1;history.push({type:'set',y,x,prev:0});sfx.x();render();return}
+  if(v===1){place(y,x);return}
+  // v===2 (correct, locked)
+  say('このチャッピーはもう正しいおうちにいるよ！','happy');
+}
+function place(y,x){
+  if(P.sol[y]===x){
+    state[y][x]=2;const auto=[];
+    for(let yy=0;yy<N;yy++)for(let xx=0;xx<N;xx++){if(state[yy][xx]!==0)continue;
+      if(yy===y||xx===x||P.g[yy][xx]===P.g[y][x]||(Math.abs(yy-y)<=1&&Math.abs(xx-x)<=1)){state[yy][xx]=1;auto.push([yy,xx])}}
+    history.push({type:'place',y,x,auto});
+    const n=count();sfx.place(n);render();
+    if(tut)return;
+    if(n===N)return win();
+    const lines=['いいね！ここがぼくのおうち！','ぴったり！まわりは自動で×にしたよ','その調子！あと'+(N-n)+'ひき！','すごい！のこり'+(N-n)+'ひき'];
+    say(lines[Math.floor(Math.random()*lines.length)],'happy');
+  }else{
+    hearts--;sfx.bad();render();const c=cellEl(y,x);
+    c.replaceChildren(headEl('sad'));c.dataset.v='sad';c.classList.add('wrong');
+    say(hearts>0?'うわっ、ここは<em>ちがうおうち</em>だった…！あと'+hearts+'回まちがえられるよ':'もうハートがない…','sad');
+    setTimeout(()=>{c.classList.remove('wrong');state[y][x]=1;render();if(hearts<=0)lose()},650);
+  }
+}
+// ---- undo / reset ----
+$('btnUndo').onclick=()=>{if(done||tut)return;const h=history.pop();if(!h){say('もどせる手はないよ');return}
+  if(h.type==='set')state[h.y][h.x]=h.prev;
+  else if(h.type==='paint')h.cells.forEach(([y,x])=>state[y][x]=0);
+  else if(h.type==='place'){state[h.y][h.x]=1;h.auto.forEach(([y,x])=>state[y][x]=0)}
+  clearHint();render()};
+$('btnReset').onclick=()=>{if(done||tut)return;for(const r of state)r.fill(0);history=[];clearHint();render();say('まっさらにしたよ。ハートはそのままね')};
+
+// ---- hint: find a logically forced spot ----
+let hintCell=null;
+function clearHint(){if(hintCell){hintCell.classList.remove('hint');hintCell=null}}
+function forcedHint(){
+  // a region / row / col whose only non-× cells are one cell
+  const groups=[];
+  for(let i=0;i<N;i++){groups.push({name:'この色のおうち',cells:[]},{name:(i+1)+'行目',cells:[]},{name:(i+1)+'列目',cells:[]})}
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(state[y][x]===1)continue;groups[P.g[y][x]*3].cells.push([y,x]);groups[y*3+1].cells.push([y,x]);groups[x*3+2].cells.push([y,x])}
+  for(const g of groups){if(g.cells.length===1){const[y,x]=g.cells[0];if(state[y][x]===0)return{y,x,why:g.name+'で、のこっているのはここだけ！'}}}
+  return null;
+}
+$('btnHint').onclick=()=>{if(done||hints<=0)return;clearHint();
+  let h=forcedHint();hints--;sfx.hint();
+  if(!h){const unsolved=[];for(let y=0;y<N;y++)if(state[y][P.sol[y]]!==2)unsolved.push(y);
+    const y=unsolved[Math.floor(Math.random()*unsolved.length)];h={y,x:P.sol[y],why:'ここにぼくがいる気がする…！'}}
+  hintCell=cellEl(h.y,h.x);hintCell.classList.add('hint');
+  say('<em>ヒント</em>：'+h.why+'（光ってるマス）','normal','nod');render()};
+
+// ---- tutorial ----
+const TUTP={N:5,g:[[2,0,1,1,1],[2,2,2,1,3],[2,2,2,3,3],[4,4,2,3,3],[4,4,4,4,3]],sol:[1,3,0,4,2]};
+const TUT=[
+ {t:'ぼくチャッピー！このマップには<em>5つの色のおうち</em>があるよ。ぼくたち5ひきを、正しいおうちに入れてね',next:1},
+ {t:'ルールは3つ。①同じ色のおうちに1ぴきずつ。②たての列・よこの列にも1ぴきずつ。③ぼくたちは<em>くっつくのがニガテ</em>',next:1},
+ {t:'緑のおうちを見て。<em>1マスしかない</em>から、ここに住むしかないね。光ってるマスを<em>1回</em>タップしてみて',tg:[0,1],ex:'x'},
+ {t:'×がついたね。×は「ここじゃない」のメモだよ。同じマスを<em>もう1回</em>タップすると、ぼくが入るよ',tg:[0,1],ex:'place'},
+ {t:'入れた！まわりに×が自動でついたよ。同じよこの列、同じたての列、同じ色。それと<em>くっついている8マス</em>（赤いわく）。ななめにくっつくのもダメなんだ',ring:[0,1],next:1},
+ {t:'こんどは<em>むらさきのおうち</em>。×がついていないマスは1つだけ！そこに2回タップしてね',tg:[1,3],ex:'place'},
+ {t:'上から3段目の<em>よこの列</em>を見て。のこっているのは1マスだけだね',tg:[2,0],ex:'place'},
+ {t:'左から3列目の<em>たての列</em>。のこりは1マス！',tg:[4,2],ex:'place'},
+ {t:'さいごは<em>オレンジのおうち</em>。のこったマスはどこかな？',tg:[3,4],ex:'place'},
+ {t:'できた！緑のわくの2ひきは、ななめの線にならんでいるけど<em>はなれているからOK</em>。ダメなのはくっつくときだけだよ',pair:[[2,0],[4,2]],next:1,face:'happy'},
+ {t:'まちがえると❤️がへるよ。こまったら<em>りんごのヒント</em>を使ってね。じゃあ本番いってみよう！',next:1,end:1,face:'happy'}
+];
+let tut=null;
+function startTutorial(){tut={i:0};N=5;P=TUTP;state=Array.from({length:N},()=>new Array(N).fill(0));hearts=3;hints=0;history=[];done=false;
+  $('lvLabel').innerHTML='あそびかた<span class="tutTag">チュートリアル</span>';buildBoard();render();tutShow()}
+function tutClear(){for(const c of $('board').children)c.classList.remove('hint','ring','okpair')}
+function tutShow(extra){const s=TUT[tut.i];tutClear();
+  if(s.tg)cellEl(...s.tg).classList.add('hint');
+  if(s.ring){const[y0,x0]=s.ring;for(let y=y0-1;y<=y0+1;y++)for(let x=x0-1;x<=x0+1;x++)if(y>=0&&x>=0&&y<N&&x<N&&!(y===y0&&x===x0))cellEl(y,x).classList.add('ring')}
+  if(s.pair)s.pair.forEach(([y,x])=>cellEl(y,x).classList.add('okpair'));
+  say(s.t+(extra?'<small>'+extra+'</small>':'')+(s.next?`<br><button class="nextb" id="tutNext">${s.end?'本番スタート ▶':'つぎへ ▶'}</button>`:''),s.face||'normal');
+  if(s.pair)for(const c of $('board').children)if(state[c.dataset.y][c.dataset.x]===2){c.replaceChildren(headEl('happy'));c.dataset.v='happy'}
+}
+$('bubble').addEventListener('click',e=>{if(!tut||e.target.id!=='tutNext')return;tone(660,.06);
+  if(TUT[tut.i].end){tut=null;store.set('tutDone',true);startLevel();return}
+  tut.i++;tutShow()});
+function tutTap(y,x){const s=TUT[tut.i];
+  if(!s.tg){tutShow('「つぎへ」をおしてね');return}
+  if(y!==s.tg[0]||x!==s.tg[1]){tutShow('光っているマスをタップしてね');return}
+  if(s.ex==='x'){state[y][x]=1;sfx.x();render();tut.i++;tutShow();return}
+  if(state[y][x]===0){state[y][x]=1;sfx.x();render();tutShow('×になったね。もう1回タップ！');return}
+  place(y,x);tut.i++;setTimeout(()=>tut&&tutShow(),350);
+}
+
+// ---- end states ----
+function fmt(ms){const s=Math.round(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
+function win(){done=true;sfx.clear();clearHint();
+  for(const c of $('board').children)if(state[c.dataset.y][c.dataset.x]===2){c.replaceChildren(headEl('happy'));c.dataset.v='happy';c.classList.add('party')}
+  say('みんなおうちに帰れたよ！ありがとう！','happy');
+  const t=Date.now()-startT,bests=store.get('best',{}),prev=bests[level];const isNew=!prev||t<prev;if(isNew){bests[level]=t;store.set('best',bests)}
+  window.CGCBridge&&CGCBridge.report({board:'lv'+level,boardName:'レベル '+level+'（'+N+'×'+N+'）',score:t});
+  maxLevel=Math.max(maxLevel,level+1);store.set('max',maxLevel);store.set('level',level+1);
+  $('clearRes').innerHTML=`レベル ${level} クリア ・ タイム ${fmt(t)}<br>${isNew?'<span class="new">ベスト記録！</span>':'ベスト '+fmt(prev)} ・ のこりハート ${'❤️'.repeat(hearts)}`;
+  for(let i=0;i<18;i++){const a=document.createElement('img');a.src=IMG.apple;a.className='fall';a.style.left=Math.random()*100+'vw';a.style.animationDuration=(1.6+Math.random()*1.6)+'s';a.style.animationDelay=(Math.random()*.6)+'s';document.body.appendChild(a);setTimeout(()=>a.remove(),4000)}
+  setTimeout(()=>{$('clear').hidden=false;Chappy.play(clearSvg,'jump');setTimeout(()=>Chappy.play(clearSvg,'wave'),950)},1300);
+}
+function lose(){done=true;$('over').hidden=false;setTimeout(()=>Chappy.play(overSvg,'nod'),300)}
+$('btnStart').onclick=()=>{tone(660,.08);$('title').hidden=true;store.get('tutDone',false)?startLevel():startTutorial()};
+$('btnTut').onclick=()=>{tone(660,.08);$('title').hidden=true;startTutorial()};
+$('btnNext').onclick=()=>{$('clear').hidden=true;level++;startLevel()};
+$('btnMenu').onclick=()=>{$('clear').hidden=true;level=Math.min(maxLevel,level+1);setPick();$('title').hidden=false;setTimeout(()=>Chappy.play(titleSvg,'wave'),300)};
+$('btnRetry').onclick=()=>{$('over').hidden=true;startLevel()};
+</script>
+
+</body></html>

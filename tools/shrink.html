@@ -1,0 +1,12 @@
+<!doctype html><meta charset="utf-8"><title>画像を軽くする</title>
+<!-- tools/shrink.py から使う。?src=…&w=…&q=… の画像を JPEG にして <pre> に出す -->
+<pre id="o"></pre>
+<script>
+const p = new URLSearchParams(location.search), img = new Image();
+img.onload = () => {
+  const w = +p.get("w"), h = Math.round(img.height * w / img.width), c = document.createElement("canvas");
+  c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(img, 0, 0, w, h);
+  document.getElementById("o").textContent = c.toDataURL("image/jpeg", +p.get("q"));
+};
+img.src = p.get("src");
+</script>
