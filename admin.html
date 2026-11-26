@@ -293,7 +293,7 @@ function drawRows() {
   $("rows").innerHTML = list.length ? list.map(r => `<tr data-id="${esc(r.id)}">
       <td><input type="checkbox" data-chk></td><td>${esc(r.date)}</td><td>${esc(r.boardName)}</td>
       <td><input type="text" data-nick maxlength="10" value="${esc(r.nick)}"></td>
-      <td><input type="number" data-score value="${r.score}"><span class="fmt">${esc(g.fmt(r.score))}</span></td>
+      <td><input type="number" data-score value="${r.score}"><span class="fmt">${esc(g.fmt(r.score, r.board))}</span></td>
       <td><button class="btn sm green" data-save>保存</button></td></tr>`).join("")
     : `<tr><td colspan="6" style="color:var(--sub)">記録はありません</td></tr>`;
   $("count").textContent = list.length ? `${list.length} 行（新しい順・最大1000行）${unit}` : "";
@@ -302,7 +302,7 @@ function drawRows() {
     const n = tr.querySelector("[data-nick]"), s = tr.querySelector("[data-score]");
     const dirty = () => tr.classList.add("dirty");
     n.oninput = dirty;
-    s.oninput = () => { dirty(); tr.querySelector(".fmt").textContent = s.value !== "" && isFinite(s.value) ? g.fmt(Number(s.value)) : ""; };
+    s.oninput = () => { dirty(); tr.querySelector(".fmt").textContent = s.value !== "" && isFinite(s.value) ? g.fmt(Number(s.value), (rows.find(x => x.id === tr.dataset.id) || {}).board) : ""; };
     tr.querySelector("[data-save]").onclick = async () => {
       const nick = n.value.trim();
       if (!nick) { toast("ニックネームを入れてください"); return; }

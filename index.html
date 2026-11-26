@@ -252,6 +252,7 @@ const ICON = {
   lab:   `<svg class="icon" viewBox="0 0 64 64"><rect x="10" y="14" width="44" height="36" rx="12" fill="#14181f" stroke="#fff" stroke-width="5"/><circle cx="25" cy="31" r="5" fill="#35d0c5"/><circle cx="39" cy="31" r="5" fill="#35d0c5"/><rect x="24" y="40" width="16" height="4" rx="2" fill="#35d0c5"/><path d="M32 14V6" stroke="#fff" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="5" r="4" fill="#ffd84a"/></svg>`,
   car:   `<svg class="icon" viewBox="0 0 64 64"><path d="M10 38 L16 22 Q18 18 23 18 H41 Q46 18 48 22 L54 38 Z" fill="#fff"/><rect x="6" y="34" width="52" height="14" rx="6" fill="#fff"/><circle cx="18" cy="48" r="6" fill="#30425a"/><circle cx="46" cy="48" r="6" fill="#30425a"/><path d="M22 23 H42 L46 33 H18 Z" fill="#3a7bd5"/><path d="M32 12 V4 M26 8 a8 8 0 0 1 12 0" stroke="#ffd84a" stroke-width="3" fill="none" stroke-linecap="round"/></svg>`,
   eye:   `<svg class="icon" viewBox="0 0 64 64"><path d="M4 32 Q32 6 60 32 Q32 58 4 32 Z" fill="#fff"/><circle cx="32" cy="32" r="12" fill="#7a4dff"/><circle cx="32" cy="32" r="5" fill="#1d2433"/><circle cx="36" cy="28" r="3" fill="#fff"/></svg>`,
+  keys:  `<svg class="icon" viewBox="0 0 64 64"><rect x="4" y="16" width="56" height="34" rx="8" fill="#fff"/><g fill="#e0457b"><rect x="10" y="22" width="7" height="6" rx="1.5"/><rect x="20" y="22" width="7" height="6" rx="1.5"/><rect x="30" y="22" width="7" height="6" rx="1.5"/><rect x="40" y="22" width="7" height="6" rx="1.5"/><rect x="50" y="22" width="5" height="6" rx="1.5"/><rect x="13" y="31" width="7" height="6" rx="1.5"/><rect x="23" y="31" width="7" height="6" rx="1.5"/><rect x="33" y="31" width="7" height="6" rx="1.5"/><rect x="43" y="31" width="9" height="6" rx="1.5"/><rect x="18" y="40" width="28" height="5" rx="2"/></g></svg>`,
   glass: `<svg class="icon" viewBox="0 0 64 64"><circle cx="27" cy="27" r="17" fill="rgba(255,255,255,.35)" stroke="#fff" stroke-width="7"/><path d="M40 40 L56 56" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M19 21 l3-6 l4 5 M35 21 l-3-6 l-4 5" fill="#fff" stroke="#fff" stroke-width="2"/></svg>`
 };
 
@@ -502,9 +503,9 @@ function drawRank() {
   } else {
     const top = list.filter(r => r.rank <= 3).slice(0, 3);
     const pod = [top[1], top[0], top[2]];
-    h += `<div class="podium">` + pod.map((r, i) => r ? `<div class="p p${r.rank}${r.me ? " me" : ""}">${r.rank === 1 ? `<span class="crown">👑</span>` : ""}<span class="n">${esc(r.nick)}</span><span class="s">${esc(g.fmt(r.score))}</span><div class="bar">${r.rank}</div></div>` : `<div></div>`).join("") + `</div>`;
+    h += `<div class="podium">` + pod.map((r, i) => r ? `<div class="p p${r.rank}${r.me ? " me" : ""}">${r.rank === 1 ? `<span class="crown">👑</span>` : ""}<span class="n">${esc(r.nick)}</span><span class="s">${esc(g.fmt(r.score, d.board))}</span><div class="bar">${r.rank}</div></div>` : `<div></div>`).join("") + `</div>`;
     const rest = list.slice(top.length);
-    if (rest.length) h += `<ol class="rk">` + rest.map(r => `<li class="${r.me ? "me" : ""}"><span class="r">${r.rank}</span><span class="n">${esc(r.nick)}</span><span class="s">${esc(g.fmt(r.score))}</span></li>`).join("") + `</ol>`;
+    if (rest.length) h += `<ol class="rk">` + rest.map(r => `<li class="${r.me ? "me" : ""}"><span class="r">${r.rank}</span><span class="n">${esc(r.nick)}</span><span class="s">${esc(g.fmt(r.score, d.board))}</span></li>`).join("") + `</ol>`;
   }
   h += `<div class="rk-note">${rk.tab === "daily" ? "デイリーは まいにち 0時に リセット。1人 いちばん良い きろくだけ のるよ" : "これまでで 1人 いちばん良い きろくだけ のるよ"}</div>`;
   $("rkBody").innerHTML = h;

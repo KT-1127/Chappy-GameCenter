@@ -45,7 +45,11 @@ const GAMES = [
   { id: "vlab",    name: "バーチャル計測制御ラボ", kana: "VLAB", ready: true, color: "#3a7bd5", color2: "#bcd6fb", icon: "car", rank: false,
     desc: "ブロックでプログラム！3Dの町でロボットカーやセンサーを動かそう", order: "desc", fmt: pts },
   { id: "mikata",  name: "見え方スイッチ",     kana: "MIKATA", ready: true, color: "#7a4dff", color2: "#d9ccff", icon: "eye", rank: false,
-    desc: "同じ動きなのに見え方がかわる！ふしぎな錯視をたいけんしよう", order: "desc", fmt: pts }
+    desc: "同じ動きなのに見え方がかわる！ふしぎな錯視をたいけんしよう", order: "desc", fmt: pts },
+  // board はモード・言語・むずかしさごと（例 rush-ja-normal）。単位はモードで変わる
+  { id: "typing",  name: "チャッピータイピング", kana: "TYPING", ready: true, color: "#e0457b", color2: "#ffc9dc", icon: "keys",
+    desc: "りんごを集めながらタイピング！ローマ字・英語・技術の用語も", order: "desc", note: "モード・むずかしさごとの自己ベスト",
+    fmt: (v, b) => { b = String(b || ""); return v.toLocaleString() + (b.startsWith("cannon") ? "点" : b.startsWith("free") ? " 打/分" : "個"); } }
 ];
 GAMES.forEach(g => { g.url = "games/" + g.id + "/index.html"; g.banner = "games/" + g.id + "/thumb.jpg"; });
 const gameById = id => GAMES.find(g => g.id === id);

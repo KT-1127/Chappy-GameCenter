@@ -29,6 +29,7 @@ assets/top.png    センターの画像。軽い assets/top.jpg をリンク共�
   lab       チャッピーラボ     … chappy-lab-trial/ から（公開中の chappy-lab と同じもの）
   vlab      バーチャル計測制御ラボ … 仮想プログラミング/ から（ランキングなし。トップ index.html → ラボ app.html）
   mikata    見え方スイッチ     … 見方/ から（ランキングなし）
+  typing    チャッピータイピング … タイピング/ から（ランキングはモード・言語・むずかしさごと。js/main.js の onFinish から送る）
 tools/banner.html バナー画像を作るページ
 tools/shrink.py   表示用の軽い画像（thumb.jpg / assets/top.jpg）を作る
 ```
