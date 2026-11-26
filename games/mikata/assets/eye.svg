@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 見え方スイッチのアイコン：チャッピーの顔（黒い画面に水色の目と ω の口） -->
+  <defs>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2d2f"/><stop offset="1" stop-color="#151718"/></linearGradient>
+    <linearGradient id="e" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4FC5D0"/><stop offset="1" stop-color="#2EA6B3"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#s)"/>
+  <ellipse cx="15.5" cy="26" rx="7" ry="10.5" fill="url(#e)" transform="rotate(4 15.5 26)"/>
+  <ellipse cx="48.5" cy="26" rx="7" ry="10.5" fill="url(#e)" transform="rotate(4 48.5 26)"/>
+  <ellipse cx="13.6" cy="20.5" rx="2" ry="2.6" fill="#E8FCFD" transform="rotate(-18 13.6 20.5)"/>
+  <ellipse cx="46.6" cy="20.5" rx="2" ry="2.6" fill="#E8FCFD" transform="rotate(-18 46.6 20.5)"/>
+  <path d="M18,42 C18.5,48 21.5,51 25,51 C29,51 31.5,48 32,44.5 C32.5,48 35,51 39,51 C42.5,51 45.5,48 46,42"
+        fill="none" stroke="#3AB7C2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

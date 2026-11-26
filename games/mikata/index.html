@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-TGT2Y7KLF3"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-TGT2Y7KLF3');
+  </script>
+<meta charset="UTF-8">
+<script src="../../assets/config.js"></script><script src="../../assets/cgc.js"></script><script src="../../assets/bridge.js" data-game="mikata"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>見え方スイッチ</title>
+<meta name="description" content="見え方スイッチ。同じ動きなのに見え方がパッと切り替わる錯視を、チャッピーといっしょに体験。1つの動きにかくれた「2つの見え方」を両方見つけよう。お手本つき。Open EduTech Lab 無料公開。">
+<meta property="og:title" content="見え方スイッチ">
+<meta property="og:description" content="同じ動きなのに見え方が切り替わる錯視の体験アプリ。2つの見え方を両方見つけよう。Open EduTech Lab 無料公開。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ja_JP">
+<link rel="icon" type="image/svg+xml" href="assets/eye.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+  /* 錯視は「黒い背景に灰色の点」がいちばん効くので、暗いテーマで固定 */
+  :root { --fg:#f2f2f2; --muted:#9a9a9a; --red:#e8323c; --yellow:#ffd23f; --pink:#ff6b7a; --teal:#3AB7C2; --green:#5fd38a;
+          --line:#2c2c2c; --card:#121212; color-scheme:dark; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; min-height:100%; background:#000; color:var(--fg);
+    font-family:"M PLUS Rounded 1c", system-ui, sans-serif; -webkit-tap-highlight-color:transparent; }
+  body { display:flex; flex-direction:column; align-items:center; min-height:100vh; }
+  button { font:inherit; color:inherit; cursor:pointer; }
+  [hidden] { display:none !important; }
+  .wrap { width:100%; max-width:640px; padding:0 16px; }
+
+  /* ---------- トップ ---------- */
+  #top { width:100%; max-width:640px; display:flex; flex-direction:column; align-items:center; padding:12px 16px 20px; }
+  #topStage { position:relative; width:100%; height:min(46vh, 380px); min-height:260px; touch-action:manipulation; }
+  #topStage canvas { position:absolute; inset:0; width:100%; height:100%; }
+  .flipBox { display:flex; flex-direction:column; align-items:center; gap:6px; margin-top:4px; width:100%; }
+  .flipNote { margin:0; font-size:13px; line-height:1.6; color:#cfcfcf; text-align:center; min-height:3.2em; word-break:keep-all; overflow-wrap:anywhere; }
+  .flipNote b { color:var(--yellow); }
+  .title { margin:4px 0 0; font-size:clamp(34px,10vw,52px); font-weight:800; color:var(--yellow); letter-spacing:.06em; }
+  .catch { margin:4px 0 14px; font-weight:800; font-size:clamp(15px,4.2vw,19px); text-align:center; word-break:keep-all; overflow-wrap:anywhere; }
+  .guide { display:flex; align-items:flex-end; gap:8px; width:100%; }
+  .avatar { flex:none; width:84px; margin-bottom:-4px; }
+  .bubble { position:relative; flex:1; min-width:0; background:#12191a; border:1.5px solid #24494c; border-radius:18px; padding:12px 14px;
+    font-weight:800; font-size:clamp(14px,3.9vw,16px); line-height:1.65; word-break:keep-all; overflow-wrap:anywhere; }
+  .bubble::before { content:""; position:absolute; left:-9px; bottom:18px; width:16px; height:16px; background:#12191a;
+    border-left:1.5px solid #24494c; border-bottom:1.5px solid #24494c; transform:rotate(45deg); }
+  .bubble em { font-style:normal; color:var(--yellow); }
+  .how { list-style:none; margin:16px 0 0; padding:0; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; width:100%; }
+  .how li { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 8px; text-align:center; font-size:13px; font-weight:800; line-height:1.5; word-break:keep-all; overflow-wrap:anywhere; }
+  .how b { display:block; color:var(--pink); font-size:20px; }
+  #start { margin-top:18px; background:var(--yellow); color:#000; border:0; border-radius:999px; font-weight:800; font-size:20px; padding:14px 48px; }
+  .progress { margin:10px 0 0; color:var(--muted); font-size:13px; }
+
+  /* ---------- 錯視の画面 ---------- */
+  #lab { width:100%; display:flex; flex-direction:column; align-items:center; flex:1; }
+  .bar { width:100%; max-width:640px; padding:12px 16px 0; display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+  .row { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; padding-bottom:2px; }
+  .row::-webkit-scrollbar { display:none; }
+  .row button { flex:none; font-weight:800; font-size:13px; background:#151515; border:1px solid var(--line); border-radius:999px; padding:7px 13px; white-space:nowrap; }
+  .row button[aria-pressed=true] { background:#fff; color:#000; border-color:#fff; }
+  .row button.done::after { content:" ✓"; color:var(--green); }
+  #levels button { color:var(--pink); }
+  #levels button[aria-pressed=true] { background:var(--pink); color:#000; border-color:var(--pink); }
+  #levels button.home { color:var(--teal); margin-right:4px; }
+  /* 難易度は5つとも必ず見えるように、はみ出したら折り返す（横スクロールで ★★★★★ がかくれない） */
+  #levels, #items { flex-wrap:wrap; overflow:visible; align-items:center; }
+  #levels .cap { font-size:12px; font-weight:800; color:var(--pink); margin:0 2px 0 2px; }
+  #levels button[data-lv] { letter-spacing:-.04em; padding:7px 11px; }
+  header { text-align:center; padding:12px 16px 0; }
+  .badge { display:inline-block; background:var(--red); color:#fff; font-weight:800; padding:4px 16px; border-radius:999px; font-size:15px; }
+  h1 { font-size:clamp(19px,5.2vw,27px); margin:10px 0 4px; font-weight:800; color:var(--yellow); word-break:keep-all; overflow-wrap:anywhere; }
+  .lv { color:var(--pink); font-weight:800; font-size:clamp(13px,3.8vw,16px); margin:0; letter-spacing:.04em; }
+  #stage { position:relative; width:100%; max-width:640px; height:min(48vh, 420px); min-height:280px; }
+  #stage canvas { position:absolute; inset:0; width:100%; height:100%; }
+  .demoTag { position:absolute; left:50%; top:8px; transform:translateX(-50%); background:var(--yellow); color:#000; font-weight:800; font-size:12px;
+    padding:3px 12px; border-radius:999px; white-space:nowrap; pointer-events:none; }
+
+  .panel { width:100%; max-width:640px; padding:4px 16px 8px; display:grid; grid-template-columns:minmax(0,1fr); gap:10px; }
+  .lead { margin:0; font-size:13px; color:var(--muted); text-align:center; }
+  .lead.done { background:var(--yellow); color:#000; font-weight:800; font-size:15px; border-radius:999px; padding:4px 12px; }
+  .cards { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .card { background:var(--card); border:1.5px solid var(--line); border-radius:16px; padding:10px 10px 10px; display:flex; flex-direction:column; gap:4px; }
+  .card.on { border-color:var(--yellow); }
+  .card.seen { border-color:var(--green); background:#0f1a13; }
+  .card .tag { font-size:11px; color:var(--muted); font-weight:800; }
+  .card .head { display:flex; align-items:center; gap:8px; }
+  .card .icon { flex:none; width:38px; height:38px; border-radius:12px; background:#1e1e1e; display:grid; place-items:center; font-size:20px; font-weight:800; color:var(--yellow); }
+  .card .label { font-weight:800; font-size:16px; line-height:1.3; word-break:keep-all; overflow-wrap:anywhere; }
+  .card .desc { font-size:13px; line-height:1.55; color:#cfcfcf; flex:1; word-break:keep-all; overflow-wrap:anywhere; }
+  .card .desc b { color:var(--yellow); }
+  .card .seenBtn { margin-top:4px; border:1px solid #3a3a3a; background:#1b1b1b; border-radius:12px; padding:8px 6px; font-weight:800; font-size:14px; }
+  .card.seen .seenBtn { background:var(--green); color:#000; border-color:var(--green); }
+  .tools { display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:center; }
+  .seg { display:flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .seg button { border:0; background:#151515; padding:8px 11px; font-weight:800; font-size:13px; white-space:nowrap; }
+  .seg button[aria-pressed=true] { background:var(--yellow); color:#000; }
+  .seg.speed button[aria-pressed=true] { background:#fff; }
+  .seg .cap { padding:8px 8px 8px 11px; font-size:12px; color:var(--muted); font-weight:800; background:#0c0c0c; white-space:nowrap; display:grid; place-items:center; }
+  .tip { margin:0; background:#141414; border-radius:14px; padding:10px 12px; font-size:14px; line-height:1.6; word-break:keep-all; overflow-wrap:anywhere; }
+  .vnote { border:1.5px solid #3a3320; }
+  .vnote b { color:var(--yellow); }
+  .tip.vnote::before { content:"この色だと"; background:var(--yellow); }
+  .tip::before { content:"こつ"; display:inline-block; background:var(--teal); color:#000; font-weight:800; font-size:11px; border-radius:6px; padding:1px 7px; margin-right:6px; vertical-align:1px; }
+  .clear { margin:0; background:var(--yellow); color:#000; font-weight:800; border-radius:14px; padding:10px 12px; text-align:center; font-size:16px; }
+  details { background:#141414; border-radius:14px; padding:10px 12px; font-size:14px; line-height:1.7; }
+  summary { font-weight:800; color:var(--yellow); cursor:pointer; }
+  details p { margin:8px 0 0; word-break:keep-all; overflow-wrap:anywhere; }
+  details p.src { color:var(--muted); font-size:12px; border-top:1px solid #262626; padding-top:6px; }
+  /* ボタンをさわりながらアニメーションを見られるように：
+     スマホ … ぶたいを画面の上にはりつけ、下のカードやボタンだけがスクロールする
+     広い画面 … 左にぶたい、右にカードとボタン（スクロールしてもぶたいは残る） */
+  .labBody { width:100%; max-width:640px; display:grid; grid-template-columns:minmax(0,1fr); }
+  #stage { position:sticky; top:0; z-index:2; background:#000; height:min(42vh, 400px); min-height:230px; }
+  .labBody header { padding-top:8px; }
+  .labBody h1 { margin:6px 0 2px; }
+  @media (min-width: 900px) {
+    #lab .bar { max-width:1180px; }
+    .labBody { max-width:1180px; padding:0 16px; gap:0 20px;
+      grid-template-columns:minmax(0,1.25fr) minmax(340px,1fr); grid-template-areas:"stage head" "stage panel"; grid-template-rows:auto 1fr; align-items:start; }
+    .labBody header { grid-area:head; padding:8px 0 0; }
+    .labBody .panel { grid-area:panel; padding:8px 0 8px; max-width:none; }
+    #stage { grid-area:stage; top:12px; max-width:none; margin-top:12px;
+      height:clamp(320px, calc(100vh - var(--barH, 120px) - 36px), 760px); min-height:320px;
+      border:1px solid #1a1a1a; border-radius:18px; overflow:hidden; }
+  }
+  footer { font-size:11px; color:#666; padding:6px 16px 14px; text-align:center; max-width:640px; line-height:1.7; }
+  footer p { margin:0 0 4px; word-break:keep-all; overflow-wrap:anywhere; }
+  footer a { color:#8a8a8a; }
+
+  /* チャッピー（compass の Chappy と同じ作り：パーツ画像を重ね、顔は線でかく） */
+  .cp{ display:block; width:100%; height:auto; overflow:visible; }
+  .cp .cp-all{ transform-origin:448px 966px; animation:cpBreath 3.6s ease-in-out infinite; }
+  .cp .cp-shadow{ transform-origin:448px 966px; animation:cpShadow 3.6s ease-in-out infinite; }
+  .cp .cp-tail{ transform-origin:600px 860px; animation:cpTail 3.4s ease-in-out infinite; }
+  .cp .cp-apple{ transform-origin:856px 330px; animation:cpApple 3.4s ease-in-out -.5s infinite; }
+  .cp .cp-head{ transform-origin:450px 632px; animation:cpTilt 7s ease-in-out infinite; }
+  .cp .cp-earL{ transform-origin:295px 215px; animation:cpEarL 6.4s ease-in-out infinite; }
+  .cp .cp-earR{ transform-origin:645px 210px; animation:cpEarR 6.4s ease-in-out 2.2s infinite; }
+  .cp .cp-eyes{ transform-origin:420px 413px; animation:cpBlink 4.8s infinite; }
+  .cp .cp-armR{ transform-origin:600px 652px; }
+  .cp .cp-patch{ opacity:0; }
+  .cp.wave .cp-armR{ animation:cpWave 1.6s ease-in-out infinite; }
+  .cp.wave .cp-patch{ opacity:1; }
+  @keyframes cpBreath{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-12px); } }
+  @keyframes cpShadow{ 0%,100%{ transform:scaleX(1); opacity:1; } 50%{ transform:scaleX(.88); opacity:.75; } }
+  @keyframes cpTail{ 0%,100%{ transform:rotate(-2.5deg); } 50%{ transform:rotate(3.5deg); } }
+  @keyframes cpApple{ 0%,100%{ transform:rotate(5deg); } 50%{ transform:rotate(-6deg); } }
+  @keyframes cpTilt{ 0%,100%{ transform:rotate(-1.3deg); } 50%{ transform:rotate(1.4deg); } }
+  @keyframes cpEarL{ 0%,85%,100%{ transform:rotate(0) scaleY(1); } 88%{ transform:rotate(-5deg) scaleY(.92); } 91%{ transform:rotate(2deg) scaleY(1.02); } 94%{ transform:rotate(0) scaleY(1); } }
+  @keyframes cpEarR{ 0%,85%,100%{ transform:rotate(0) scaleY(1); } 88%{ transform:rotate(5deg) scaleY(.92); } 91%{ transform:rotate(-2deg) scaleY(1.02); } 94%{ transform:rotate(0) scaleY(1); } }
+  @keyframes cpBlink{ 0%,93%,100%{ transform:scaleY(1); } 95%{ transform:scaleY(.06); } 97%{ transform:scaleY(1); } }
+  @keyframes cpWave{ 0%,100%{ transform:rotate(0); } 18%{ transform:rotate(-116deg); } 34%{ transform:rotate(-98deg); } 50%{ transform:rotate(-120deg); } 66%{ transform:rotate(-100deg); } 82%{ transform:rotate(-112deg); } }
+  @media (prefers-reduced-motion: reduce){ .cp *{ animation:none !important; } }
+</style>
+</head>
+<body>
+
+<!-- ================= トップ（チャッピーはここだけ） ================= -->
+<section id="top">
+  <div id="topStage"><canvas id="tc" aria-label="点でできたチャッピー"></canvas></div>
+  <div class="flipBox">
+    <div class="seg" id="flip" role="group" aria-label="チャッピーの見え方">
+      <button data-f="1" aria-pressed="true">いつもの見え方</button>
+      <button data-f="-1" aria-pressed="false">もう一つの見え方</button>
+    </div>
+    <p class="flipNote" id="flipNote"></p>
+  </div>
+  <p class="title">見え方スイッチ</p>
+  <p class="catch">同じ動きなのに、見え方がパッと切り替わる！</p>
+  <div class="guide">
+    <div class="avatar" id="avatar"></div>
+    <div class="bubble">ぼくの体も、点でできているんだ。<br>ここでは、1つの動きにかくれている <em>「2つの見え方」</em> を、両方見つけてね！</div>
+  </div>
+  <ol class="how">
+    <li><b>1</b>画面を<br>じっと見る</li>
+    <li><b>2</b>見えた方の<br>「見えた！」をおす</li>
+    <li><b>3</b>2つとも見えたら<br>クリア！</li>
+  </ol>
+  <button id="start">はじめる</button>
+  <p class="progress" id="topProg"></p>
+</section>
+
+<!-- ================= 錯視の画面 ================= -->
+<div id="lab" hidden>
+  <div class="bar">
+    <div class="row" id="levels"></div>
+    <div class="row" id="items"></div>
+  </div>
+  <div class="labBody">
+  <header>
+    <div class="badge" id="name"></div>
+    <h1 id="q"></h1>
+    <p class="lv" id="lv"></p>
+  </header>
+  <div id="stage"><canvas id="c" aria-label="錯視のぶたい"></canvas><div class="demoTag" id="demoTag" hidden></div></div>
+  <div class="panel">
+    <p class="lead" id="lead"></p>
+    <div class="cards" id="cards"></div>
+    <p class="clear" id="clear" hidden>🎉 2つとも見えた！ クリア！</p>
+    <div class="tools">
+      <div class="seg" id="demos"></div>
+      <div class="seg" id="variants" hidden></div>
+      <div class="seg speed" id="speed"></div>
+    </div>
+    <p class="tip vnote" id="vnote" hidden></p>
+    <p class="tip" id="tip"></p>
+    <details id="why"><summary>なぜ2通りに見えるの？</summary><p id="whyText"></p><p class="src" id="srcText"></p></details>
+  </div>
+  </div>
+</div>
+<footer id="foot">
+  <p>このサイトでは、使われ方を知るために Google アナリティクスを使っています。Google はクッキーを使ってアクセスの情報を集めますが、名前など、あなたがだれかわかる情報は集めません。くわしくは <a href="https://policies.google.com/technologies/partner-sites?hl=ja" target="_blank" rel="noopener">Google のポリシー</a> をご覧ください。クリアの記録は、この端末の中だけに保存されます。</p>
+  <p>錯視の絵・動き・プログラム・文章は、このアプリのために新しく作ったものです。</p>
+  <p>© TAKANO tools ／ Open EduTech Lab</p>
+</footer>
+
+<script>
+(() => {
+  const rnd = (a, b) => a + Math.random() * (b - a), TAU = Math.PI * 2, D = Math.PI / 180;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const circle = (r, y, n = 72) => Array.from({ length: n + 1 }, (_, k) => [r * Math.cos(k / n * TAU), y, r * Math.sin(k / n * TAU)]);
+  const $ = id => document.getElementById(id);
+
+  // 正投影のカメラ（遠くても小さくならない＝奥行きの手がかりがない）。返り値 [画面x, 画面y, 手前への近さ]
+  function camera(cx, cy, roll, elev, yaw, S) {
+    const ca = Math.cos(roll), sa = Math.sin(roll), ce = Math.cos(elev), se = Math.sin(elev), cA = Math.cos(yaw), sA = Math.sin(yaw);
+    return (x, y, z) => {
+      const x1 = x * cA - z * sA, z1 = x * sA + z * cA, y2 = y * ce - z1 * se;
+      return [cx + (x1 * ca - y2 * sa) * S, cy - (x1 * sa + y2 * ca) * S, z1 * ce + y * se];
+    };
+  }
+  function fitCanvas(cv, ctx) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2), r = cv.getBoundingClientRect();
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return [r.width, r.height];
+  }
+
+  // =====================================================================
+  //  2D のチャッピー（トップの案内役）
+  //  TAKANO tools のチャッピーと同じ作り：公式のパーツ画像（assets/chappy）を重ね、目と口は線でかく
+  // =====================================================================
+  const Chappy2D = (() => {
+    const PARTS = { tail:[566,298,377,572], apple:[759,86,198,249], body:[212,595,437,378], patch:[499,623,119,253],
+                    armR:[557,622,127,241], earL:[164,57,218,251], earR:[558,60,175,250], head:[141,179,619,462] };
+    const EYES = [
+      { cx:296.2, cy:409.5, rx:27, ry:46.6, rot:3.6, hx:288.5, hy:384, hrx:7.5, hry:10 },
+      { cx:544.5, cy:417.1, rx:28, ry:46, rot:3.1, hx:536, hy:391, hrx:6.2, hry:7.8 },
+    ];
+    const LINE = 'fill="none" stroke="#3AB7C2" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"';
+    const part = k => { const [x, y, w, h] = PARTS[k];
+      return `<image href="assets/chappy/${k}.webp" x="${x}" y="${y}" width="${w}" height="${h}" preserveAspectRatio="none"/>`; };
+    const eyes = EYES.map(e => `<g transform="rotate(${e.rot} ${e.cx} ${e.cy})"><ellipse cx="${e.cx}" cy="${e.cy}" rx="${e.rx}" ry="${e.ry}" fill="url(#cpE)"/>`
+      + `<ellipse cx="${e.hx}" cy="${e.hy}" rx="${e.hrx}" ry="${e.hry}" transform="rotate(-18 ${e.hx} ${e.hy})" fill="#E8FCFD" opacity=".92"/></g>`).join('');
+    const mouth = `<path d="M367,474 C371,494 383,499 393,498 C405,497 412,490 416,484 C421,491 428,499 440,500 C452,500 464,493 469,474" ${LINE}/>`;
+    const svg = (cls = '') => `<svg class="cp ${cls}" viewBox="128 46 846 934" role="img" aria-label="チャッピー">`
+      + `<defs><linearGradient id="cpE" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4FC5D0"/><stop offset="1" stop-color="#2EA6B3"/></linearGradient>`
+      + `<radialGradient id="cpS"><stop offset="0" stop-color="#3AB7C2" stop-opacity=".35"/><stop offset="1" stop-color="#3AB7C2" stop-opacity="0"/></radialGradient></defs>`
+      + `<ellipse class="cp-shadow" cx="448" cy="966" rx="210" ry="18" fill="url(#cpS)"/>`
+      + `<g class="cp-all"><g class="cp-tail">${part('tail')}<g class="cp-apple">${part('apple')}</g></g>${part('body')}`
+      + `<g class="cp-patch">${part('patch')}</g><g class="cp-armR">${part('armR')}</g>`
+      + `<g class="cp-head"><g class="cp-earL">${part('earL')}</g><g class="cp-earR">${part('earR')}</g>${part('head')}`
+      + `<g class="cp-face"><g class="cp-eyes">${eyes}</g>${mouth}</g></g></g></svg>`;
+    return { svg };
+  })();
+
+  // =====================================================================
+  //  つぶつぶチャッピー（トップで回る 3D の点の雲）
+  //  TAKANO tools の 3D チャッピー（バーチャル計測制御ラボで使っているもの）と同じ寸法・形で
+  //  面の上に点をまく。点は [x, y, z, 色番号]
+  // =====================================================================
+  const PALETTE = ['#e6f2f1', '#2c7178', '#5fe6ef', '#86cfdc', '#ff5b45', '#63c83f', '#b07a3e'];
+  const CP = { WHITE:0, SCREEN:1, FACE:2, EAR:3, APPLE:4, LEAF:5, STEM:6 };
+  function gauss(){ let u = 0, v = 0; while(!u) u = Math.random(); while(!v) v = Math.random(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * v); }
+  function unitVec(){ let x, y, z, l; do { x = gauss(); y = gauss(); z = gauss(); l = Math.hypot(x, y, z); } while(!l); return [x / l, y / l, z / l]; }
+  const bez3 = (a, b, c, d, t) => { const u = 1 - t; return [u*u*u*a[0] + 3*u*u*t*b[0] + 3*u*t*t*c[0] + t*t*t*d[0], u*u*u*a[1] + 3*u*u*t*b[1] + 3*u*t*t*c[1] + t*t*t*d[1]]; };
+  const bez2 = (a, b, c, t) => { const u = 1 - t; return [u*u*a[0] + 2*u*t*b[0] + t*t*c[0], u*u*a[1] + 2*u*t*b[1] + t*t*c[1]]; };
+  const rotZ = ([x, y, z], a) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a), z];
+  function inPoly(poly, x, y){
+    let ins = false;
+    for(let i = 0, j = poly.length - 1; i < poly.length; j = i++){
+      const [xi, yi] = poly[i], [xj, yj] = poly[j];
+      if((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) ins = !ins;
+    }
+    return ins;
+  }
+  function chappyCloud(){
+    const P = [], add = (x, y, z, c = CP.WHITE) => P.push([x, y, z, c]);
+    // 頭：超楕円体（下を少し細く）。中心 (0,64,0)
+    const HEAD = { a:35, b:27, c:24.5, n:3, taper:0.07 }, HY = 64;
+    const headA = y => HEAD.a * (1 - HEAD.taper * Math.max(0, -y / HEAD.b));
+    const zOn = (x, y) => HEAD.c * Math.pow(Math.max(0, 1 - Math.abs(x / headA(y)) ** HEAD.n - Math.abs(y / HEAD.b) ** HEAD.n), 1 / HEAD.n);
+    const SA = 27.3, SB = 19.2, OY = -1.5;
+    const onScreen = (x, y) => Math.abs(x / SA) ** 4 + Math.abs((y - OY) / SB) ** 4 < 1;
+    for(let i = 0; i < 2300; i++){
+      const [ux, uy, uz] = unitVec(), n = HEAD.n;
+      const k = Math.pow(Math.abs(ux) ** n + Math.abs(uy) ** n + Math.abs(uz) ** n, 1 / n);
+      const y = uy / k * HEAD.b, x = ux / k * headA(y), z = uz / k * HEAD.c;
+      add(x, HY + y, z, z > 0 && onScreen(x, y) ? CP.SCREEN : CP.WHITE);
+    }
+    // 顔の絵（256×176 の画面の絵の座標 → 頭の座標）：目と ω の口
+    const fx = cx => (cx / 256 - 0.5) * 2 * SA, fy = cy => OY + ((1 - cy / 176) - 0.5) * 2 * SB;
+    const facePt = (cx, cy) => { const x = fx(cx), y = fy(cy); add(x, HY + y, zOn(x, y) + 0.4, CP.FACE); };
+    [[63, 82], [193, 84]].forEach(([ex, ey]) => {
+      for(let i = 0; i < 110; i++){ const r = Math.sqrt(Math.random()), t = rnd(0, TAU); facePt(ex + 15 * r * Math.cos(t), ey + 25 * r * Math.sin(t)); }
+    });
+    const mx = 128, my = 121, M = [
+      [[mx - 28, my], [mx - 26, my + 12], [mx - 18, my + 15], [mx - 12, my + 14]],
+      [[mx - 12, my + 14], [mx - 5, my + 13], [mx - 1, my + 9], [mx, my + 6]],
+      [[mx, my + 6], [mx + 3, my + 10], [mx + 8, my + 15], [mx + 15, my + 15]],
+      [[mx + 15, my + 15], [mx + 22, my + 15], [mx + 28, my + 11], [mx + 30, my]],
+    ];
+    for(let i = 0; i < 150; i++){ const [cx, cy] = bez3(...M[i % 4], Math.random()); facePt(cx + rnd(-2.5, 2.5), cy + rnd(-2.5, 2.5)); }
+    // ネコ耳（内がわはゆるい坂・外がわはほぼ垂直・先は外寄りで丸い）
+    function earPoly(s, inner){
+      const X = x => x * s * 1.45, pts = [], seg = (f, n = 16) => { for(let i = 0; i < n; i++) pts.push(f(i / n)); };
+      if(inner){
+        seg(t => bez3([X(-9.2), 3], [X(-6.6), 9], [X(-2.6), 15.6], [X(1.6), 21.4], t));
+        seg(t => bez2([X(1.6), 21.4], [X(3.6), 23.6], [X(5.2), 21.2], t), 8);
+        seg(t => bez3([X(5.2), 21.2], [X(6.6), 15], [X(7.2), 9], [X(7), 2.6], t));
+        seg(t => bez2([X(7), 2.6], [X(-1), 1.2], [X(-9.2), 3], t), 8);
+      } else {
+        seg(t => bez3([X(-14), 0], [X(-10.5), 8], [X(-4.5), 17.5], [X(1.6), 25.6], t));
+        seg(t => bez2([X(1.6), 25.6], [X(4), 29.4], [X(6.4), 25.8], t), 8);
+        seg(t => bez3([X(6.4), 25.8], [X(8.6), 19], [X(10.2), 10], [X(10), 0], t));
+        seg(t => bez2([X(10), 0], [X(-2), -3], [X(-14), 0], t), 8);
+      }
+      return pts;
+    }
+    [-1, 1].forEach(s => {
+      const outer = earPoly(s, false), inner = earPoly(s, true);
+      const toWorld = (x, y, z) => { const [a, b, c] = rotZ([x, y, z], -s * 0.12); return [a + s * 18.5, HY + b + 13, c - 3]; };
+      const backZ = y => -4.5 * (1 - 0.5 * clamp(y / 28, 0, 1));
+      let front = 0, back = 0;
+      while(front < 300 || back < 170){
+        const x = rnd(-21, 16) * s, y = rnd(-3, 30);
+        if(!inPoly(outer, x, y)) continue;
+        if(front < 300){ front++; const inn = inPoly(inner, x, y); add(...toWorld(x, y, inn ? 2.6 : 4.4), inn ? CP.EAR : CP.WHITE); }
+        else { back++; add(...toWorld(x, y, backZ(y))); }
+      }
+      for(let i = 0; i < 110; i++){ const [x, y] = outer[Math.floor(Math.random() * outer.length)]; add(...toWorld(x, y, rnd(backZ(y), 4.4))); }
+    });
+    // 胴（洋なし形の回転体）
+    const prof = [[0.01, 0], [13, 0.6], [17.6, 4], [19.4, 11.5], [19, 20], [17, 27], [12.5, 32], [6.5, 34], [0.01, 34.5]];
+    const segW = []; let tot = 0;
+    for(let i = 0; i < prof.length - 1; i++){ const [r0, y0] = prof[i], [r1, y1] = prof[i + 1]; tot += Math.hypot(r1 - r0, y1 - y0) * (r0 + r1) / 2; segW.push(tot); }
+    for(let i = 0; i < 1000; i++){
+      const w = Math.random() * tot, k = segW.findIndex(v => v >= w), t = Math.random();
+      const r = prof[k][0] + (prof[k + 1][0] - prof[k][0]) * t, y = prof[k][1] + (prof[k + 1][1] - prof[k][1]) * t, a = rnd(0, TAU);
+      add(r * Math.cos(a), 9.5 + y, r * Math.sin(a) * 0.86);
+    }
+    const capsule = (r, len) => { const [x, y, z] = unitVec(); return [x * r, y * r + Math.sign(y) * len / 2, z * r]; };
+    [-1, 1].forEach(s => {     // 腕
+      for(let i = 0; i < 230; i++){ const [x, y, z] = capsule(6.2, 11), [a, b, c] = rotZ([x, y - 9.5, z + 0.6], s * 0.26); add(a + s * 17, b + 38.5, c + 0.5); }
+    });
+    [-1, 1].forEach(s => {     // 足と足先
+      for(let i = 0; i < 140; i++){ const [x, y, z] = capsule(7, 3); add(x + s * 7.4, y + 8.5, z); }
+      for(let i = 0; i < 180; i++){ const [x, y, z] = unitVec(); add(x * 7.8 + s * 8, y * 4.06 + 3.4, z * 9.75 + 1.8); }
+    });
+    // しっぽ（Catmull-Rom 曲線にそった管）と先のりんご
+    const TP = [[0, 0, 0], [8, -5, -9], [24, -6, -12], [38, 3, -9], [43, 24, -6], [41, 48, -4], [39, 62, -4]].map(([x, y, z]) => [x + 2, y + 20, z - 10]);
+    const cr = u => {
+      const n = TP.length - 1, f = clamp(u, 0, 0.9999) * n, i = Math.floor(f), t = f - i;
+      const p0 = TP[Math.max(0, i - 1)], p1 = TP[i], p2 = TP[i + 1], p3 = TP[Math.min(n, i + 2)];
+      return [0, 1, 2].map(k => 0.5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t * t + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t * t * t));
+    };
+    for(let i = 0; i < 340; i++){
+      const u = Math.random(), c = cr(u), d = cr(Math.min(1, u + 0.01)), r = 2.3 - 0.55 * u;
+      const tg = [d[0] - c[0], d[1] - c[1], d[2] - c[2]], tl = Math.hypot(...tg) || 1; tg.forEach((v, k) => tg[k] = v / tl);
+      let [vx, vy, vz] = unitVec(); const dot = vx * tg[0] + vy * tg[1] + vz * tg[2];
+      vx -= dot * tg[0]; vy -= dot * tg[1]; vz -= dot * tg[2]; const vl = Math.hypot(vx, vy, vz) || 1;
+      add(c[0] + vx / vl * r, c[1] + vy / vl * r, c[2] + vz / vl * r);
+    }
+    const end = cr(1), AR = 10.5, ax = end[0], ay = end[1] + 9, az = end[2];
+    for(let i = 0; i < 480; i++){ const [x, y, z] = unitVec(); add(ax + x * AR, ay + y * AR * 0.9, az + z * AR, CP.APPLE); }
+    for(let i = 0; i < 24; i++) add(ax + rnd(-0.6, 0.6), ay + AR * 0.6 + rnd(0, AR * 0.7), az + rnd(-0.6, 0.6), CP.STEM);
+    for(let i = 0; i < 60; i++){
+      const [x, y, z] = unitVec(), [a, b, c] = rotZ([x * AR * 0.675, y * AR * 0.126, z * AR * 0.34], 0.5);
+      add(ax + AR * 0.35 + a, ay + AR * 1.05 + b, az + c, CP.LEAF);
+    }
+    return P.map(([x, y, z, c]) => [x / 48, (y - 53) / 48, z / 48, c]);
+  }
+
+  // ---------- トップのチャッピー：集まってきて、奥行きつきでくるくる回る ----------
+  const Top = (() => {
+    const cv = $('tc'), ctx = cv.getContext('2d');
+    let W = 0, H = 0, pts = null, seeds, from = null, born = 0;
+    // flip = 1 はプログラムどおりの奥行き、-1 は手前と奥を入れかえた奥行き（＝もう一つの見え方）
+    let flip = 1;
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
+    function scatter(){ from = pts.map(() => { const [x, y, z] = unitVec(), r = rnd(1.6, 3); return [x * r, y * r, z * r]; }); born = performance.now(); }
+    function init(){ if(!pts){ pts = chappyCloud(); seeds = pts.map(() => rnd(0.65, 1.3)); scatter(); } }
+    function resize(){ [W, H] = fitCanvas(cv, ctx); }
+    function draw(now){
+      ctx.clearRect(0, 0, W, H);
+      const S = Math.min(W * 0.4, H * 0.44) / 1.2, yaw = now / 1000 * 32 * D;
+      const P = camera(W / 2, H / 2 + Math.sin(now / 600) * 4, 0, 10 * D, -yaw, S);
+      const age = from ? (now - born) / 1000 : 9;
+      if(age > 2.4) from = null;
+      const base = Math.max(1.4, S / 105);
+      const proj = pts.map((p, i) => {
+        let q = p;
+        if(from){ const k = easeOut(clamp((age - seeds[i] * 0.6 + 0.3) / 1.3, 0, 1)), f = from[i]; q = [f[0] + (p[0] - f[0]) * k, f[1] + (p[1] - f[1]) * k, f[2] + (p[2] - f[2]) * k]; }
+        const r = P(q[0], q[1], q[2]); r[2] *= flip; r.push(i); return r;
+      }).sort((a, b) => a[2] - b[2]);
+      proj.forEach(([x, y, d, i]) => {
+        const k = clamp((d + 1.2) / 2.4, 0, 1), s = base * seeds[i] * (0.6 + 0.7 * k);
+        ctx.globalAlpha = 0.2 + 0.8 * k; ctx.fillStyle = PALETTE[pts[i][3]]; ctx.fillRect(x - s / 2, y - s / 2, s, s);
+      });
+      ctx.globalAlpha = 1;
+    }
+    cv.addEventListener('click', () => pts && scatter());
+    // 見え方の切りかえ。点の動きはそのままで、手前と奥だけを入れかえる
+    const NOTE = {
+      '1': 'ふつうのチャッピーが、手前の面を <b>右へ →</b> 流して回っているよ。',
+      '-1': '点の動きは同じなのに、手前と奥を入れかえただけで、<b>しっぽとりんごが反対がわ</b>の「鏡のチャッピー」が <b>← 左へ</b> 回って見えるよ。',
+    };
+    function setFlip(f){
+      flip = f;
+      document.querySelectorAll('#flip button').forEach(b => b.setAttribute('aria-pressed', +b.dataset.f === f));
+      $('flipNote').innerHTML = NOTE[f];
+    }
+    document.querySelectorAll('#flip button').forEach(b => b.onclick = () => setFlip(+b.dataset.f));
+    setFlip(1);
+    return { init, resize, draw };
+  })();
+  $('avatar').innerHTML = Chappy2D.svg('wave');
+
+  // =====================================================================
+  //  点の雲（錯視用）
+  // =====================================================================
+  const cyl = (n, h) => { const p = []; for (let i = 0; i < n; i++) { const t = rnd(0, TAU); p.push([Math.cos(t), rnd(-h, h), Math.sin(t)]); } return p; };
+  const sphere = n => { const p = []; for (let i = 0; i < n; i++) { const y = rnd(-1, 1), t = rnd(0, TAU), r = Math.sqrt(1 - y * y); p.push([r * Math.cos(t), y, r * Math.sin(t)]); } return p; };
+  const cubeEdges = () => { const L = []; for (const a of [-1, 1]) for (const b of [-1, 1]) L.push([[-1, a, b], [1, a, b]], [[a, -1, b], [a, 1, b]], [[a, b, -1], [a, b, 1]]); return L; };
+  const turn45 = q => q.map(([x, y, z]) => [(x - z) / Math.SQRT2, y, (x + z) / Math.SQRT2]);
+  const cubePts = n => { const p = []; for (let i = 0; i < n; i++) { const f = i % 6, a = rnd(-1, 1), b = rnd(-1, 1), s = f < 3 ? 1 : -1; p.push(f % 3 === 0 ? [s, a, b] : f % 3 === 1 ? [a, s, b] : [a, b, s]); } return p; };
+  const torus = n => { const p = []; for (let i = 0; i < n; i++) { const u = rnd(0, TAU), v = rnd(0, TAU), w = 1 + 0.35 * Math.cos(v); p.push([w * Math.cos(u), 0.35 * Math.sin(v), w * Math.sin(u)]); } return p; };
+  const helix = n => { const p = []; for (let i = 0; i < n; i++) { const s = i % 2, y = rnd(-1.45, 1.45), t = y * 3.2 + s * Math.PI, r = 0.85 + rnd(-0.05, 0.05); p.push([r * Math.cos(t), y + rnd(-0.03, 0.03), r * Math.sin(t)]); } return p; };
+  const ring = n => { const p = []; for (let i = 0; i < n; i++) { const t = i / n * TAU; p.push([Math.cos(t), 0, Math.sin(t)]); } return p; };
+
+  // =====================================================================
+  //  カタログ
+  //  どの錯視も「見え方A」と「見え方B」をはっきり書く。両方に「見えた！」でクリア。
+  //  demos はお手本（その見え方に決まるように、手がかりを足して見せる）
+  // =====================================================================
+  // 回る系はぜんぶ同じ言い方にそろえる：手前の面が右へ流れる＝右回り
+  const SPIN = o => Object.assign({
+    type: 'sfm', spin: true,
+    A: { icon: '→', label: '右回り', desc: '手前の面が <b>右へ →</b> 流れていく' },
+    B: { icon: '←', label: '左回り', desc: '手前の面が <b>← 左へ</b> 流れていく' },
+    demos: [['A', '右回りで見る'], ['B', '左回りで見る']],
+    why: '画面の点の動きは、右回りでも左回りでもまったく同じになります。遠くの点が小さく・暗くならないので、脳は「どっちが手前か」を決められず、2つの見え方の間を行ったり来たりします。お手本では、手前の点を明るく大きくして、どちらか一方に決めています。',
+  }, o);
+  const SPIN_TIP = 'じっと見ながら、心の中で「逆に回れ！」と唱えてみよう。お手本で両方の回り方を見てからだと、切り替えやすいよ。';
+
+  // ---------- 新しい錯視用の形 ----------
+  // ぐるぐるふりこ：天井の点からのびた糸の先で、おもりが円をえがく（円すいふりこ）
+  const pendulum = () => {
+    const p = [];
+    for (let i = 0; i < 650; i++) { const [a, b, c] = unitVec(); p.push([0.8 + a * 0.17, -0.95 + b * 0.17, c * 0.17]); }
+    for (let i = 0; i < 40; i++) { const [a, b, c] = unitVec(); p.push([a * 0.05, 1.15 + b * 0.05, c * 0.05]); }
+    return p;
+  };
+  // 2つの筒：外の筒（印 0）と内の筒（印 1）。描くときに反対向きに回す
+  const twinCyl = () => {
+    const p = [];
+    for (let i = 0; i < 3200; i++) { const t = rnd(0, TAU); p.push([Math.cos(t), rnd(-1.2, 1.2), Math.sin(t), 0]); }
+    for (let i = 0; i < 1500; i++) { const t = rnd(0, TAU); p.push([0.55 * Math.cos(t), rnd(-0.9, 0.9), 0.55 * Math.sin(t), 1]); }
+    return { pts: p, lines: [] };
+  };
+  // 魚の群れ：点でできた魚が、輪になって泳ぐ。しっぽをふり、少し上下する（毎コマ作り直す）
+  const fishSchool = () => {
+    const BL = 0.2, TL = 0.14, tpl = [];   // 体の半分の長さ・尾びれの長さ
+    for (let i = 0; i < 70; i++) { const [a, b, c] = unitVec(); tpl.push([a * BL, b * 0.085, c * 0.055, 0]); }  // 体
+    for (let i = 0; i < 24; i++) { const u = Math.random(); tpl.push([-BL - u * TL, rnd(-1, 1) * u * 0.1, 0, 1]); } // 尾びれ
+    const fish = Array.from({ length: 10 }, (_, i) => ({ th: i / 10 * TAU + rnd(-0.12, 0.12), r: rnd(0.85, 1.1), h: rnd(-0.65, 0.65), ph: rnd(0, TAU) }));
+    // 回転は sfm のカメラがする（角度 θ が増える向き）。魚の頭はその進む向き（円の接線）に向ける
+    const dyn = t => {
+      const out = [];
+      fish.forEach(f => {
+        const T = [-Math.sin(f.th), Math.cos(f.th)], Rd = [Math.cos(f.th), Math.sin(f.th)];
+        const h = f.h + 0.06 * Math.sin(t * 1.6 + f.ph), wag = Math.sin(t * 9 + f.ph);
+        tpl.forEach(([lx, ly, lz, tail]) => {
+          const side = lz + (tail ? wag * 0.07 * ((-lx - BL) / TL + 0.3) : wag * 0.018 * Math.max(0, -lx) / BL);
+          out.push([f.r * Rd[0] + lx * T[0] + side * Rd[0], h + ly, f.r * Rd[1] + lx * T[1] + side * Rd[1]]);
+        });
+      });
+      return out;
+    };
+    return { pts: dyn(0), lines: [], dyn, dot: 1.25 };
+  };
+  // 2D の Catmull-Rom 曲線（ルビンの壺の横顔をなめらかにする）
+  const smooth2 = (P, per = 10) => {
+    const out = [];
+    for (let i = 0; i < P.length - 1; i++) for (let j = 0; j < per; j++) {
+      const t = j / per, p0 = P[Math.max(0, i - 1)], p1 = P[i], p2 = P[i + 1], p3 = P[Math.min(P.length - 1, i + 2)];
+      out.push([0, 1].map(k => 0.5 * (2 * p1[k] + (-p0[k] + p2[k]) * t + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t * t + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t * t * t)));
+    }
+    out.push(P[P.length - 1]);
+    return out;
+  };
+
+  // ---------------------------------------------------------------------
+  //  難易度は「お手本なしで、2つ目の見え方に切り替えられるか」で決めている
+  //  ★1：だれでもすぐ見つかる … ★5：切り替えがとても難しい
+  // ---------------------------------------------------------------------
+  const ITEMS = [
+    // ================= ★1 =================
+    { lv: 1, name: 'ネッカーの立方体', type: 'necker', still: true, q: 'どっちの正方形が 手前に見える？',
+      A: { icon: '↙', label: '左下が手前', desc: '<b>左下の正方形</b>がこっちに出ている（箱を<b>上から</b>見下ろしている）' },
+      B: { icon: '↗', label: '右上が手前', desc: '<b>右上の正方形</b>がこっちに出ている（箱を<b>下から</b>見上げている）' },
+      demos: [['A', '左下を手前にする'], ['B', '右上を手前にする']],
+      tip: '左下の正方形をじっと見つめてから、右上の正方形に目をうつしてみよう。目を動かしたとたんに、箱がひっくり返ることがあるよ。',
+      why: '線だけの絵には、どの線が手前かの手がかり（かくれる線・かげ）がありません。脳は2通りの箱のどちらかを選び、しばらくすると同じ見え方に「あきて」、もう一方に切り替えます。動いていない絵でも、見え方は切り替わるのです。' },
+    { lv: 1, name: 'ルビンの壺', type: 'rubin', still: true, q: '白い壺？ それとも 向かい合う2人の顔？',
+      A: { icon: '壺', label: '白い壺', desc: 'まん中の<b>白い形</b>が、花びんや壺に見える' },
+      B: { icon: '顔', label: '2人の顔', desc: '左右の<b>こい色の形</b>が、向かい合った<b>横顔</b>に見える（おでこ・鼻・口・あご）' },
+      demos: [['A', '壺にする'], ['B', '顔にする']],
+      tip: 'まん中の白い形を見ると「壺」。次に、左のこい色の形のとがったところ（鼻）と、その下のへこみ（口）を見つけると、顔に見えてくるよ。',
+      why: '絵の中の「形（図）」と「うしろ（地）」のどちらを選ぶかで、見えるものが変わります。白を形と見れば壺、こい色を形と見れば顔です。脳は両方を同時に「形」と見ることができないので、どちらか一方に切り替わります。デンマークの心理学者ルビンが考えた絵をもとにしています。' },
+    { lv: 1, name: 'すり抜け？衝突？', type: 'bounce', q: '2つの点は すり抜けた？ ぶつかった？',
+      A: { icon: '⇄', label: 'すり抜ける', desc: '2つの点が真ん中ですれちがい、<b>そのまま反対がわまで</b>進む' },
+      B: { icon: '✳', label: 'ぶつかる', desc: '真ん中でコツンとぶつかり、<b>来た方へはね返る</b>' },
+      demos: [['A', 'すり抜けで見る'], ['B', 'はね返りで見る'], ['snd', 'コツン音']],
+      tip: '点が重なる瞬間をじっと見よう。「コツン音」をおすと、重なる瞬間に音が鳴って、ぶつかって見えやすくなるよ。',
+      why: '点が白一色だと、どっちの点がどっちへ行ったか区別できません。画面はどちらの場合も同じなので、脳が「すり抜け」か「はね返り」かを選んでいます。音が鳴るだけで「ぶつかった」に変わりやすいのは、耳の情報も見え方に使っているからです。' },
+    { lv: 1, name: '光の行進', type: 'phi', q: '光は 本当に動いてる？',
+      A: { icon: '◌', label: '光が回る', tag: '見え方', desc: '光の玉が<b>1つ</b>、円の上を<b>ぐるぐる</b>動いている' },
+      B: { icon: '⁘', label: '順番に光るだけ', tag: '本当の動き', desc: '<b>12この電球</b>が、となりへ順番に<b>ついたり消えたり</b>しているだけ' },
+      demos: [['B', '電球を見せて ゆっくりにする']],
+      tip: 'まずは円の真ん中を見よう。光の玉が回って見えたら「光が回る」。次にお手本で、電球が1つずつ光っているだけなのをたしかめよう。',
+      why: '光は1つも動いていません。となりの電球が少しずつ時間をずらして光ると、脳は「同じ光が動いた」と考えて、あいだをつないでしまいます（仮現運動）。映画やアニメ、駅の電光掲示板が動いて見えるのも、このしくみです。' },
+    { lv: 1, name: '歩く四角', type: 'feet', q: '2つの四角は、どんなふうに動いてる？',
+      A: { icon: '⋯', label: '交互に歩く', tag: '見え方', desc: '2つの四角が<b>かわりばんこに</b>、止まったり進んだりして歩く' },
+      B: { icon: '⇉', label: 'いっしょに動く', tag: '本当の動き', desc: '2つとも<b>ずっと同じ速さ</b>で、ならんで動いている' },
+      demos: [['B', 'しま模様を消す']],
+      // 四角の色を変えて比べる（明るさのちがいが、歩いて見えるかどうかを決めている）
+      variants: { cap: '四角の色', list: [
+        ['yb', '黄と青', '黄色は黒いしまの上で、青は白いしまの上でくっきり見える。くっきりする場所が2つでずれるので、<b>かわりばんこに歩いて</b>見えるよ。'],
+        ['yy', '2つとも黄色', '2つとも黒いしまの上でくっきり、白いしまの上でぼんやりする。だから<b>2つそろって</b>止まったり進んだりして見えるよ（交互ではなくなる）。'],
+        ['gg', '2つとも灰色', '灰色は、黒いしまとも白いしまとも同じくらいの差がある明るさ。くっきり・ぼんやりのちがいがないので、<b>ほとんど歩かず、なめらかに</b>動いて見えるよ。'],
+      ] },
+      tip: '2つの四角のあいだを見つめよう。歩いているように見えたら「交互に歩く」。そのあと「しま模様を消す」をおして、本当の動きをたしかめよう。',
+      why: '黄色い四角は、黒いしまの上ではくっきり、白いしまの上ではぼんやり見えます（青はその逆）。くっきり見えるときは速く、ぼんやりのときは遅く感じるので、交互に歩いているように見えます。本当は、2つともずっと同じ速さです。' },
+    { lv: 1, name: '床屋のポール', type: 'barber', q: 'しまは どっちへ動いてる？',
+      A: { icon: '↑', label: '上へのぼる', tag: '見え方', desc: 'しまが細い窓の中を、<b>上へ</b>のぼっていく' },
+      B: { icon: '→', label: '右へ動く', tag: '本当の動き', desc: 'しまは本当は、<b>右へ</b>横すべりしている' },
+      demos: [['B', 'しまに目印をつける']],
+      tip: 'まずは窓の中を見よう。上へのぼって見えたら「上へのぼる」。そのあと「しまに目印をつける」で、目印の点がどっちへ動くか見よう。',
+      why: '細い窓から見ると、しまの「はし」は窓のふちにそって動きます。長いふち（たて）にそって動くはしが多いので、脳はしま全体が上へ動いていると考えます。これは「窓問題（アパーチャー問題）」と呼ばれ、目のしくみを研究する人たちも調べています。' },
+
+    // ================= ★2 =================
+    SPIN({ lv: 2, name: '線の立方体', q: '立方体は どっちに回ってる？', tip: '1つの角に注目して、その角が手前を通るのか、奥を通るのかを決めてみよう。手前を通ると思うと、回る向きが決まるよ。',
+      build: () => ({ pts: [], lines: turn45(cubeEdges().flat()).reduce((a, v, i) => (i % 2 ? a[a.length - 1].push(v) : a.push([v]), a), []) }), roll: 0, elev: 20, speed: 30, extent: 1.6 }),
+    { lv: 2, name: '動きの四つ角', type: 'quartet', q: '点は たてに動いてる？ よこに動いてる？',
+      A: { icon: '↕', label: 'たてに動く', desc: '左と右に1つずつ、点が <b>上↔下</b> を行ったり来たりする' },
+      B: { icon: '↔', label: 'よこに動く', desc: '上と下に1つずつ、点が <b>左↔右</b> を行ったり来たりする' },
+      demos: [['A', 'たてで見る'], ['B', 'よこで見る']],
+      tip: '真ん中の小さな点を見つめたまま、左がわの2か所だけに注目すると「たて」に見えやすいよ。上の2か所に注目すると「よこ」。',
+      why: '点は動いておらず、ななめの2か所が交互に光っているだけです。脳は「消えた点がどこへ動いたか」を考えて、近い方へつなぎます。たても横も同じ距離なので、どちらにもつなげられます。お手本では、片方の距離を短くしています。' },
+    { lv: 2, name: 'かくれたひし形', type: 'diamond', q: '動いているのは バラバラの線？ 1つの形？',
+      A: { icon: '╱', label: 'バラバラの線', tag: '見え方', desc: '4本の短い線が、<b>それぞれ別の向き</b>に動いている' },
+      B: { icon: '◇', label: '回るひし形', tag: '本当の動き', desc: '1つのひし形が、<b>円をえがいて</b>回っている' },
+      demos: [['B', 'かくし板を見せる'], ['all', '全部見せる']],
+      tip: 'まずは4本の線を見よう。バラバラに見えたら「バラバラの線」。次に「かくし板を見せる」をおして、同じ線がどう見えるか比べよう。',
+      why: 'ひし形の角が見えないと、4本の線はバラバラに見えます。かくし板が見えると、脳は「板のうしろに角がかくれている」と考えて、1つの形にまとめます。見えない部分をおぎなって考えるのも、脳のはたらきです。' },
+    { lv: 2, name: '転がる光', type: 'roll', q: '光は どんなふうに動いてる？',
+      A: { icon: '⌒', label: '跳ねる光', tag: '見え方', desc: '光が<b>ぴょん、ぴょん</b>と、弧をえがいて跳ねながら進む' },
+      B: { icon: '◎', label: '転がる車輪', tag: '本当の動き', desc: '光は<b>転がる車輪のふち</b>についていて、車輪といっしょに回っている' },
+      demos: [['B', 'じくにも光をつける'], ['all', '車輪を見せる']],
+      tip: 'まずは光の通り道を見よう。跳ねて見えたら「跳ねる光」。次に「じくにも光をつける」をおして、同じ光が、回る車輪のふちに見えてくるか比べよう。',
+      why: '光が1つだけだと、脳はその通り道（サイクロイドという弧の形）をそのまま見ます。車輪のじくにも光をつけると、脳は「2つの光は同じ車輪についている」と考えて、ふちの光を「じくのまわりを回る動き」として見るようになります。何といっしょに見るかで、同じ動きでも見え方が変わります。' },
+    { lv: 2, name: '車輪の逆回転', type: 'wagon', q: 'タイヤは どっちに回ってる？',
+      A: { icon: '↺', label: 'ゆっくり逆回り', tag: '見え方', desc: 'タイヤが<b>時計の針と反対</b>の向きに、<b>ゆっくり</b>回って見える' },
+      B: { icon: '↻', label: '速く前回り', tag: '本当の動き', desc: 'タイヤは本当は<b>時計の針と同じ</b>向きに、<b>速く</b>回っている' },
+      demos: [['B', '1本だけ赤くする'], ['smooth', 'コマを細かくする']],
+      tip: 'まずは白い棒（スポーク）を見よう。反対にゆっくり回って見えたら「ゆっくり逆回り」。次に「1本だけ赤くする」で、赤い棒がどっちへ跳ぶか見よう。',
+      why: 'この画面は、タイヤを1秒に10回だけ「パッ、パッ」と写しています。1回のあいだにタイヤは棒1本分より少しだけ少なく回るので、脳は「となりの棒が少し後ろへ下がった」とつないでしまいます。動画で車のタイヤやヘリコプターの羽が逆に回って見えるのも、同じしくみです。' },
+    { lv: 2, name: '3つの点', type: 'ternus', q: '3つの点は どう動いてる？',
+      A: { icon: '⤼', label: 'はしの1つが跳ぶ', desc: '真ん中の2つは止まったまま、<b>はしの1つだけ</b>が反対のはしへ跳ぶ' },
+      B: { icon: '⇉', label: '3つそろって動く', desc: '<b>3つがならんだまま</b>、右へ左へいっしょに動く' },
+      demos: [['A', 'すきまをなくす'], ['B', 'すきまを長くする']],
+      tip: '点が消えている「すきま」の長さで見え方が変わるよ。お手本で両方を見たら「なし」にもどして、どちらに見えるかためそう。「はやさ」を変えても、見え方が変わるよ。',
+      why: '真ん中の2つの点は、じつはずっと同じ場所に出ています。点が消える「すきま」が短いと、脳は「同じ場所の点は動いていない」と考え、はしの1つが跳んだと見ます。すきまが長いと、3つを1つのまとまりと考えて、そろって動いたと見ます。テルヌスという心理学者が調べた見え方です。' },
+
+    // ================= ★3 =================
+    SPIN({ lv: 3, name: '点の輪', q: '輪は どっちに回ってる？', tip: '輪の下がわが手前だと思って見てみよう。次に、上がわが手前だと思って見てみよう。手前と思う方を変えると、回る向きも変わるよ。',
+      build: () => ({ pts: ring(90), lines: [], dot: 2.4 }), roll: 8, elev: 18, speed: 40, extent: 1.15 }),
+    SPIN({ lv: 3, name: '点の球', q: '球は どっちに回ってる？', tip: SPIN_TIP,
+      build: () => ({ pts: sphere(3500), lines: [] }), roll: 0, elev: 12, speed: 35, extent: 1.1 }),
+    SPIN({ lv: 3, name: '灰色の筒', q: '筒は どっちに回ってる？', tip: '上と下のふちの楕円を見て、手前のふちがどっちか決めてみよう。決めた方に、回る向きが変わるよ。',
+      build: () => ({ pts: cyl(5000, 1.3), lines: [circle(1, -1.3), circle(1, 1.3)] }), roll: 0, elev: 14, speed: 40, extent: 1.45 }),
+    { lv: 3, name: '2枚の縞', type: 'plaid', q: '1枚の網？ それとも 2枚の縞？',
+      A: { icon: '↓', label: '1枚の網', desc: '線が交わったところ（<b>◇の目</b>）が、全部そろって<b>真下へ ↓</b> 動く' },
+      B: { icon: '⤡', label: '2枚の縞', desc: '線は<b>ななめ右下 ↘</b> と <b>ななめ左下 ↙</b> の2組。重なったまま、すれちがっていく' },
+      demos: [['one', '縞を1枚だけ'], ['A', '網で見る'], ['B', '縞で見る']],
+      tip: '① まず「縞を1枚だけ」をおして、1枚の縞が ↘ に動くのを見よう。② 「なし」にもどして2枚重ねたら、◇の目を見よう。目が下へ流れたら「1枚の網」。③ 次に1本の線だけを目で追いかけよう。線がななめにすべって見えたら「2枚の縞」。',
+      why: '1枚ずつなら、どちらの縞もななめに動いているだけです。ところが2枚重なると、交わったところが「網の目」になり、その目は真下へ動きます。脳が目をまとめて1つのものと考えると「下へ動く1枚の網」、線を別々のものと考えると「すれちがう2枚の縞」に見えます。お手本では、網の目と、それぞれの縞に目印の点をつけています。' },
+    // オリジナル
+    SPIN({ lv: 3, name: 'ぐるぐるふりこ', q: 'ふりこの おもりは どっちに回ってる？',
+      A: { icon: '→', label: '右回り', desc: 'おもりが手前を通るとき、<b>右へ →</b> 動く' },
+      B: { icon: '←', label: '左回り', desc: 'おもりが手前を通るとき、<b>← 左へ</b> 動く' },
+      tip: 'おもりが円の下がわを通るときが「手前」だと思って見てみよう。次に、上がわを通るときが手前だと思って見ると、回る向きが変わるよ。',
+      build: () => ({ pts: pendulum(), lines: [[[0, 1.15, 0], [0.8, -0.95, 0]]] }), roll: 0, elev: 14, speed: 70, extent: 1.3 }),
+    // オリジナル
+    { lv: 3, name: 'ばね？波？', type: 'screw', q: '回る ばね？ それとも 進む 波？',
+      A: { icon: '⟲', label: '回るばね', desc: '<b>ばね（らせん）</b>が、その場で<b>くるくる回って</b>いる' },
+      B: { icon: '∿', label: '進む波', desc: '<b>1本のひも</b>に波ができて、<b>右へ →</b> 進んでいる' },
+      demos: [['A', 'ばねで見る'], ['B', '波で見る']],
+      tip: 'まず「波で見る」で、ひもの赤い点が上下に動くだけなのを見よう。次に「ばねで見る」で、手前の点が明るいばねを見よう。「なし」にもどしたら、点の列を「らせん」だと思って見ると、回るばねに見えてくるよ。',
+      why: 'ばね（らせん）を真横から見ると、その形は波と同じになります。そして、ばねがその場で回ると、横から見た形は「波が進む」のとまったく同じ動きになります。だから脳は「回るばね」とも「進む波」とも受け取れるのです。' },
+
+    // ================= ★4 =================
+    SPIN({ lv: 4, name: 'ななめの筒', q: 'ななめの筒は どっちに回ってる？', tip: SPIN_TIP,
+      build: () => ({ pts: cyl(5000, 1.3), lines: [circle(1, -1.3), circle(1, 1.3)] }), roll: 28, elev: 14, speed: 40, extent: 1.45 }),
+    SPIN({ lv: 4, name: '点のドーナツ', q: 'ドーナツは どっちに回ってる？', tip: 'ドーナツの穴の下がわを見よう。穴の下のふちが手前に見えるか、奥に見えるかで回る向きが変わるよ。',
+      build: () => ({ pts: torus(5000), lines: [] }), roll: 12, elev: 30, speed: 32, extent: 1.45 }),
+    { lv: 4, name: '光の点で歩く人', type: 'walker', q: 'この人は どっちを向いて歩いてる？',
+      A: { icon: '↘', label: 'こちら向き', desc: '<b>顔をこっちに</b>向けて、ななめ前へ歩いてくる' },
+      B: { icon: '↖', label: '向こう向き', desc: '<b>背中を見せて</b>、ななめ向こうへ歩いていく' },
+      demos: [['A', 'こちら向きで見る'], ['B', '向こう向きで見る']],
+      tip: 'ひざの点に注目しよう。ひざがこっちに出ると思うと「こちら向き」、向こうに出ると思うと「向こう向き」に見えるよ。多くの人は「こちら向き」に見えやすいので、「向こう向き」は少し難しいよ。',
+      why: '光の点には手前と奥の手がかりがないので、こちら向きにも向こう向きにも見えます。点が13個あるだけで「人が歩いている」とわかるのは、脳が動きのパターンから人を見つけるのがとても得意だからです。' },
+    // オリジナル
+    SPIN({ lv: 4, name: '魚の群れ', q: '魚の群れは どっちに回ってる？',
+      A: { icon: '→', label: '右回り', desc: '手前を泳ぐ魚が <b>右へ →</b> 進んでいる' },
+      B: { icon: '←', label: '左回り', desc: '手前を泳ぐ魚が <b>← 左へ</b> 進んでいる' },
+      tip: '1ぴきの魚だけを目で追いかけよう。その魚が手前を泳いでいると思うか、奥を泳いでいると思うかで、群れの回る向きが変わるよ。',
+      why: '点の魚にも、手前と奥の手がかりがありません。おもしろいのは、どちらの向きに見えても、魚はちゃんと頭の方へ泳いで見えることです。手前と奥を入れかえると、魚の向きもいっしょに入れかわるからです。お手本では、手前の魚を明るく大きくしています。',
+      build: fishSchool, roll: 0, elev: 16, speed: 30, extent: 1.35 }),
+
+    // ================= ★5 =================
+    // 人の形はこのアプリのオリジナル（旗を持って歩く人）。ほかの作品の絵やポーズは使っていない
+    SPIN({ lv: 5, name: '旗を持つ影', type: 'silhouette', q: '影の人は どっちに回ってる？', speed: 70, extent: 1.7,
+      A: { icon: '→', label: '右回り', desc: '前にのばした腕が手前を通るとき、<b>右へ →</b> 動く' },
+      B: { icon: '←', label: '左回り', desc: '前にのばした腕が手前を通るとき、<b>← 左へ</b> 動く' },
+      tip: '前にのばした腕の先（手）だけを見よう。手がこっちを指していると思うか、向こうを指していると思うかで、回る向きが変わるよ。影は手がかりがとても少ないので、切り替えるのが難しいよ。',
+      why: '影には手前も奥もありません。右回りの人の影と、左回りの人の影は、まったく同じ形になります。だから脳は、どちらの向きにも見ることができます。お手本では、手前の体を明るくしています。' }),
+    SPIN({ lv: 5, name: '点の立方体', q: '点の立方体は どっちに回ってる？', tip: '枠線がないので、まずは面を1つ決めよう。その面が手前を通ると思って見ると、回る向きが決まるよ。',
+      build: () => ({ pts: turn45(cubePts(4200)), lines: [] }), roll: 0, elev: 22, speed: 30, extent: 1.5 }),
+    SPIN({ lv: 5, name: '二重らせん', q: 'らせんは どっちに回ってる？', tip: '2本のらせんのうち、1本だけを目で追ってみよう。その1本が手前を通る向きを決めると、回る向きが決まるよ。',
+      build: () => ({ pts: helix(2600), lines: [] }), roll: -18, elev: 6, speed: 45, extent: 1.55 }),
+    // オリジナル
+    { lv: 5, name: '2つの筒', type: 'twin', q: '外の筒と内の筒は、同じ向き？ 反対の向き？',
+      A: { icon: '⇄', label: '反対の向き', desc: '外の筒と内の筒が、<b>反対の向き</b>に回っている' },
+      B: { icon: '⇉', label: '同じ向き', desc: '外の筒も内の筒も、<b>同じ向き</b>に回っている' },
+      demos: [['A', '反対の向きで見る'], ['B', '同じ向きで見る']],
+      tip: 'まず外の筒だけを見て、回る向きを決めよう。そのまま内の筒に目をうつして、内の筒の手前と奥を入れかえるつもりで見ると、もう1つの見え方になるよ。',
+      why: '2つの筒は、それぞれ別々に「右回り・左回り」のどちらにも見えます。だから組み合わせで「反対の向き」にも「同じ向き」にも見えるのです。プログラムでは反対の向きに回していますが、画面の点の動きだけでは、どちらとも決められません。',
+      build: twinCyl, speed: 36 },
+  ];
+  // ---------- もとになった研究（「なぜ？」の下に出す） ----------
+  // 錯視のしくみ（現象・アイデア）は研究者が見つけたもの。絵・動き・プログラム・文章は、どれもこのアプリで新しく作ったもの
+  const KDE = 'もとになった研究：ワラックとオコンネルの「運動奥行き効果」（1953年）';
+  const SRC = {
+    'ネッカーの立方体': 'もとになった研究：ルイ・アルベール・ネッカー（1832年）',
+    'ルビンの壺': 'もとになった研究：エドガー・ルビン（1915年）。横顔の形は、このアプリで新しくかいたものです。',
+    'すり抜け？衝突？': 'もとになった研究：メッツガー（1934年）。音の効果は、セクラーたち（1997年）',
+    '光の行進': 'もとになった研究：マックス・ヴェルトハイマー（1912年）',
+    '歩く四角': 'もとになった研究：スチュアート・アンスティス（2001年）',
+    '床屋のポール': 'もとになった研究：ハンス・ワラック（1935年）',
+    '線の立方体': KDE, '点の輪': KDE, '点の球': KDE, '灰色の筒': KDE, 'ななめの筒': KDE, '点のドーナツ': KDE, '点の立方体': KDE, '二重らせん': KDE,
+    '動きの四つ角': 'もとになった研究：フォン・シラー（1933年）',
+    'かくれたひし形': 'もとになった研究：ロランソーとシフラー（1992年）',
+    '転がる光': 'もとになった研究：カール・ドゥンカー（1929年）',
+    '車輪の逆回転': '映画の時代から知られている「ストロボ効果」です',
+    '3つの点': 'もとになった研究：ヨゼフ・テルヌス（1926年）',
+    '2枚の縞': 'もとになった研究：アデルソンとモブション（1982年）',
+    '光の点で歩く人': 'もとになった研究：グンナー・ヨハンソン（1973年）。歩き方は、このアプリで計算して作っています。',
+    'ぐるぐるふりこ': 'このアプリのオリジナル作品です（しくみは「運動奥行き効果」と同じ）。',
+    'ばね？波？': 'このアプリのオリジナル作品です。',
+    '魚の群れ': 'このアプリのオリジナル作品です（しくみは「運動奥行き効果」と同じ）。',
+    '2つの筒': 'このアプリのオリジナル作品です（しくみは「運動奥行き効果」と同じ）。',
+    '旗を持つ影': '茅原伸幸さんの「シルエット錯視」（2003年）と同じしくみです。人の形は、このアプリのオリジナルです。',
+  };
+  ITEMS.forEach(it => { it.src = SRC[it.name] || ''; });
+  const stars = n => '★'.repeat(n) + '☆'.repeat(5 - n);
+
+  // ---------- 進み具合（この端末だけに保存） ----------
+  const KEY = 'mikata-lab-v1';
+  let prog = {};
+  try { prog = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { prog = {}; }
+  const saveProg = () => { try { localStorage.setItem(KEY, JSON.stringify(prog)); } catch (e) {} };
+  const isDone = it => prog[it.name] && prog[it.name].A && prog[it.name].B;
+  const doneCount = () => ITEMS.filter(isDone).length;
+
+  // =====================================================================
+  //  状態と UI
+  // =====================================================================
+  const cv = $('c'), ctx = cv.getContext('2d');
+  let W = 0, H = 0, cur, data, seeds = [], clock = 0, last = performance.now(), speedMul = 1, demo = null, prevPh = 0;
+  let mode = 'top', variant = null;
+
+  const levels = $('levels'), items = $('items');
+  const home = document.createElement('button'); home.textContent = '← トップ'; home.className = 'home'; home.onclick = showTop; levels.appendChild(home);
+  for (let lv = 1; lv <= 5; lv++) {
+    if (lv === 1) { const c = document.createElement('span'); c.className = 'cap'; c.textContent = '難易度'; levels.appendChild(c); }
+    const b = document.createElement('button'); b.textContent = '★'.repeat(lv); b.dataset.lv = lv;
+    b.setAttribute('aria-label', '難易度 ' + lv);
+    b.onclick = () => showLevel(lv, true); levels.appendChild(b);
+  }
+  const speedBox = $('speed');
+  speedBox.innerHTML = '<span class="cap">はやさ</span>';
+  [['とめる', 0], ['ゆっくり', 0.45], ['ふつう', 1], ['はやい', 1.9]].forEach(([label, v]) => {
+    const b = document.createElement('button'); b.textContent = label; b.setAttribute('aria-pressed', v === 1);
+    b.onclick = () => { speedMul = v; speedBox.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); };
+    speedBox.appendChild(b);
+  });
+
+  function showLevel(lv, pickFirst) {
+    levels.querySelectorAll('button[data-lv]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.lv === lv));
+    items.innerHTML = '';
+    ITEMS.filter(it => it.lv === lv).forEach(it => {
+      const b = document.createElement('button'); b.textContent = it.name; b.onclick = () => select(it);
+      b.classList.toggle('done', !!isDone(it)); b.setAttribute('aria-pressed', it === cur); items.appendChild(b);
+    });
+    if (pickFirst) select(ITEMS.find(it => it.lv === lv));
+  }
+  function select(it) {
+    cur = it; clock = 0; demo = null; prevPh = 0;
+    if (it.build) { data = it.build(); seeds = data.pts.map(() => rnd(0.65, 1.3)); }
+    $('name').textContent = it.name;
+    $('q').textContent = it.q;
+    $('lv').textContent = '難易度：' + stars(it.lv);
+    const truth = it.B.tag === '本当の動き';
+    $('lead').textContent = truth ? '「見え方」と「本当の動き」を、両方たしかめよう' : '2つの見え方があるよ。見えたら「見えた！」をおそう';
+    $('tip').textContent = it.tip;
+    $('whyText').textContent = it.why;
+    $('srcText').textContent = it.src;
+    $('why').querySelector('summary').textContent = truth ? 'なぜそう見えるの？' : 'なぜ2通りに見えるの？';
+    $('why').open = false;
+    speedBox.hidden = !!it.still;
+    variant = it.variants ? it.variants.list[0][0] : null; renderVariants();
+    renderCards(); renderDemos(); updateClear(false);
+    items.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.textContent === it.name));
+  }
+  function renderCards() {
+    const st = prog[cur.name] || {};
+    $('cards').innerHTML = ['A', 'B'].map(k => {
+      const c = cur[k];
+      return `<div class="card${st[k] ? ' seen' : ''}${demo === k ? ' on' : ''}" data-k="${k}">
+        <span class="tag">${c.tag || '見え方 ' + k}</span>
+        <div class="head"><span class="icon">${c.icon}</span><span class="label">${c.label}</span></div>
+        <div class="desc">${c.desc}</div>
+        <button class="seenBtn" aria-pressed="${!!st[k]}">${st[k] ? '✓ 見えた！' : '見えた！'}</button></div>`;
+    }).join('');
+    $('cards').querySelectorAll('.card').forEach(el => {
+      el.querySelector('.seenBtn').onclick = () => {
+        const k = el.dataset.k, st2 = prog[cur.name] = prog[cur.name] || {};
+        const was = isDone(cur);
+        st2[k] = !st2[k]; saveProg(); renderCards();
+        const now = isDone(cur);
+        updateClear(!was && now);
+        if (was && !now) showLevel(cur.lv, false);   // 「見えた！」を取り消したら一覧の ✓ も外す
+      };
+    });
+  }
+  function renderVariants() {
+    const box = $('variants'), note = $('vnote'), V = cur.variants;
+    box.hidden = note.hidden = !V;
+    if (!V) return;
+    box.innerHTML = `<span class="cap">${V.cap}</span>`;
+    V.list.forEach(([k, label, text]) => {
+      const b = document.createElement('button'); b.textContent = label; b.setAttribute('aria-pressed', variant === k);
+      b.onclick = () => { variant = k; renderVariants(); };
+      box.appendChild(b);
+      if (variant === k) note.innerHTML = text;
+    });
+  }
+  function renderDemos() {
+    const box = $('demos');
+    box.innerHTML = '<span class="cap">お手本</span>';
+    [[null, 'なし'], ...cur.demos].forEach(([k, label]) => {
+      const b = document.createElement('button'); b.textContent = label; b.setAttribute('aria-pressed', demo === k);
+      b.onclick = () => { demo = k; if (k === 'snd') audio(); renderDemos(); renderCards(); };
+      box.appendChild(b);
+    });
+    const d = cur.demos.find(([k]) => k === demo);
+    $('demoTag').hidden = !d; if (d) $('demoTag').textContent = 'お手本：' + d[1];
+  }
+  function updateClear(justNow) {
+    const done = isDone(cur);
+    // クリアの知らせは、上の案内の行を置きかえて出す（行がふえて「なぜ？」が画面の下に押し出されないように）
+    $('clear').hidden = true;
+    const lead = $('lead');
+    lead.classList.toggle('done', done);
+    lead.textContent = done ? '🎉 2つとも見えた！ クリア！'
+      : (cur.B.tag === '本当の動き' ? '「見え方」と「本当の動き」を、両方たしかめよう' : '2つの見え方があるよ。見えたら「見えた！」をおそう');
+    if (justNow) {
+      $('why').open = true; showLevel(cur.lv, false);
+      // 開いた「なぜ？」が見えるところまでスクロール（ぶたいは上にはりついたまま）
+      requestAnimationFrame(() => $('why').scrollIntoView({ block: 'nearest', behavior: 'smooth' }));
+    }
+  }
+
+  // ---------- コツン音 ----------
+  let ac = null;
+  function audio() { try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); if (ac.state === 'suspended') ac.resume(); } catch (e) { ac = null; } }
+  function knock() {
+    if (!ac) return;
+    const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(1100, t); o.frequency.exponentialRampToValueAtTime(380, t + 0.07);
+    g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.1);
+  }
+
+  // ---------- 画面の切りかえ ----------
+  function showTop() {
+    mode = 'top'; $('top').hidden = false; $('lab').hidden = true; $('foot').hidden = false;
+    $('topProg').textContent = doneCount() ? `クリア ${doneCount()} / ${ITEMS.length}` : `錯視は全部で ${ITEMS.length} こ`;
+    Top.init(); Top.resize(); window.scrollTo(0, 0);
+  }
+  function showLab(it) {
+    mode = 'lab'; $('top').hidden = true; $('lab').hidden = false; $('foot').hidden = true;   // 説明はトップだけ（錯視の画面ではじゃまになる）
+    W = 0; resize();
+    const start = it || cur || ITEMS[0];
+    select(start); showLevel(start.lv, false);
+    window.scrollTo(0, 0);
+  }
+  $('start').onclick = () => showLab();
+  function resize() { if (mode === 'lab') [W, H] = fitCanvas(cv, ctx); else Top.resize(); }
+
+  // =====================================================================
+  //  お手本の奥行き：+1 ならプログラムどおりの奥行き、-1 なら手前と奥を入れかえた奥行き、0 なら奥行きなし
+  // =====================================================================
+  function depthSign() {
+    if (demo !== 'A' && demo !== 'B') return 0;
+    if (cur.type === 'walker') return demo === 'A' ? 1 : -1;
+    // yaw が増えると手前の点は左へ流れる。右回り（A）を見せたいときは手前と奥を入れかえる
+    const nearLeft = cur.speed * (speedMul || 1) > 0;
+    return (demo === 'A') === nearLeft ? -1 : 1;
+  }
+  const gray = k => { const v = 50 + 190 * k | 0; return `rgb(${v},${v},${v})`; };
+
+  // =====================================================================
+  //  描く
+  // =====================================================================
+  const R = {
+    sfm(t) {
+      const S = Math.min(W * 0.36, H * 0.42) / cur.extent, ext = cur.extent;
+      const P = camera(W / 2, H / 2, cur.roll * D, cur.elev * D, t * cur.speed * D, S);
+      const base = (data.dot || 1) * Math.max(1.3, S / 110), sg = depthSign();
+      const pts = data.dyn ? data.dyn(t) : data.pts;   // 魚の群れのように、毎コマ形が変わるもの
+      if (!sg) {
+        ctx.fillStyle = 'rgba(235,235,235,0.85)';
+        pts.forEach((p, i) => { const [x, y] = P(p[0], p[1], p[2]), s = base * seeds[i]; ctx.fillRect(x - s / 2, y - s / 2, s, s); });
+      } else {
+        // お手本：奥から順に描き、手前ほど明るく大きく
+        pts.map((p, i) => { const q = P(p[0], p[1], p[2]); q[2] *= sg; q.push(i); return q; })
+          .sort((a, b) => a[2] - b[2])
+          .forEach(([x, y, d, i]) => {
+            const k = clamp((d + ext) / (2 * ext), 0, 1), s = base * seeds[i] * (0.5 + 0.9 * k);
+            ctx.fillStyle = gray(k); ctx.fillRect(x - s / 2, y - s / 2, s, s);
+          });
+      }
+      ctx.strokeStyle = 'rgba(225,225,225,0.85)'; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      data.lines.forEach(line => {
+        if (sg) {
+          for (let k = 1; k < line.length; k++) {
+            const a = P(...line[k - 1]), b = P(...line[k]), m = clamp(((a[2] + b[2]) / 2 * sg + ext) / (2 * ext), 0, 1);
+            ctx.strokeStyle = gray(m); ctx.lineWidth = (data.pts.length ? 0.8 : 1.2) + 3 * m;
+            ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+          }
+        } else {
+          ctx.lineWidth = data.pts.length ? 1.3 : 2.2;
+          ctx.beginPath(); line.forEach((v, k) => { const [x, y] = P(...v); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }); ctx.stroke();
+        }
+      });
+    },
+    bounce(t) {
+      const T = 2.6, ph = (t % T) / T, A = Math.min(W * 0.36, 180), r = Math.max(9, A * 0.07);
+      const x = -A + 2 * A * ph;
+      if (demo === 'snd' && prevPh < 0.5 && ph >= 0.5) knock();
+      prevPh = ph;
+      // s=+1 の点は左から右へ、s=-1 の点は右から左へ
+      for (const s of [1, -1]) {
+        let col = '#e8e8e8';
+        if (demo === 'A') col = s > 0 ? '#ff6b5a' : '#4fa8ff';
+        if (demo === 'B') col = (s > 0) === (ph < 0.5) ? '#ff6b5a' : '#4fa8ff';
+        ctx.fillStyle = col; ctx.beginPath(); ctx.arc(W / 2 + x * s, H / 2, r, 0, TAU); ctx.fill();
+      }
+      if (demo === 'snd' && Math.abs(ph - 0.5) < 0.02) {
+        ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2;
+        for (let k = 0; k < 6; k++) { const a = k / 6 * TAU; ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(a) * r * 1.6, H / 2 + Math.sin(a) * r * 1.6); ctx.lineTo(W / 2 + Math.cos(a) * r * 2.4, H / 2 + Math.sin(a) * r * 2.4); ctx.stroke(); }
+      }
+    },
+    quartet(t) {
+      const a = Math.min(W, H) * 0.24, r = Math.max(10, a * 0.12), on = Math.floor(t / 0.45) % 2;
+      // お手本：たて（A）はたての間かくを、よこ（B）はよこの間かくを短くする
+      const ax = demo === 'A' ? a * 1.3 : demo === 'B' ? a * 0.55 : a;
+      const ay = demo === 'A' ? a * 0.55 : demo === 'B' ? a * 1.3 : a;
+      ctx.fillStyle = '#e8e8e8';
+      (on ? [[-1, -1], [1, 1]] : [[1, -1], [-1, 1]]).forEach(([sx, sy]) => { ctx.beginPath(); ctx.arc(W / 2 + sx * ax, H / 2 + sy * ay, r, 0, TAU); ctx.fill(); });
+      ctx.fillStyle = '#666'; ctx.beginPath(); ctx.arc(W / 2, H / 2, 3, 0, TAU); ctx.fill();
+    },
+    necker() {
+      const s = Math.min(W, H) * 0.42, d = s * 0.42, l = W / 2 - (s + d) / 2, tp = H / 2 - (s - d) / 2;
+      const LL = [[l, tp], [l + s, tp], [l + s, tp + s], [l, tp + s]];
+      const UR = LL.map(([x, y]) => [x + d, y - d]);
+      const sq = (Q, w, col) => { ctx.strokeStyle = col; ctx.lineWidth = w; ctx.beginPath(); Q.forEach(([x, y], k) => k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.stroke(); };
+      const links = (w, col) => { ctx.strokeStyle = col; ctx.lineWidth = w; LL.forEach((p, k) => { ctx.beginPath(); ctx.moveTo(...p); ctx.lineTo(...UR[k]); ctx.stroke(); }); };
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      if (!demo) { sq(UR, 2.4, '#e2e2e2'); sq(LL, 2.4, '#e2e2e2'); links(2.4, '#e2e2e2'); return; }
+      // お手本：奥の正方形をうすく描き、手前の正方形でかくす
+      const front = demo === 'A' ? LL : UR, back = demo === 'A' ? UR : LL;
+      sq(back, 1.6, '#5a5a5a'); links(1.6, '#5a5a5a');
+      ctx.fillStyle = 'rgba(40,36,20,0.92)'; ctx.beginPath(); front.forEach(([x, y], k) => k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.fill();
+      // 手前の面から奥へのびる辺のうち、かくれない部分を明るく描きなおす
+      ctx.save(); ctx.beginPath(); ctx.rect(0, 0, W, H); front.forEach(([x, y], k) => k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.clip('evenodd');
+      links(2.6, '#e2e2e2'); sq(back, 2.6, '#e2e2e2'); ctx.restore();
+      sq(front, 3.2, '#ffd23f');
+    },
+    feet(t) {
+      const bw = Math.min(W * 0.9, 560), bh = Math.min(H * 0.6, 220), x0 = (W - bw) / 2, y0 = (H - bh) / 2, per = 14;
+      if (demo === 'B') { ctx.fillStyle = '#7f7f7f'; ctx.fillRect(x0, y0, bw, bh); }
+      else { ctx.fillStyle = '#fff'; ctx.fillRect(x0, y0, bw, bh); ctx.fillStyle = '#000'; for (let x = x0; x < x0 + bw; x += per * 2) ctx.fillRect(x, y0, per, bh); }
+      // 一定の速さで左右に行ったり来たり（三角波）
+      const w = Math.min(84, bw * 0.18), span = Math.max(1, bw - w - 24), period = span / 45 * 2;
+      const u = (t % period) / period, f = u < 0.5 ? u * 2 : 2 - u * 2, x = x0 + 12 + f * span;
+      const COL = { yb: ['#ffe63b', '#16288f'], yy: ['#ffe63b', '#ffe63b'], gg: ['#808080', '#808080'] }[variant || 'yb'];
+      ctx.fillStyle = COL[0]; ctx.fillRect(x, y0 + bh * 0.3 - 9, w, 18);
+      ctx.fillStyle = COL[1]; ctx.fillRect(x, y0 + bh * 0.7 - 9, w, 18);
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 1; ctx.strokeRect(x0 - 0.5, y0 - 0.5, bw + 1, bh + 1);
+    },
+    plaid(t) {
+      // 縞1（+45°）は ↘ へ、縞2（-45°）は ↙ へ動く。重なった「目」は真下へ動く
+      const r = Math.min(W * 0.4, H * 0.33), per = r * 0.34, v = per * 0.55, cx = W / 2, cy = H / 2 - 22;
+      const ORANGE = 'rgba(255,140,60,0.85)', BLUE = 'rgba(70,150,255,0.85)';
+      const offs = [(t * v) % per, -((t * v) % per)];
+      const sheets = demo === 'one' ? [0] : [0, 1];
+      ctx.save(); ctx.translate(cx, cy);
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.clip();
+      ctx.globalCompositeOperation = demo === 'A' ? 'source-over' : 'lighter';
+      sheets.forEach(s => {
+        ctx.save(); ctx.rotate((s ? -45 : 45) * D);
+        ctx.fillStyle = demo === 'B' ? (s ? BLUE : ORANGE) : demo === 'A' ? '#9a9a9a' : 'rgba(150,150,150,0.75)';
+        for (let k = -6; k <= 6; k++) ctx.fillRect(k * per + offs[s] - per * 0.13, -r * 1.5, per * 0.26, r * 3);
+        // 目印：その縞といっしょに動く点（縞で見る／縞を1枚だけ）
+        if (demo === 'B' || demo === 'one') {
+          ctx.globalCompositeOperation = 'source-over';
+          ctx.fillStyle = demo === 'one' ? '#ffd23f' : s ? '#bfe0ff' : '#ffe0c8';
+          for (let k = -6; k <= 6; k++) for (let j = -3; j <= 3; j++) {
+            ctx.beginPath(); ctx.arc(k * per + offs[s], j * per * 1.6 + (k % 2) * per * 0.8, Math.max(3, per * 0.08), 0, TAU); ctx.fill();
+          }
+          if (demo === 'B') ctx.globalCompositeOperation = 'lighter';
+        }
+        ctx.restore();
+      });
+      // 目印：網の目（2本の線が交わるところ）。真下へ動く
+      if (demo === 'A') {
+        const c = Math.SQRT1_2;
+        ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#ffd23f';
+        for (let k = -6; k <= 6; k++) for (let m = -6; m <= 6; m++) {
+          const a = k * per + offs[0], b = m * per + offs[1];
+          ctx.beginPath(); ctx.arc((a + b) / (2 * c), (a - b) / (2 * c), Math.max(3, per * 0.09), 0, TAU); ctx.fill();
+        }
+      }
+      ctx.restore();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = 'rgba(200,200,200,0.5)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+      // 動きの向きを矢印で示す（円の下）
+      const arrow = (x, y, dx, dy, col, label) => {
+        const L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L;
+        ctx.strokeStyle = ctx.fillStyle = col; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + dx, y + dy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + dx + ux * 6, y + dy + uy * 6); ctx.lineTo(x + dx - ux * 8 - uy * 7, y + dy - uy * 8 + ux * 7); ctx.lineTo(x + dx - ux * 8 + uy * 7, y + dy - uy * 8 - ux * 7); ctx.fill();
+        if (label) { ctx.font = '800 12px "M PLUS Rounded 1c", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(label, x + dx / 2, y + dy + 20); }
+      };
+      const ay = cy + r + 12;
+      if (ay + 40 > H) return;
+      if (demo === 'A') arrow(cx, ay, 0, 22, '#ffd23f', '網の目は真下へ');
+      if (demo === 'one') arrow(cx - 12, ay, 22, 18, '#ffd23f', '1枚だと ななめ右下へ');
+      if (demo === 'B') { arrow(cx - 46, ay, 18, 16, '#ff8c3c', ''); arrow(cx + 46, ay, -18, 16, '#4696ff', ''); ctx.fillStyle = '#ddd'; ctx.font = '800 12px "M PLUS Rounded 1c", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('2枚がすれちがう', cx, ay + 36); }
+    },
+    barber(t) {
+      // 細い窓の中で、「＼」のしまを右へ動かす（窓が細いと、上へのぼって見える）
+      const w = Math.min(W, H) * 0.26, h = H * 0.8, L = W / 2 - w / 2, top = H / 2 - h / 2, per = w * 0.6, bw = per * 0.5;
+      const off = (t * 40) % per;
+      ctx.save(); ctx.beginPath(); ctx.rect(L, top, w, h); ctx.clip();
+      ctx.fillStyle = '#1c1c1c'; ctx.fillRect(L, top, w, h);
+      let k = 0;
+      for (let c = L - h - per * 2; c < L + w + per; c += per, k++) {
+        const cc = c + off;
+        ctx.fillStyle = '#e8e8e8';
+        ctx.beginPath(); ctx.moveTo(cc, top); ctx.lineTo(cc + bw, top); ctx.lineTo(cc + bw + h, top + h); ctx.lineTo(cc + h, top + h); ctx.closePath(); ctx.fill();
+        if (demo === 'B') {
+          ctx.fillStyle = '#ff4d3d';
+          for (let j = 0; j < 3; j++) {
+            const yd = top + ((k * 2 + j * 5) % 9 + 0.5) / 9 * h;
+            ctx.beginPath(); ctx.arc(cc + bw / 2 + (yd - top), yd, Math.max(3, bw * 0.16), 0, TAU); ctx.fill();
+          }
+        }
+      }
+      ctx.restore();
+      ctx.strokeStyle = '#8a8a8a'; ctx.lineWidth = 2; ctx.strokeRect(L - 1, top - 1, w + 2, h + 2);
+    },
+    diamond(t) {
+      const Ld = Math.min(W, H) * 0.3, r = Ld * 0.14, a = t * 2.2, cx = W / 2 + r * Math.cos(a), cy = H / 2 + r * Math.sin(a), hb = Ld * 0.4;
+      const V = [[0, -Ld], [Ld, 0], [0, Ld], [-Ld, 0]];
+      ctx.strokeStyle = '#ececec'; ctx.lineWidth = 5; ctx.lineCap = 'butt';
+      ctx.beginPath(); V.forEach(([x, y], k) => k ? ctx.lineTo(cx + x, cy + y) : ctx.moveTo(cx + x, cy + y)); ctx.closePath(); ctx.stroke();
+      // かくし板：ふだんは背景と同じ黒（見えない）、お手本では灰色、「全部見せる」では外す
+      if (demo !== 'all') {
+        ctx.fillStyle = demo === 'B' ? '#4a4a4a' : '#000';
+        V.forEach(([x, y]) => ctx.fillRect(W / 2 + x - hb, H / 2 + y - hb, hb * 2, hb * 2));
+      } else {
+        ctx.setLineDash([5, 6]); ctx.strokeStyle = '#555'; ctx.lineWidth = 1.2;
+        V.forEach(([x, y]) => ctx.strokeRect(W / 2 + x - hb, H / 2 + y - hb, hb * 2, hb * 2)); ctx.setLineDash([]);
+      }
+    },
+    walker(t) {
+      // 光の点で歩く人（関節13か所）。歩き方はこのアプリで計算して作っている（人の動きを記録したデータは使っていない）
+      const S = Math.min(W * 0.32, H * 0.24), P = camera(W / 2, H / 2, 0, 0, 40 * D, S);
+      const ph = t * TAU * 0.9, bob = 0.035 * Math.cos(2 * ph), J = [];
+      for (const side of [1, -1]) {
+        const p = side > 0 ? ph : ph + Math.PI;
+        // 足：ももを前後にふり、足を前へ運ぶあいだはひざを曲げる（体は +z を向いている）
+        const hipA = 0.45 * Math.sin(p), kneeA = 0.08 + 0.65 * Math.pow(Math.max(0, Math.cos(p + 0.3)), 1.5);
+        const hip = [side * 0.16, bob, 0];
+        const knee = [hip[0], hip[1] - 0.82 * Math.cos(hipA), 0.82 * Math.sin(hipA)];
+        const ank = [hip[0], knee[1] - 0.8 * Math.cos(hipA - kneeA), knee[2] + 0.8 * Math.sin(hipA - kneeA)];
+        // 腕：同じがわの足と反対にふり、前に来たときはひじを少し曲げる
+        const armA = -0.38 * Math.sin(p), elbA = 0.3 + 0.2 * Math.max(0, -Math.sin(p));
+        const sh = [side * 0.23, 1.12 + bob, 0];
+        const el = [sh[0], sh[1] - 0.52 * Math.cos(armA), 0.52 * Math.sin(armA)];
+        const wr = [sh[0], el[1] - 0.48 * Math.cos(armA + elbA), el[2] + 0.48 * Math.sin(armA + elbA)];
+        J.push(hip, knee, ank, sh, el, wr);
+      }
+      J.push([0, 1.5 + bob, 0]);                                                   // 頭
+      const sg = depthSign(), rr = Math.max(4, S * 0.045);
+      J.map(j => P(j[0], j[1] + 0.05, j[2])).map(q => (q[2] *= sg || 0, q)).sort((a, b) => a[2] - b[2]).forEach(([x, y, d]) => {
+        const k = sg ? clamp((d + 0.6) / 1.2, 0, 1) : 1;
+        ctx.fillStyle = sg ? gray(0.15 + 0.85 * k) : '#eee';
+        ctx.beginPath(); ctx.arc(x, y, rr * (sg ? 0.6 + 0.7 * k : 1), 0, TAU); ctx.fill();
+      });
+    },
+    rubin() {
+      // 横顔の形（上から y=0〜1）。w は真ん中の線から横顔までの距離（小さいほど顔が前に出る＝壺が細い）
+      const KP = [[0, 0.30], [0.10, 0.285], [0.22, 0.265], [0.30, 0.255], [0.345, 0.27], [0.40, 0.205], [0.455, 0.125], [0.50, 0.19],
+                  [0.535, 0.17], [0.565, 0.205], [0.595, 0.175], [0.645, 0.225], [0.70, 0.18], [0.76, 0.245], [0.84, 0.275], [1, 0.30]];
+      const Hf = Math.min(H * 0.84, W * 1.05), cx = W / 2, top = (H - Hf) / 2, half = 0.42 * Hf;
+      const prof = smooth2(KP, 8).map(([y, w]) => [w * Hf, top + y * Hf]);
+      const vase = () => { ctx.beginPath(); prof.forEach(([w, y], k) => k ? ctx.lineTo(cx + w, y) : ctx.moveTo(cx + w, y)); for (let k = prof.length - 1; k >= 0; k--) ctx.lineTo(cx - prof[k][0], prof[k][1]); ctx.closePath(); };
+      const faceCol = demo === 'A' ? '#0d0d0d' : demo === 'B' ? '#e8c4a0' : '#3b4a6b';
+      const vaseCol = demo === 'B' ? '#0d0d0d' : '#ececec';
+      ctx.fillStyle = faceCol; ctx.fillRect(cx - half, top, half * 2, Hf);
+      ctx.fillStyle = vaseCol; vase(); ctx.fill();
+      if (demo === 'A') {
+        // 壺の模様と光
+        ctx.save(); vase(); ctx.clip();
+        ctx.fillStyle = '#3AB7C2'; ctx.fillRect(cx - half, top + Hf * 0.12, half * 2, Hf * 0.04); ctx.fillRect(cx - half, top + Hf * 0.86, half * 2, Hf * 0.04);
+        ctx.fillStyle = '#e8323c'; ctx.fillRect(cx - half, top + Hf * 0.175, half * 2, Hf * 0.015); ctx.fillRect(cx - half, top + Hf * 0.835, half * 2, Hf * 0.015);
+        const g = ctx.createLinearGradient(cx - Hf * 0.3, 0, cx + Hf * 0.3, 0);
+        g.addColorStop(0, 'rgba(0,0,0,0.25)'); g.addColorStop(0.35, 'rgba(255,255,255,0.35)'); g.addColorStop(1, 'rgba(0,0,0,0.3)');
+        ctx.fillStyle = g; ctx.fillRect(cx - half, top, half * 2, Hf);
+        ctx.restore();
+      }
+      if (demo === 'B') {
+        // 目・まゆ・ほお（左右の横顔に）
+        for (const s of [-1, 1]) {
+          const ex = cx + s * (0.27 + 0.065) * Hf, ey = top + 0.335 * Hf;
+          ctx.fillStyle = '#2a1d14'; ctx.beginPath(); ctx.ellipse(ex, ey, Hf * 0.014, Hf * 0.02, 0, 0, TAU); ctx.fill();
+          ctx.strokeStyle = '#5a3a24'; ctx.lineWidth = Math.max(2, Hf * 0.01); ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(ex - s * Hf * 0.03, ey - Hf * 0.045); ctx.lineTo(ex + s * Hf * 0.035, ey - Hf * 0.035); ctx.stroke();
+          ctx.fillStyle = 'rgba(230,120,120,0.35)'; ctx.beginPath(); ctx.ellipse(cx + s * 0.33 * Hf, top + 0.47 * Hf, Hf * 0.035, Hf * 0.02, 0, 0, TAU); ctx.fill();
+          // 後ろ頭の髪
+          ctx.fillStyle = '#3b2a1e'; ctx.beginPath();
+          ctx.moveTo(cx + s * half, top); ctx.lineTo(cx + s * 0.30 * Hf, top); ctx.quadraticCurveTo(cx + s * 0.36 * Hf, top + 0.12 * Hf, cx + s * half, top + 0.3 * Hf); ctx.closePath(); ctx.fill();
+        }
+      }
+      ctx.strokeStyle = '#555'; ctx.lineWidth = 1.5; ctx.strokeRect(cx - half, top, half * 2, Hf);
+    },
+    phi(t) {
+      // 12この電球が順番に光る。ふだんは消えている電球を見せない（光が回って見える）
+      const N = 12, r = Math.min(W, H) * 0.32, rb = Math.max(7, r * 0.09), slow = demo === 'B';
+      const idx = Math.floor(t / (slow ? 0.6 : 0.09)) % N;
+      for (let k = 0; k < N; k++) {
+        const a = k / N * TAU - TAU / 4, x = W / 2 + r * Math.cos(a), y = H / 2 + r * Math.sin(a);
+        if (k === idx) {
+          const g = ctx.createRadialGradient(x, y, 0, x, y, rb * 2.6);
+          g.addColorStop(0, 'rgba(255,240,170,0.9)'); g.addColorStop(1, 'rgba(255,210,63,0)');
+          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rb * 2.6, 0, TAU); ctx.fill();
+          ctx.fillStyle = '#fff6cf'; ctx.beginPath(); ctx.arc(x, y, rb, 0, TAU); ctx.fill();
+        } else if (slow) {
+          ctx.fillStyle = '#1c1c1c'; ctx.strokeStyle = '#555'; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.arc(x, y, rb, 0, TAU); ctx.fill(); ctx.stroke();
+        }
+      }
+    },
+    roll(t) {
+      // 右へ転がる車輪のふちの光。光の通り道（サイクロイド）がうすく残る
+      const R0 = Math.min(W, H) * 0.12, gy = H * 0.64, yc = gy - R0, x0 = W * 0.1;
+      const span = Math.max(1, Math.floor((W * 0.8) / (TAU * R0))) * TAU * R0;   // 1周の長さの整数倍でくり返す
+      const at = tt => { const d = ((tt * 70) % span + span) % span, th = d / R0, xc = x0 + d; return { d, xc, th, rim: [xc - R0 * Math.sin(th), yc + R0 * Math.cos(th)] }; };
+      const now = at(t);
+      if (demo === 'all') {
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x0 - R0, gy); ctx.lineTo(x0 + span + R0, gy); ctx.stroke();
+        ctx.strokeStyle = '#666'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(now.xc, yc, R0, 0, TAU); ctx.stroke();
+        for (let k = 0; k < 6; k++) { const a = now.th + k / 6 * TAU; ctx.beginPath(); ctx.moveTo(now.xc, yc); ctx.lineTo(now.xc - R0 * Math.sin(a), yc + R0 * Math.cos(a)); ctx.stroke(); }
+      }
+      for (let k = 24; k >= 1; k--) {
+        const p = at(t - k * 0.04);
+        if (p.d > now.d) continue;                                       // くり返しの切れ目はつながない
+        ctx.fillStyle = `rgba(255,230,140,${0.5 * (1 - k / 25)})`; ctx.beginPath(); ctx.arc(p.rim[0], p.rim[1], 3, 0, TAU); ctx.fill();
+      }
+      ctx.fillStyle = '#fff3b8'; ctx.beginPath(); ctx.arc(now.rim[0], now.rim[1], Math.max(6, R0 * 0.1), 0, TAU); ctx.fill();
+      if (demo === 'B' || demo === 'all') { ctx.fillStyle = '#9fe3ff'; ctx.beginPath(); ctx.arc(now.xc, yc, Math.max(6, R0 * 0.1), 0, TAU); ctx.fill(); }
+    },
+    wagon(t) {
+      // 1秒に10回だけ写す。1回に 41°（棒どうしの間 45° より少し少ない）だけ時計回りに進める
+      const N = 8, R0 = Math.min(W, H) * 0.34, cx = W / 2, cy = H / 2, rate = 10, stepA = 41 * D;
+      const ang = demo === 'smooth' ? t * rate * stepA : Math.floor(t * rate) * stepA;
+      ctx.strokeStyle = '#333'; ctx.lineWidth = R0 * 0.16; ctx.beginPath(); ctx.arc(cx, cy, R0 * 0.92, 0, TAU); ctx.stroke();
+      ctx.strokeStyle = '#8a8a8a'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, R0 * 0.82, 0, TAU); ctx.stroke();
+      ctx.lineCap = 'round'; ctx.lineWidth = Math.max(4, R0 * 0.055);
+      for (let k = 0; k < N; k++) {
+        const a = ang + k / N * TAU;
+        ctx.strokeStyle = demo === 'B' && k === 0 ? '#ff4d3d' : '#e6e6e6';
+        ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * R0 * 0.12, cy + Math.sin(a) * R0 * 0.12); ctx.lineTo(cx + Math.cos(a) * R0 * 0.8, cy + Math.sin(a) * R0 * 0.8); ctx.stroke();
+      }
+      ctx.fillStyle = '#bbb'; ctx.beginPath(); ctx.arc(cx, cy, R0 * 0.1, 0, TAU); ctx.fill();
+    },
+    ternus(t) {
+      // 3つの点（左よせ）→ すきま → 3つの点（右よせ）→ すきま … をくり返す
+      const s = Math.min(W, H) * 0.17, F = 0.24, isi = demo === 'A' ? 0 : demo === 'B' ? 0.16 : 0.05;
+      const u = t % (2 * (F + isi));
+      const xs = u < F ? [-1.5, -0.5, 0.5] : (u >= F + isi && u < 2 * F + isi) ? [-0.5, 0.5, 1.5] : null;
+      if (xs) { ctx.fillStyle = '#e8e8e8'; xs.forEach(x => { ctx.beginPath(); ctx.arc(W / 2 + x * s, H / 2, s * 0.18, 0, TAU); ctx.fill(); }); }
+      ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(W / 2, H / 2 + s * 0.8, 3, 0, TAU); ctx.fill();
+    },
+    screw(t) {
+      // 横向きのらせんを真横から見る：点の高さ = r·cos(kx − ωt) ＝ 右へ進む波と同じ形
+      const S = Math.min(W * 0.3, H * 0.42), r = 0.42, k = TAU / 1.4, n = 110, cx = W / 2, cy = H / 2 - 8, ph = t * 2.4;
+      const pts = [];
+      for (let i = 0; i <= n; i++) { const x = -1.5 + 3 * i / n, f = k * x - ph; pts.push([cx + x * S, cy - r * Math.cos(f) * S, r * Math.sin(f)]); }
+      const base = Math.max(3, S / 45);
+      if (demo === 'A') {
+        ctx.strokeStyle = '#3a3a3a'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(cx - 1.6 * S, cy); ctx.lineTo(cx + 1.6 * S, cy); ctx.stroke();
+        pts.slice().sort((a, b) => a[2] - b[2]).forEach(([x, y, z]) => {
+          const m = clamp((z + r) / (2 * r), 0, 1), s = base * (0.5 + 0.9 * m);
+          ctx.fillStyle = gray(0.1 + 0.9 * m); ctx.beginPath(); ctx.arc(x, y, s / 2, 0, TAU); ctx.fill();
+        });
+      } else if (demo === 'B') {
+        ctx.strokeStyle = '#7fc8e8'; ctx.lineWidth = 3; ctx.lineJoin = 'round';
+        ctx.beginPath(); pts.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+        const mid = pts[n / 2];                                           // ひもの真ん中の赤い点：上下に動くだけ
+        ctx.fillStyle = '#ff4d3d'; ctx.beginPath(); ctx.arc(mid[0], mid[1], Math.max(7, base * 2), 0, TAU); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,77,61,0.35)'; ctx.setLineDash([4, 5]); ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(mid[0], cy - r * S - 6); ctx.lineTo(mid[0], cy + r * S + 6); ctx.stroke(); ctx.setLineDash([]);
+        const ay = cy + r * S + 34;
+        if (ay + 10 < H) {
+          ctx.strokeStyle = ctx.fillStyle = '#ffd23f'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.moveTo(cx - 40, ay); ctx.lineTo(cx + 34, ay); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(cx + 44, ay); ctx.lineTo(cx + 30, ay - 8); ctx.lineTo(cx + 30, ay + 8); ctx.fill();
+          ctx.font = '800 12px "M PLUS Rounded 1c", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('波の形が右へ進む（赤い点は上下だけ）', cx, ay + 22);
+        }
+      } else {
+        ctx.fillStyle = '#e8e8e8';
+        pts.forEach(([x, y]) => { ctx.beginPath(); ctx.arc(x, y, base / 2, 0, TAU); ctx.fill(); });
+      }
+    },
+    twin(t) {
+      // 外の筒（印0）と内の筒（印1）を反対向きに回す。お手本 B は内の筒だけ手前と奥を入れかえる
+      const ext = 1.45, S = Math.min(W * 0.36, H * 0.42) / ext, base = Math.max(1.3, S / 110);
+      const Ps = [camera(W / 2, H / 2, 0, 14 * D, t * cur.speed * D, S), camera(W / 2, H / 2, 0, 14 * D, -t * cur.speed * D, S)];
+      const sg = demo === 'A' ? [1, 1] : demo === 'B' ? [1, -1] : null;
+      if (!sg) {
+        ctx.fillStyle = 'rgba(235,235,235,0.85)';
+        data.pts.forEach((p, i) => { const [x, y] = Ps[p[3]](p[0], p[1], p[2]), s = base * seeds[i]; ctx.fillRect(x - s / 2, y - s / 2, s, s); });
+      } else {
+        data.pts.map((p, i) => { const q = Ps[p[3]](p[0], p[1], p[2]); q[2] *= sg[p[3]]; q.push(i); return q; })
+          .sort((a, b) => a[2] - b[2])
+          .forEach(([x, y, d, i]) => { const k = clamp((d + ext) / (2 * ext), 0, 1), s = base * seeds[i] * (0.5 + 0.9 * k); ctx.fillStyle = gray(k); ctx.fillRect(x - s / 2, y - s / 2, s, s); });
+      }
+      ctx.strokeStyle = 'rgba(225,225,225,0.7)'; ctx.lineWidth = 1.3;
+      [-1.2, 1.2].forEach(y => { ctx.beginPath(); circle(1, y).forEach((v, k) => { const [x, yy] = Ps[0](...v); k ? ctx.lineTo(x, yy) : ctx.moveTo(x, yy); }); ctx.stroke(); });
+    },
+    silhouette(t) {
+      // 旗を持って歩く人の影（このアプリのオリジナルの形）。体は +z を向き、両足を前後に開いて立っている
+      const S = Math.min(W * 0.26, H * 0.22), P = camera(W / 2, H / 2 + S * 0.26, 0, 8 * D, t * cur.speed * D, S);
+      const segs = [
+        [[0, 0, 0], [0, 0.85, 0], 0.17],                                                                 // 胴
+        [[0.1, 0, 0], [0.12, -0.75, 0.25], 0.12], [[0.12, -0.75, 0.25], [0.12, -1.5, 0.32], 0.1],        // 前に出した足
+        [[0.12, -1.5, 0.32], [0.12, -1.53, 0.52], 0.07],                                                 //   その足先
+        [[-0.1, 0, 0], [-0.12, -0.76, -0.22], 0.12], [[-0.12, -0.76, -0.22], [-0.12, -1.48, -0.45], 0.1], // うしろの足
+        [[-0.12, -1.48, -0.45], [-0.12, -1.53, -0.27], 0.07],                                            //   その足先
+        [[-0.2, 0.8, 0], [-0.24, 0.8, 0.42], 0.08], [[-0.24, 0.8, 0.42], [-0.26, 0.84, 0.82], 0.07],     // 前へまっすぐのばした腕
+        [[0.2, 0.8, 0], [0.36, 1.12, -0.1], 0.08], [[0.36, 1.12, -0.1], [0.42, 1.45, -0.18], 0.07],      // 旗を持ち上げた腕
+        [[0.42, 1.3, -0.18], [0.44, 2.05, -0.2], 0.03],                                                  // 旗のさお
+      ];
+      const FLAG = [[0.44, 2.02, -0.2], [0.44, 1.72, -0.2], [0.92, 1.78, -0.4], [0.92, 2.0, -0.4]];     // 旗の布
+      const sg = depthSign();
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      const parts = segs.map(([a, b, w]) => { const p = P(...a), q = P(...b); return { p, q, w, d: (p[2] + q[2]) / 2 * (sg || 0) }; });
+      const hd = P(0, 1.12, 0); parts.push({ head: true, p: hd, d: hd[2] * (sg || 0) });
+      const fl = FLAG.map(v => P(...v)); parts.push({ flag: fl, d: fl.reduce((s, v) => s + v[2], 0) / 4 * (sg || 0) });
+      parts.sort((a, b) => a.d - b.d).forEach(o => {
+        const col = sg ? gray(0.15 + 0.85 * clamp((o.d + 1) / 2, 0, 1)) : '#dcdcdc';
+        ctx.strokeStyle = ctx.fillStyle = col;
+        if (o.head) { ctx.beginPath(); ctx.arc(o.p[0], o.p[1], S * 0.2, 0, TAU); ctx.fill(); }
+        else if (o.flag) { ctx.lineWidth = 2; ctx.beginPath(); o.flag.forEach(([x, y], k) => k ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+        else { ctx.lineWidth = o.w * S * 2; ctx.beginPath(); ctx.moveTo(o.p[0], o.p[1]); ctx.lineTo(o.q[0], o.q[1]); ctx.stroke(); }
+      });
+    },
+  };
+
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (mode === 'top') Top.draw(now);
+    else if (W) {
+      clock += dt * speedMul;
+      ctx.clearRect(0, 0, W, H);
+      R[cur.type](clock);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', resize);
+  // 難易度を変えると作品の列の高さが変わる → ぶたいの高さ（--barH）とキャンバスの大きさを合わせなおす
+  const barEl = document.querySelector('#lab .bar');
+  const syncBar = () => document.documentElement.style.setProperty('--barH', barEl.offsetHeight + 'px');
+  if (window.ResizeObserver) {
+    new ResizeObserver(syncBar).observe(barEl);
+    new ResizeObserver(() => { if (mode === 'lab') resize(); }).observe($('stage'));
+  }
+  // index.html#床屋のポール のように、名前でいきなり開ける（#名前+A / +B でお手本つき）
+  let hashText = '';
+  try { hashText = decodeURIComponent(location.hash.slice(1)); } catch (e) { hashText = ''; }   // こわれた # でも止まらない
+  const [hName, hDemo] = hashText.split('+');
+  const hashItem = ITEMS.find(it => it.name === hName);
+  if (hashItem) { showLab(hashItem); if (hDemo && hashItem.demos.some(([k]) => k === hDemo)) { demo = hDemo; renderDemos(); renderCards(); } }
+  else showTop();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
