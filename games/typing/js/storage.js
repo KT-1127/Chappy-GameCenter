@@ -5,12 +5,13 @@
 (function (global) {
 "use strict";
 
-const KEY = "chappy-typing:v1";
+// まなびコンパスの中で開いたときは、生徒ごとの保存場所を使う（bridge.js が決める）
+const KEY = global.__typingStoreKey || "chappy-typing:v1";
 const HISTORY_MAX = 200;
 
 function defaultSettings() {
   return {
-    lang: "ja", diff: "normal", field: "all", time: 60,
+    lang: "ja", diff: "easy", field: "all", time: 60,
     bgm: 0.5, se: 0.8, muted: false,
     guide: true, layout: "jis", romaji: true, fontSize: "m",
     use3d: true, reduceMotion: false,
@@ -47,15 +48,21 @@ function merge(d) {
 }
 
 function load() {
+  let raw = null;
   try {
-    const raw = localStorage.getItem(KEY);
+    raw = localStorage.getItem(KEY);
     if (raw) data = merge(JSON.parse(raw));
   } catch (e) { data = defaults(); }
+  // この端末に保存できない環境でも、まなびコンパスから受け取った記録を使う
+  if (!raw && global.__typingInitial) data = merge(global.__typingInitial);
+  // （技術サイト版では毎回「日本語・やさしい・60秒」から始めていたが、まなびコンパスでは前回の設定から始める）
   return data;
 }
 
 function save() {
   try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* 保存できなくても続ける */ }
+  // まなびコンパスの中で開いたときは、サーバーにも保存する
+  if (global.__typingOnSave) global.__typingOnSave(data);
 }
 
 function dayStr(d) {

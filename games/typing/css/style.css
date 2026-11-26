@@ -345,6 +345,9 @@ main { position: relative; z-index: 1; height: 100%; }
 .result-side .bubble { max-width: 320px; text-align: center; font-weight: 700; }
 .result-chappy { width: 190px; margin-bottom: 8px; }
 .result-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+/* 技術サイトの中で開いたときの「本日の記録にする」ボタン */
+.result-actions .btn-record { background: linear-gradient(180deg, #F5B93A, #E39B12); box-shadow: 0 10px 24px -12px rgba(227, 155, 18, .8); }
+.result-actions .btn-record:disabled { opacity: .85; cursor: default; }
 
 .weak-list { display: flex; flex-wrap: wrap; gap: 8px; }
 .key-chip {

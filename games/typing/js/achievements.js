@@ -28,8 +28,8 @@ const LIST = [
   { id: "stars3", icon: "🌟", name: "三つ星", desc: "レッスンで★3つを取った", check: (d) => Object.values(d.steps).some((s) => s >= 3) },
   { id: "tech30", icon: "🔧", name: "技術科ことば博士", desc: "技術科ことばで、1回にりんご30個", check: (d, r) => r && r.mode === "tech" && r.apples >= 30 },
   { id: "techAll", icon: "🧰", name: "全分野制覇", desc: "技術科ことばを4分野すべてで遊んだ", check: (d) => ["material", "bio", "energy", "info"].every((f) => d.best[`tech:ja:${f}`]) },
-  { id: "cannon5", icon: "🎯", name: "キャノンの名手", desc: "りんごキャノンでウェーブ5に到達", check: (d, r) => r && r.mode === "cannon" && r.wave >= 5 },
-  { id: "cannon10", icon: "🛡️", name: "島の守り神", desc: "りんごキャノンでウェーブ10に到達", check: (d, r) => r && r.mode === "cannon" && r.wave >= 10 },
+  { id: "cannon5", icon: "🎯", name: "キャノンの名手", desc: "りんごキャノンでボスを2体たおす", check: (d, r) => r && r.mode === "cannon" && (r.bosses || 0) >= 2 },
+  { id: "cannon10", icon: "🛡️", name: "島の守り神", desc: "りんごキャノンで魔王をたおしてゲームクリア", check: (d, r) => r && r.mode === "cannon" && (r.bosses || 0) >= 5 },
   { id: "bilingual", icon: "🌏", name: "バイリンガル", desc: "日本語と英語の両方で遊んだ", check: (d) => d.history.some((h) => h.lang === "ja") && d.history.some((h) => h.lang === "en") },
   { id: "weak", icon: "🔍", name: "弱点克服", desc: "にがて特訓で、特訓キーの正確さ95%以上", check: (d, r) => r && r.mode === "weak" && r.score >= 95 },
 ];
@@ -47,8 +47,9 @@ function check(d, r) {
 
 // きせかえの解放条件（集めたりんごの合計）
 const UNLOCK = {
-  skin: { none: 0, sprout: 30, glasses: 100, ribbon: 250, scarf: 500, headphones: 1000, crown: 2000 },
-  sky: { day: 0, sunset: 300, night: 800 },
+  // きせかえ・背景の解放に必要なりんごの数（技術サイト用に、もとの10倍にした）
+  skin: { none: 0, sprout: 300, glasses: 1000, ribbon: 2500, scarf: 5000, headphones: 10000, crown: 20000 },
+  sky: { day: 0, sunset: 3000, night: 8000 },
 };
 const SKY_NAMES = { day: "昼の空", sunset: "夕焼け", night: "星空" };
 

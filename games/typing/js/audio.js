@@ -3,7 +3,9 @@
  *
  *   Sound.unlock()            最初のクリックやキー入力のときに呼ぶ（ブラウザの決まりで、それまで音は出せない）
  *   Sound.se("key")           効果音：key / miss / word / apple / combo / count / go / finish / result / record / click / hover / tick
- *   Sound.bgm("title")        BGM：title / play / null（止める）
+ *   Sound.bgm("title")        BGM：title / play / battle / cannon2 / cannon3 / bossFake / bossEvil / bossMecha / bossGhost / bossKing / bossRage / rest / null（止める）
+ *                             りんごキャノンのボス戦の効果音：alarm / fight / bossHit / crit / hit / jab / charge / blast / guard / dodge / rage / ko / fanfare / gameover
+ *                             launch（ミサイル）/ heal（ボスの回復）/ warp（ワープ）/ stun（フラフラ）
  *   Sound.setVolume(bgm, se)  0〜1
  *   Sound.setMuted(true)
  */
@@ -156,6 +158,106 @@ const SE = {
   badge(t) {
     [84, 88, 91, 96, 100].forEach((m, i) => bell(seBus, mtof(m), t + i * 0.07, 0.7, 0.06));
   },
+  // ---- りんごキャノンのボス戦 ----
+  alarm(t) { // ボスが近づく警報（ウーウー×3）
+    for (let k = 0; k < 3; k++) {
+      const s = t + k * 0.62;
+      tone(seBus, { type: "square", freq: 660, t: s, dur: 0.3, gain: 0.07, slideTo: 990, filter: { freq: 2600 } });
+      tone(seBus, { type: "square", freq: 990, t: s + 0.3, dur: 0.3, gain: 0.07, slideTo: 660, filter: { freq: 2600 } });
+      tone(seBus, { type: "sine", freq: 82, t: s, dur: 0.5, gain: 0.16 });
+    }
+  },
+  fight(t) { // 「FIGHT!」の合図（力強い和音）
+    [48, 55, 60, 64, 67].forEach((m) => {
+      tone(seBus, { type: "sawtooth", freq: mtof(m), t, dur: 0.9, gain: 0.035, filter: { freq: 2400 }, detune: -8 });
+      tone(seBus, { type: "sawtooth", freq: mtof(m), t, dur: 0.9, gain: 0.035, filter: { freq: 2400 }, detune: 8 });
+    });
+    tone(seBus, { type: "sine", freq: 120, t, dur: 0.4, gain: 0.3, slideTo: 40 });
+    noise(seBus, { t, dur: 0.8, gain: 0.06, freq: 5000 });
+  },
+  bossHit(t) { // ボスにりんごが当たった
+    noise(seBus, { t, dur: 0.16, gain: 0.16, type: "bandpass", freq: 900, q: 0.9 });
+    tone(seBus, { type: "square", freq: 420, t, dur: 0.14, gain: 0.07, slideTo: 90, filter: { freq: 1800 } });
+    tone(seBus, { type: "sine", freq: 180, t, dur: 0.22, gain: 0.22, slideTo: 50 });
+  },
+  crit(t) { // クリティカル
+    SE.bossHit(t);
+    [91, 96, 100, 103].forEach((m, i) => bell(seBus, mtof(m), t + 0.04 + i * 0.04, 0.5, 0.06));
+    noise(seBus, { t: t + 0.02, dur: 0.5, gain: 0.04, type: "bandpass", freq: 9000, q: 1.5 });
+  },
+  hit(t) { // チャッピーが攻撃を受けた（大）
+    tone(seBus, { type: "sine", freq: 170, t, dur: 0.45, gain: 0.34, slideTo: 36 });
+    tone(seBus, { type: "square", freq: 110, t, dur: 0.3, gain: 0.08, slideTo: 45, filter: { freq: 700 } });
+    noise(seBus, { t, dur: 0.4, gain: 0.2, type: "lowpass", freq: 1600 });
+  },
+  jab(t) { // ミスタイプの反撃（小）
+    noise(seBus, { t, dur: 0.1, gain: 0.1, type: "bandpass", freq: 2400, q: 1.4 });
+    tone(seBus, { type: "square", freq: 300, t, dur: 0.12, gain: 0.05, slideTo: 120, filter: { freq: 1400 } });
+    tone(seBus, { type: "sine", freq: 120, t, dur: 0.16, gain: 0.14, slideTo: 60 });
+  },
+  charge(t) { // ボスが力をためる
+    tone(seBus, { type: "sawtooth", freq: 160, t, dur: 0.75, gain: 0.05, slideTo: 1300, filter: { freq: 2200 } });
+    tone(seBus, { type: "sine", freq: 80, t, dur: 0.75, gain: 0.1, slideTo: 260 });
+    noise(seBus, { t, dur: 0.75, gain: 0.03, type: "bandpass", freq: 3000, q: 3 });
+  },
+  blast(t) { // ボスの大きな攻撃
+    noise(seBus, { t, dur: 0.7, gain: 0.22, type: "lowpass", freq: 2200 });
+    tone(seBus, { type: "sawtooth", freq: 900, t, dur: 0.5, gain: 0.06, slideTo: 60, filter: { freq: 2000 } });
+    tone(seBus, { type: "sine", freq: 140, t: t + 0.05, dur: 0.6, gain: 0.3, slideTo: 32 });
+  },
+  guard(t) { // バリアで防いだ
+    bell(seBus, 1250, t, 0.5, 0.1);
+    bell(seBus, 1870, t + 0.02, 0.4, 0.06);
+    noise(seBus, { t, dur: 0.12, gain: 0.06, freq: 6000 });
+  },
+  dodge(t) { // ぎりぎりで攻撃をかわした
+    noise(seBus, { t, dur: 0.25, gain: 0.08, type: "bandpass", freq: 1200, q: 0.8 });
+    tone(seBus, { type: "sine", freq: 400, t, dur: 0.25, gain: 0.08, slideTo: 1600 });
+    bell(seBus, mtof(96), t + 0.12, 0.4, 0.06);
+  },
+  rage(t) { // ボスが怒った
+    tone(seBus, { type: "sawtooth", freq: 70, t, dur: 1.2, gain: 0.1, slideTo: 140, filter: { freq: 900 } });
+    tone(seBus, { type: "sawtooth", freq: 72, t, dur: 1.2, gain: 0.1, slideTo: 146, filter: { freq: 900 } });
+    noise(seBus, { t, dur: 1.2, gain: 0.08, type: "lowpass", freq: 700 });
+  },
+  ko(t) { // ボスをたおした
+    noise(seBus, { t, dur: 1.4, gain: 0.25, type: "lowpass", freq: 1800 });
+    tone(seBus, { type: "sine", freq: 220, t, dur: 1.2, gain: 0.32, slideTo: 30 });
+    tone(seBus, { type: "sawtooth", freq: 600, t, dur: 1, gain: 0.05, slideTo: 80, filter: { freq: 1500 } });
+  },
+  fanfare(t) { // 勝利のファンファーレ
+    const n = (m, s, d, g) => {
+      tone(seBus, { type: "sawtooth", freq: mtof(m), t: t + s, dur: d, gain: g, filter: { freq: 2800 }, detune: -6 });
+      tone(seBus, { type: "square", freq: mtof(m), t: t + s, dur: d, gain: g * 0.6, filter: { freq: 2000 }, detune: 6 });
+    };
+    const b = 0.13;
+    [0, 1, 2, 3].forEach((i) => n(72, i * b, b * 0.9, 0.05));
+    n(68, 4 * b, b * 2.6, 0.05); n(70, 7 * b, b * 2.6, 0.05); n(72, 10 * b, b * 1.4, 0.05);
+    n(70, 11.5 * b, b * 0.8, 0.05); n(72, 12.5 * b, b * 8, 0.06);
+    [48, 55, 60, 64].forEach((m) => tone(seBus, { type: "triangle", freq: mtof(m), t: t + 12.5 * b, dur: b * 8, gain: 0.05 }));
+    noise(seBus, { t: t + 12.5 * b, dur: 1.2, gain: 0.05, freq: 5000 });
+  },
+  gameover(t) { // ゲームオーバー
+    [67, 66, 65, 64].forEach((m, i) => tone(seBus, { type: "sawtooth", freq: mtof(m), t: t + i * 0.32, dur: 0.34, gain: 0.05, filter: { freq: 1400 } }));
+    [52, 55, 58, 61].forEach((m) => tone(seBus, { type: "triangle", freq: mtof(m), t: t + 1.3, dur: 1.6, gain: 0.05 }));
+    tone(seBus, { type: "sine", freq: 90, t: t + 1.3, dur: 1.4, gain: 0.2, slideTo: 40 });
+  },
+  launch(t) { // ミサイル発射
+    noise(seBus, { t, dur: 0.35, gain: 0.08, type: "bandpass", freq: 900, q: 0.7 });
+    tone(seBus, { type: "sawtooth", freq: 220, t, dur: 0.3, gain: 0.04, slideTo: 880, filter: { freq: 1800 } });
+  },
+  heal(t) { // ボスの回復
+    [76, 79, 83, 88].forEach((m, i) => tone(seBus, { type: "triangle", freq: mtof(m), t: t + i * 0.07, dur: 0.4, gain: 0.05 }));
+    noise(seBus, { t, dur: 0.5, gain: 0.025, type: "bandpass", freq: 6000, q: 2 });
+  },
+  warp(t) { // ワープ
+    tone(seBus, { type: "sine", freq: 1400, t, dur: 0.25, gain: 0.06, slideTo: 200 });
+    tone(seBus, { type: "sine", freq: 300, t: t + 0.18, dur: 0.25, gain: 0.05, slideTo: 1600 });
+  },
+  stun(t) { // ボスがフラフラ
+    [84, 88, 84, 88, 91].forEach((m, i) => bell(seBus, mtof(m), t + i * 0.08, 0.3, 0.05));
+    tone(seBus, { type: "sine", freq: 400, t, dur: 0.6, gain: 0.05, slideTo: 150 });
+  },
   click(t) { tone(seBus, { type: "sine", freq: 880, t, dur: 0.08, gain: 0.08, slideTo: 1320 }); },
   hover(t) { tone(seBus, { type: "sine", freq: 1320, t, dur: 0.04, gain: 0.025 }); },
 };
@@ -182,12 +284,75 @@ const SONGS = {
            [53, 57, 60, 64], [55, 59, 62, 65], [48, 52, 55, 60], [48, 52, 55, 59]],
     drums: "beat", arp: "fast", melody: 0.55, seed: 21,
   },
-  // りんごキャノン：少し緊張感のある曲
+  // りんごキャノン（ステージ1）：少し緊張感のある曲
   battle: {
     bpm: 128, swing: 0,
     bars: [[57, 60, 64, 67], [53, 57, 60, 64], [48, 52, 55, 59], [55, 59, 62, 65],
            [57, 60, 64, 67], [53, 57, 60, 64], [50, 53, 57, 60], [52, 56, 59, 62]],
     drums: "beat", arp: "fast", melody: 0.6, seed: 33,
+  },
+  // りんごキャノン（ステージ2）：速くてかっこいい（ホ短調）
+  cannon2: {
+    bpm: 138, swing: 0, key: 4, scale: "minor",
+    bars: [[52, 55, 59, 62], [48, 52, 55, 60], [50, 54, 57, 62], [47, 51, 54, 59],
+           [52, 55, 59, 62], [48, 52, 55, 60], [45, 48, 52, 55], [47, 51, 54, 57]],
+    drums: "rock", bass: "drive", arp: "fast", lead: "square", melody: 0.62, seed: 58,
+  },
+  // りんごキャノン（ステージ3〜）：さらに速く、暗め（ハ短調）
+  cannon3: {
+    bpm: 148, swing: 0, key: 0, scale: "minor",
+    bars: [[48, 51, 55, 58], [44, 48, 51, 55], [46, 50, 53, 58], [43, 47, 50, 55],
+           [48, 51, 55, 58], [44, 48, 51, 55], [41, 44, 48, 51], [43, 47, 50, 53]],
+    drums: "rock", bass: "drive", arp: "fast", lead: "saw", melody: 0.65, seed: 71,
+  },
+  // ボス戦：ニセチャッピー（ふしぎで、ちょっとこわい・バグった感じ）
+  bossFake: {
+    bpm: 150, swing: 0, key: 6, scale: "minor",
+    bars: [[54, 57, 61, 64], [50, 54, 57, 61], [52, 56, 59, 62], [49, 53, 56, 59],
+           [54, 57, 61, 64], [50, 54, 57, 62], [47, 50, 54, 57], [49, 53, 56, 60]],
+    drums: "rock", bass: "drive", arp: "glitch", lead: "square", melody: 0.66, seed: 90,
+  },
+  // ボス戦：ワルチャッピー（重くて激しい）
+  bossEvil: {
+    bpm: 158, swing: 0, key: 2, scale: "minor",
+    bars: [[50, 53, 57, 60], [46, 50, 53, 57], [48, 52, 55, 60], [45, 49, 52, 55],
+           [50, 53, 57, 60], [51, 55, 58, 62], [48, 52, 55, 60], [49, 52, 55, 58]],
+    drums: "metal", bass: "drive", arp: "fast", lead: "saw", melody: 0.7, seed: 104,
+  },
+  // ボス戦：メカチャッピー（機械的で速い・きざむ音）
+  bossMecha: {
+    bpm: 162, swing: 0, key: 9, scale: "minor",
+    bars: [[57, 60, 64, 67], [57, 60, 64, 67], [53, 57, 60, 64], [55, 59, 62, 65],
+           [57, 60, 64, 67], [50, 53, 57, 60], [52, 56, 59, 62], [52, 56, 59, 64]],
+    drums: "metal", bass: "drive", arp: "glitch", lead: "square", melody: 0.6, seed: 141,
+  },
+  // ボス戦：ゴーストチャッピー（ふわふわ、ぞくっとする）
+  bossGhost: {
+    bpm: 132, swing: 0.18, key: 11, scale: "minor",
+    bars: [[47, 50, 54, 57], [43, 47, 50, 54], [45, 48, 52, 55], [42, 46, 49, 52],
+           [47, 50, 54, 57], [48, 52, 55, 58], [45, 48, 52, 55], [46, 50, 53, 56]],
+    drums: "rock", bass: "drive", arp: "slow", lead: "bell", melody: 0.55, seed: 157,
+  },
+  // ボス戦：魔王チャッピー（重く、壮大）
+  bossKing: {
+    bpm: 144, swing: 0, key: 5, scale: "minor",
+    bars: [[53, 56, 60, 63], [49, 53, 56, 60], [51, 55, 58, 62], [48, 52, 55, 58],
+           [53, 56, 60, 63], [54, 58, 61, 65], [51, 55, 58, 62], [52, 55, 58, 61]],
+    drums: "metal", bass: "drive", arp: "fast", lead: "saw", melody: 0.7, seed: 171,
+  },
+  // ボス戦のあとの休憩（ゆったり、ほっとする）
+  rest: {
+    bpm: 78, swing: 0.16,
+    bars: [[53, 57, 60, 64], [50, 53, 57, 60], [52, 55, 59, 62], [48, 52, 55, 60],
+           [53, 57, 60, 64], [55, 59, 62, 65], [52, 55, 59, 64], [48, 52, 55, 59]],
+    drums: "soft", arp: "slow", melody: 0.38, seed: 133,
+  },
+  // ボスが怒ったとき（さらに速く、半音上げて追いつめる）
+  bossRage: {
+    bpm: 176, swing: 0, key: 3, scale: "minor",
+    bars: [[51, 54, 58, 61], [47, 51, 54, 58], [49, 53, 56, 61], [46, 50, 53, 56],
+           [51, 54, 58, 61], [52, 56, 59, 63], [49, 53, 56, 61], [50, 53, 56, 59]],
+    drums: "metal", bass: "drive", arp: "glitch", lead: "saw", melody: 0.75, seed: 117,
   },
 };
 
@@ -209,7 +374,8 @@ function makeMelody(song) {
     [0,0,1,0, 1,0,0,0, 1,0,1,0, 1,0,0,0],
     [1,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,1,0],
   ];
-  const scale = [0, 2, 4, 7, 9]; // ペンタトニック（C）
+  const key = song.key || 0;
+  const scale = (song.scale === "minor" ? [0, 3, 5, 7, 10] : [0, 2, 4, 7, 9]).map((x) => (x + key) % 12); // ペンタトニック
   return song.bars.map((chord, bar) => {
     const rh = rhythms[Math.floor(r() * rhythms.length)];
     const notes = [];
@@ -224,6 +390,7 @@ function makeMelody(song) {
       } else {
         const step = scale[Math.floor(r() * scale.length)];
         n = 72 + step + (r() < 0.4 ? 12 : 0);
+        if (n > 91) n -= 12;
       }
       while (Math.abs(n - last) > 7) n += n > last ? -12 : 12;
       last = n;
@@ -252,15 +419,27 @@ function scheduleStep(cur, step, t) {
   }
   // ベース
   const root = chord[0] - 12;
-  const bassHit = s.drums === "beat" ? [0, 6, 8, 14].includes(i) : [0, 8].includes(i);
+  if (s.bass === "drive") {
+    // 8分音符で刻むベース（激しい曲）
+    if (i % 2 === 0) {
+      const n = i === 6 || i === 14 ? root + 12 : root;
+      tone(g, { type: "sawtooth", freq: mtof(n), t, dur: st * 1.7, gain: 0.07, filter: { freq: 520, q: 2 } });
+      tone(g, { type: "sine", freq: mtof(n - 12), t, dur: st * 1.8, gain: 0.11 });
+    }
+  }
+  const bassHit = s.bass !== "drive" && (s.drums === "beat" ? [0, 6, 8, 14].includes(i) : [0, 8].includes(i));
   if (bassHit) {
     const n = i === 14 ? root + 7 : root;
     tone(g, { type: "triangle", freq: mtof(n), t, dur: st * (i === 0 || i === 8 ? 3.5 : 1.8), gain: 0.16, filter: { freq: 600 } });
     tone(g, { type: "sine", freq: mtof(n - 12), t, dur: st * 3, gain: 0.12 });
   }
   // アルペジオ（ころころした音）
-  const arpEvery = s.arp === "fast" ? 2 : 4;
-  if (i % arpEvery === 0) {
+  const arpEvery = s.arp === "slow" ? 4 : 2;
+  if (s.arp === "glitch") {
+    // バグったような16分のアルペジオ（音の高さがとびはねる）
+    const m = chord[(i * 3 + bar) % chord.length] + 12 + ((i * 7 + bar) % 3 === 0 ? 12 : 0);
+    tone(g, { type: "square", freq: mtof(m), t, dur: st * 0.8, gain: 0.018, filter: { freq: 3200 } });
+  } else if (i % arpEvery === 0) {
     const idx = (i / arpEvery) % chord.length;
     const up = Math.floor(i / (arpEvery * chord.length)) % 2;
     const m = chord[up ? chord.length - 1 - idx : idx] + 12;
@@ -269,7 +448,15 @@ function scheduleStep(cur, step, t) {
   }
   // メロディ（ベルの音）
   const mel = cur.melody[bar][i];
-  if (mel) bell(g, mtof(mel), t, st * 5, 0.045);
+  if (mel) {
+    if (s.lead === "square") {
+      tone(g, { type: "square", freq: mtof(mel), t, dur: st * 3, gain: 0.028, filter: { freq: 2600 } });
+      tone(g, { type: "triangle", freq: mtof(mel), t, dur: st * 3, gain: 0.03 });
+    } else if (s.lead === "saw") {
+      tone(g, { type: "sawtooth", freq: mtof(mel), t, dur: st * 3, gain: 0.022, filter: { freq: 3000 }, detune: -9 });
+      tone(g, { type: "sawtooth", freq: mtof(mel), t, dur: st * 3, gain: 0.022, filter: { freq: 3000 }, detune: 9 });
+    } else bell(g, mtof(mel), t, st * 5, 0.045);
+  }
 
   // ドラム
   if (s.drums === "beat") {
@@ -283,6 +470,17 @@ function scheduleStep(cur, step, t) {
     if (i % 2 === 0 || hurry) { // ハイハット
       noise(g, { t, dur: i % 4 === 2 ? 0.05 : 0.025, gain: i % 4 === 2 ? 0.05 : 0.03, freq: 8000 });
     }
+  } else if (s.drums === "rock" || s.drums === "metal") {
+    const metal = s.drums === "metal";
+    const kick = metal ? (i % 2 === 0 || (i >= 12 && hurry)) : [0, 6, 8, 10].includes(i);
+    if (kick) tone(g, { type: "sine", freq: 140, t, dur: 0.18, gain: metal ? 0.22 : 0.28, slideTo: 40 });
+    if (i === 4 || i === 12) { // スネア
+      noise(g, { t, dur: 0.16, gain: 0.12, type: "bandpass", freq: 1900, q: 0.9 });
+      tone(g, { type: "triangle", freq: 210, t, dur: 0.1, gain: 0.08, slideTo: 140 });
+    }
+    if (metal || i % 2 === 0) noise(g, { t, dur: 0.03, gain: i % 4 === 2 ? 0.05 : 0.03, freq: 8500 });
+    if (i === 14 && !metal) noise(g, { t, dur: 0.18, gain: 0.04, freq: 6500 }); // オープンハイハット
+    if (i === 0 && bar % (metal ? 2 : 4) === 0) noise(g, { t, dur: 1.4, gain: 0.05, freq: 4500 }); // シンバル
   } else if (s.drums === "soft") {
     if (i === 0 || i === 10) tone(g, { type: "sine", freq: 90, t, dur: 0.25, gain: 0.12, slideTo: 45 });
     if (i === 4 || i === 12) noise(g, { t, dur: 0.15, gain: 0.025, type: "bandpass", freq: 2200, q: 0.8 });

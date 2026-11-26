@@ -33,7 +33,7 @@ const MODES = [
     say: "はじめての人はここから！ 指の置き方から、少しずつ練習しよう" },
   { id: "weak", name: "にがて特訓", desc: "記録から苦手なキーを割り出して集中練習。", options: ["lang"],
     say: "これまでの記録から、苦手なキーを中心に出題するよ" },
-  { id: "cannon", name: "りんごキャノン", desc: "落ちてくる言葉を打って、島を守ろう。", options: ["lang", "diff"],
+  { id: "cannon", name: "りんごキャノン", desc: "ボスとタイピングバトル！ あいまにアイテムを集めよう。", options: ["lang", "diff"],
     say: "落ちてくる言葉を打つと、ぼくがりんごで撃ち落とすよ！ 3回落とすとおしまい" },
   { id: "free", name: "フリー計測", desc: "飾りなしで、速さと正確さを測定。", options: ["lang", "diff", "time"],
     say: "飾りなしで、いまの実力を測ろう。時間も選べるよ" },
@@ -622,10 +622,23 @@ function headText(r) {
   return "";
 }
 
+// りんごが出てこないモード（ステップ・苦手キー・フリー計測・りんごキャノン）でも、
+// 打った量と正確さに応じてりんごがもらえる（何をしても、きせかえ用のりんごが集まる）
+function bonusApples(r) {
+  const acc = Number(r.acc) || 0;
+  const mul = acc >= 95 ? 1.2 : acc >= 90 ? 1 : acc >= 80 ? 0.8 : 0.5;
+  let n = Math.round(((r.correct || 0) / 6) * mul);
+  if (r.mode === "step") n += (r.stars || 0) * 3;
+  if (r.mode === "cannon") n += (r.bosses || 0) * 5 + (r.clear ? 20 : 0);
+  return Math.max(r.correct ? 1 : 0, n);
+}
+
 function onFinish(r) {
   game = null;
   lastResult = r;
   const applesBefore = data.totals.apples;
+  const bonusMode = r.apples == null;
+  if (bonusMode) r.apples = bonusApples(r);
   const { isBest, prev } = Store.addResult(r);
   let prevStars = 0;
   if (r.mode === "step") prevStars = Store.setStars(r.stepId, r.stars);
@@ -676,7 +689,7 @@ function onFinish(r) {
   const speed = r.lang === "en" ? `${r.kpm}<small>打/分</small><br><small>${r.wpm} WPM</small>` : `${r.kpm}<small>打/分</small>`;
   const acc = `${r.acc}<small>%</small>`;
   let stats;
-  if (r.mode === "cannon") stats = [["速さ", speed], ["正確さ", acc], ["ウェーブ", r.wave], ["撃ち落とした数", r.kills], ["最大コンボ", r.maxCombo]];
+  if (r.mode === "cannon") stats = [["速さ", speed], ["正確さ", acc], ["ステージ", r.clear ? "クリア！" : (r.stage || 1)], ["撃ち落とした数", r.kills], ["倒したボス", `${r.bosses || 0}<small> / 5</small>`]];
   else if (r.mode === "step") stats = [["速さ", speed], ["正確さ", acc], ["ミス", r.miss], ["時間", CT.modes.step.formatTime(r.seconds)], ["目安 ★2/★3", `${r.goal[0]}<small>/</small>${r.goal[1]}<small>打/分</small>`]];
   else if (r.mode === "weak") stats = [["速さ", speed], ["全体の正確さ", acc], ["ミス", r.miss], ["時間", CT.modes.step.formatTime(r.seconds)], ["問題数", r.words]];
   else if (r.mode === "free") stats = [["正確さ", acc], ["ミス", r.miss], ["正しく打った数", r.correct], [r.lang === "en" ? "WPM" : "クリアした問題", r.lang === "en" ? r.wpm : r.words], ["時間", `${r.time}<small>秒</small>`]];
@@ -688,6 +701,7 @@ function onFinish(r) {
   // 新しく取った実績・解放したきせかえ
   const earnedBox = $("resEarned");
   earnedBox.innerHTML = "";
+  if (bonusMode && r.apples > 0) earnedBox.insertAdjacentHTML("beforeend", `<span class="earned-chip apple-chip">🍎 りんごを ${r.apples} 個ゲット！（合計 ${data.totals.apples.toLocaleString()} 個）</span>`);
   for (const a of earned) earnedBox.insertAdjacentHTML("beforeend", `<span class="earned-chip">${a.icon} 実績「${a.name}」</span>`);
   for (const [id, need] of Object.entries(CT.Achievements.UNLOCK.skin)) {
     if (need > applesBefore && need <= data.totals.apples) earnedBox.insertAdjacentHTML("beforeend", `<span class="earned-chip">👕 きせかえ「${Chappy.SKINS[id].name}」が解放！</span>`);
@@ -701,7 +715,7 @@ function onFinish(r) {
   let tier = ["SS", "S"].includes(rank.letter) ? "top" : ["A", "B"].includes(rank.letter) ? "good" : ["C", "D"].includes(rank.letter) ? "mid" : "low";
   let line = pick(RESULT_LINES[tier]);
   if (r.mode === "step") line = r.stars === 3 ? "★3つ！ 完ぺきだね！" : r.stars ? "クリアおめでとう！ 次のレッスンにも行ってみよう" : "正確さ 90% でクリアだよ。もう一回やってみよう！";
-  else if (r.mode === "cannon") line = r.wave >= 5 ? "すごい！ 島をしっかり守れたね" : "ナイスファイト！ 次はもっと先のウェーブへ";
+  else if (r.mode === "cannon") line = r.clear ? "魔王をたおして島を守った！ ゲームクリア、おめでとう！" : r.bosses >= 4 ? "あと少しで魔王！ 1秒に5回打てれば勝てるよ" : r.bosses >= 2 ? "ワルチャッピーまでやっつけた！ 島のヒーローだね" : r.bosses ? "ニセチャッピーをやっつけたね！ 次はワルチャッピーだ" : "ナイスファイト！ ミスを減らすと、ボスの反撃も減るよ";
   else if (r.mode === "weak") line = r.score >= 95 ? "苦手キーもばっちり！ 克服できてきたね" : "苦手なキーは、ゆっくり正確に打つのが近道だよ";
   if (badgeText && r.mode !== "step" && prev) line = "自己ベスト更新！ やったね！";
   if (r.mode === "step") tier = r.stars === 3 ? "top" : r.stars ? "good" : "low";
@@ -711,6 +725,11 @@ function onFinish(r) {
 
   // ボタン
   $("btnNextLesson").hidden = !(r.mode === "step" && r.stars >= 1 && r.nextLesson);
+  // 技術サイトの中で開いたとき：フリー計測（日本語・やさしい・60秒）は「本日の記録にする」ボタンを出す
+  const recBtn = $("btnRecordToday");
+  recBtn.hidden = !(window.__typingBridge && window.__typingBridge.canRecord(r));
+  recBtn.disabled = false;
+  recBtn.textContent = "📝 本日の記録にする";
   $("btnToModes").innerHTML = (r.mode === "step" ? "レッスン選択" : "モード選択") + " <kbd>Esc</kbd>";
 
   show("result");
@@ -789,6 +808,21 @@ function backFromResult() {
   Sound.se("click");
   show(lastResult && lastResult.mode === "step" ? "steps" : "modes");
 }
+// 技術サイトの「タイピング」に、今日の記録として送る（1回の結果につき1回）
+$("btnRecordToday").addEventListener("click", async () => {
+  const b = $("btnRecordToday"), bridge = window.__typingBridge;
+  if (!bridge || !lastResult || b.disabled) return;
+  b.disabled = true;
+  b.textContent = "記録しています…";
+  try {
+    await bridge.record(lastResult);
+    b.textContent = "✓ 本日の記録にしました";
+    Sound.se("record");
+  } catch (e) {
+    b.disabled = false;
+    b.textContent = "📝 本日の記録にする（もう一度）";
+  }
+});
 $("btnRetry").addEventListener("click", retry);
 $("btnNextLesson").addEventListener("click", nextLesson);
 $("btnToModes").addEventListener("click", backFromResult);
@@ -1117,7 +1151,7 @@ document.addEventListener("keydown", (e) => {
       e.preventDefault(); // スペースでのスクロールや、Firefox の「'」「/」検索を止める
       els.ime.hidden = true;
       if (!game) return;
-      const ok = game.onKey(e.key);
+      const ok = game.onKey(e.key, e);
       if (ok === true) {
         if (guideOn) kb.flash(e.key, true);
         if (Scene3D.ok) Scene3D.pulse();
