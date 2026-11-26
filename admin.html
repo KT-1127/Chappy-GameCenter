@@ -62,6 +62,12 @@ td .fmt{color:var(--sub);font-size:12px;margin-left:4px}
 tr.dirty td{background:#fffbe6}
 .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .count{color:var(--sub);font-weight:700;font-size:13px;margin:8px 0 0}
+.lim{display:flex;flex-direction:column;gap:14px}
+.lim .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border:2px solid #e3ecf4;border-radius:16px;padding:10px 14px}
+.lim .row b{min-width:9em}
+.lim .row.big{border-color:#ef4b4b;background:#fff7f6}
+.days label{display:inline-flex;align-items:center;gap:3px;font-weight:800;margin-right:6px}
+input[type=time]{font:700 15px "M PLUS Rounded 1c";padding:8px 10px;border-radius:12px;border:2px solid #d3e0ec}
 #toast{position:fixed;left:50%;bottom:20px;transform:translate(-50%,160%);opacity:0;pointer-events:none;background:#24364d;color:#fff;padding:12px 20px;border-radius:14px;font-weight:800;transition:transform .3s,opacity .3s;z-index:100}
 #toast.show{transform:translate(-50%,0);opacity:1}
 </style>
@@ -90,6 +96,24 @@ tr.dirty td{background:#fffbe6}
 
   <div id="app" hidden>
     <div class="warn" id="defWarn" hidden>⚠ パスワードが はじめのまま（chappy）です。いちばん下の「パスワードの変更」で すぐに変えてください。</div>
+
+    <section class="panel">
+      <h2>🔒 ロック・時間制限</h2>
+      <p class="hint">ここの設定は すべてのゲームに かかります。プレイ中の画面も 1分以内に止まります。時間は 日本時間で判定します。</p>
+      <div class="lim">
+        <div class="row big"><b>ぜんぶロック</b>
+          <label class="sw"><input type="checkbox" id="lockAll"><span></span></label>
+          <span id="lockSt" style="font-weight:800"></span></div>
+        <div class="row"><b>あそべる時間帯</b>
+          <label class="sw"><input type="checkbox" id="hOn"><span></span></label>
+          <input type="time" id="hFrom" value="12:30"> 〜 <input type="time" id="hTo" value="13:15">
+          <span class="days" id="hDays"></span></div>
+        <div class="row"><b>1日に あそべる時間</b>
+          <input type="number" id="limitMin" min="0" max="1440" step="5" style="width:6em"> 分（0 = 制限なし）
+          <small style="color:var(--sub);font-weight:700;width:100%">※ 1台の端末（ブラウザ）ごとに数えます。ぜんぶのゲームの合計です。</small></div>
+      </div>
+      <div class="acts"><button class="btn sm" id="saveLimits">時間制限を保存</button></div>
+    </section>
 
     <section class="panel">
       <h2>🎮 ゲームの ON / OFF</h2>
@@ -198,7 +222,8 @@ async function enter(email) {
   const s = await CGC.getSettings();
   drawGames(s.games || {});
   $("notice").value = s.notice || "";
-  $("fGame").innerHTML = GAMES.map(g => `<option value="${g.id}">${esc(g.name)}${g.ready ? "" : "（じゅんび中）"}</option>`).join("");
+  drawLimits(s);
+  $("fGame").innerHTML = GAMES.filter(g => g.rank !== false).map(g => `<option value="${g.id}">${esc(g.name)}${g.ready ? "" : "（じゅんび中）"}</option>`).join("");
   loadRows();
 }
 
@@ -215,6 +240,31 @@ function drawGames(games) {
     toast(CGC.gameById(inp.dataset.g).name + " を " + (inp.checked ? "ON" : "OFF") + " にしました");
   });
 }
+
+/* ---------- ロック・時間制限 ---------- */
+const DAYN = ["日", "月", "火", "水", "木", "金", "土"];
+function drawLimits(s) {
+  const h = s.hours || { on: false, from: "12:30", to: "13:15", days: [1, 2, 3, 4, 5] };
+  $("lockAll").checked = !!s.lockAll; lockSt();
+  $("hOn").checked = !!h.on; $("hFrom").value = h.from || "12:30"; $("hTo").value = h.to || "13:15";
+  const days = Array.isArray(h.days) ? h.days : [1, 2, 3, 4, 5];
+  $("hDays").innerHTML = DAYN.map((d, i) => `<label><input type="checkbox" value="${i}" ${days.includes(i) ? "checked" : ""}>${d}</label>`).join("");
+  $("limitMin").value = s.limitMin || 0;
+}
+function lockSt() { $("lockSt").textContent = $("lockAll").checked ? "ロック中：どのゲームも あそべない" : "ロックしていない"; }
+// ぜんぶロックは すぐに反映する（授業のはじめに 1タップで止められるように）
+$("lockAll").onchange = async () => {
+  try { await call("setLimits", { lockAll: $("lockAll").checked }); }
+  catch (e) { $("lockAll").checked = !$("lockAll").checked; return; }
+  lockSt(); toast($("lockAll").checked ? "ぜんぶのゲームを ロックしました" : "ロックを はずしました");
+};
+$("saveLimits").onclick = async () => {
+  const days = [...$("hDays").querySelectorAll("input:checked")].map(i => +i.value);
+  if ($("hOn").checked && (!$("hFrom").value || !$("hTo").value)) { toast("時間帯を入れてください"); return; }
+  if ($("hOn").checked && !days.length) { toast("曜日を1つ以上えらんでください"); return; }
+  await call("setLimits", { hours: { on: $("hOn").checked, from: $("hFrom").value, to: $("hTo").value, days }, limitMin: Number($("limitMin").value) || 0 });
+  toast("時間制限を保存しました");
+};
 
 /* ---------- おしらせ ---------- */
 $("saveNotice").onclick = async () => { await call("setNotice", { notice: $("notice").value.trim() }); toast("おしらせを保存しました"); };

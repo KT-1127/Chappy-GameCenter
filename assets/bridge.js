@@ -11,7 +11,8 @@
  *
  * やること
  *   ・ニックネームが決まっていなければ、センターでニックネームを決めてもらう
- *   ・管理者がそのゲームを OFF にしていたら、プレイできないようにする（1分ごとに確認）
+ *   ・管理者がそのゲームを OFF／一括ロック／時間外にしていたら、プレイできないようにする（設定は1分ごとに確認）
+ *   ・1日にあそべる時間が決まっていたら、あそんだ時間を数えて、なくなったら止める
  *   ・左下に「センターへ もどる」ボタンとニックネームを出す
  */
 (function () {
@@ -56,8 +57,16 @@ function block(kind) {
   unblock(); blocked = kind;
   const el = document.createElement("div"); el.id = "cgc-block";
   const name = g ? g.name : "このゲーム";
-  el.innerHTML = kind === "off"
-    ? `<div class="box">${FACE}<h2>いまは おやすみ中だよ</h2><p>「${CGC.esc(name)}」は、先生が いまは あそべないように しているよ。<br>ほかのゲームで あそんでね！</p><a href="${ROOT}index.html">センターへ もどる</a></div>`
+  const back = `<a href="${ROOT}index.html">センターへ もどる</a>`;
+  const ht = CGC.hoursText(settings.hours);
+  const MSG = {
+    off: ["いまは おやすみ中だよ", `「${CGC.esc(name)}」は、先生が いまは あそべないように しているよ。<br>ほかのゲームで あそんでね！`],
+    lock: ["いまは ゲームの時間じゃないよ", "先生が ぜんぶのゲームを おやすみに しているよ。<br>また あとで あそぼうね！"],
+    hours: ["あそべる時間の そとだよ", `ゲームで あそべるのは <b>${CGC.esc(ht)}</b> だよ。<br>その時間に また来てね！`],
+    limit: ["きょうは ここまで！", `きょう あそべる時間（${settings.limitMin}分）を つかいきったよ。<br>また あした あそぼうね！`]
+  };
+  el.innerHTML = MSG[kind]
+    ? `<div class="box">${FACE}<h2>${MSG[kind][0]}</h2><p>${MSG[kind][1]}</p>${back}</div>`
     : `<div class="box">${FACE}<h2>ニックネームを きめよう！</h2><p>ランキングには ニックネームが のるよ。<br>センターで きめてから あそんでね。</p><a href="${ROOT}index.html?play=${encodeURIComponent(GAME)}">ニックネームを きめる</a></div>`;
   document.body.appendChild(el);
   // うしろのゲームのキー操作も止める
@@ -66,11 +75,27 @@ function block(kind) {
 function unblock() { const el = document.getElementById("cgc-block"); if (el) el.remove(); blocked = null; removeEventListener("keydown", stopKeys, true); }
 function stopKeys(e) { if (blocked) { e.stopPropagation(); e.preventDefault(); } }
 
-async function check() {
-  const s = await CGC.getSettings();
-  if (!CGC.isEnabled(s, GAME)) block("off");
-  else if (!CGC.getNick() || !CGC.hasAgreed()) block("nick");
+let settings = { games: {} };
+// 設定はネットから（1分ごと）、時間帯・のこり時間はこの端末で（15秒ごと）判定する
+function judge() {
+  const why = CGC.lockReason(settings, GAME);
+  if (why) block(why);
+  else if (g && g.rank !== false && (!CGC.getNick() || !CGC.hasAgreed())) block("nick");
   else unblock();
+}
+async function check() { settings = await CGC.getSettings(); judge(); }
+
+// あそんだ時間を数える（画面が見えていて、止められていないときだけ）
+const TICK = 15;
+let warned = 0;
+function tick() {
+  if (!document.hidden && !blocked) {
+    CGC.addPlayed(TICK);
+    const left = CGC.leftSec(settings);
+    if (left <= 60 && warned < 2) { warned = 2; toast("⏰ あと <b>1分</b> で きょうの時間が おわるよ"); }
+    else if (left <= 300 && left > 60 && warned < 1) { warned = 1; toast("⏰ きょう あそべるのは あと <b>5分</b> だよ"); }
+  }
+  judge();
 }
 
 let toastT = 0;
@@ -103,6 +128,7 @@ function start() {
   document.body.appendChild(chip);
   check();
   setInterval(check, 60000);
+  setInterval(tick, TICK * 1000);
   addEventListener("visibilitychange", () => { if (!document.hidden) check(); });
 }
 

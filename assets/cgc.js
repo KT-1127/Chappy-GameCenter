@@ -40,7 +40,12 @@ const GAMES = [
   { id: "sagashi", name: "チャッピー探し",     kana: "SEARCH", ready: true,  color: "#2bb673", color2: "#bdf0d2", icon: "glass",
     desc: "スマホをかざして、森のチャッピーを見つけよう！", order: "desc", fmt: pts, note: "とくてん（きんいろは10てん）" },
   { id: "lab",     name: "チャッピーラボ",     kana: "LAB",    ready: true,  color: "#0fb5aa", color2: "#b5efe9", icon: "lab",
-    desc: "ブロックでプログラミング！チャッピーを動かそう", order: "desc", fmt: v => v + "問", note: "学習ページで クリアした もんだいの数" }
+    desc: "ブロックでプログラミング！チャッピーを動かそう", order: "desc", fmt: v => v + "問", note: "学習ページで クリアした もんだいの数" },
+  // rank: false = ランキングなし（あそぶだけ）
+  { id: "vlab",    name: "バーチャル計測制御ラボ", kana: "VLAB", ready: true, color: "#3a7bd5", color2: "#bcd6fb", icon: "car", rank: false,
+    desc: "ブロックでプログラム！3Dの町でロボットカーやセンサーを動かそう", order: "desc", fmt: pts },
+  { id: "mikata",  name: "見え方スイッチ",     kana: "MIKATA", ready: true, color: "#7a4dff", color2: "#d9ccff", icon: "eye", rank: false,
+    desc: "同じ動きなのに見え方がかわる！ふしぎな錯視をたいけんしよう", order: "desc", fmt: pts }
 ];
 GAMES.forEach(g => { g.url = "games/" + g.id + "/index.html"; g.banner = "games/" + g.id + "/thumb.jpg"; });
 const gameById = id => GAMES.find(g => g.id === id);
@@ -109,6 +114,14 @@ function myRanks(rows, order, uid) {
   return { dailyRank: find(rankRows(rows.filter(r => r.date === todayJST()), order, uid, 1e6)), totalRank: find(rankRows(rows, order, uid, 1e6)) };
 }
 const isBetter = (order, a, b) => order === "asc" ? a < b : a > b;
+// 管理者が保存する制限の値をととのえる（一部だけ送られたら、その項目だけ変える）
+function cleanLimits(p) {
+  const o = {}, t = v => /^\d{1,2}:\d{2}$/.test(v || "") ? v : "";
+  if ("lockAll" in p) o.lockAll = !!p.lockAll;
+  if ("hours" in p) { const h = p.hours || {}; o.hours = { on: !!h.on, from: t(h.from), to: t(h.to), days: (h.days || []).map(Number).filter(d => d >= 0 && d <= 6) }; }
+  if ("limitMin" in p) o.limitMin = Math.max(0, Math.min(1440, Math.round(Number(p.limitMin) || 0)));
+  return o;
+}
 
 /* ============================================================
  *  おためしモード（この端末だけ・パスワードは chappy）
@@ -120,7 +133,7 @@ const Local = {
   db() { return Object.assign({ rows: [], games: {}, notice: "", passHash: DEFAULT_PASS_HASH }, ls.get(DB_KEY, {})); },
   save(d) { ls.set(DB_KEY, d); },
   uid() { let u = ls.get("cgc-uid", ""); if (!u) { u = "local-" + Math.random().toString(36).slice(2, 10); ls.set("cgc-uid", u); } return u; },
-  async settings() { const d = this.db(); return { games: d.games, notice: d.notice }; },
+  async settings() { const d = this.db(); return { games: d.games, notice: d.notice, lockAll: !!d.lockAll, hours: d.hours || null, limitMin: d.limitMin || 0 }; },
   async ranking(game, board) { return rankingFrom(this.db().rows.filter(r => r.game === game), game, board, this.uid()); },
   async submit(p) {
     const d = this.db(), uid = this.uid(), date = todayJST();
@@ -144,6 +157,7 @@ const Local = {
     switch (op) {
       case "setGame": d.games[p.game] = !!p.enabled; res = { ok: true }; break;
       case "setNotice": d.notice = String(p.notice || "").slice(0, 300); res = { ok: true }; break;
+      case "setLimits": Object.assign(d, cleanLimits(p)); res = { ok: true }; break;
       case "list": return { ok: true, rows: d.rows.filter(match).sort((a, b) => b.ts - a.ts).slice(0, 1000), boards: boardsOf(d.rows.filter(r => !p.game || r.game === p.game)) };
       case "update": { const r = d.rows.find(x => x.id === p.id); if (!r) return { ok: false, error: "notfound" }; r.nick = String(p.nick).slice(0, 10); r.score = Number(p.score); res = { ok: true }; break; }
       case "delete": { const ids = new Set(p.ids), n = d.rows.length; d.rows = d.rows.filter(r => !ids.has(r.id)); res = { ok: true, deleted: n - d.rows.length }; break; }
@@ -187,7 +201,7 @@ const Fire = {
   async settings() {
     const f = await this.load(), s = await f.fs.getDoc(f.fs.doc(f.db, "cgc_settings", "main"));
     const d = s.exists() ? s.data() : {};
-    return { games: d.games || {}, notice: d.notice || "" };
+    return { games: d.games || {}, notice: d.notice || "", lockAll: !!d.lockAll, hours: d.hours || null, limitMin: d.limitMin || 0 };
   },
   async ranking(game, board) { const [rows, uid] = await Promise.all([this.rows([["game", game]]), this.uid()]); return rankingFrom(rows, game, board, uid); },
   async submit(p) {
@@ -235,6 +249,7 @@ const Fire = {
     switch (op) {
       case "setGame": await fs.setDoc(setRef, { games: { [p.game]: !!p.enabled } }, { merge: true }); return { ok: true };
       case "setNotice": await fs.setDoc(setRef, { notice: String(p.notice || "").slice(0, 300) }, { merge: true }); return { ok: true };
+      case "setLimits": await fs.setDoc(setRef, cleanLimits(p), { merge: true }); return { ok: true };
       case "list": {
         const rows = await this.rows(where), all = p.game ? await this.rows([["game", p.game]]) : rows;
         return { ok: true, rows: rows.sort((a, b) => b.ts - a.ts).slice(0, 1000), boards: boardsOf(all) };
@@ -260,6 +275,38 @@ async function getSettings() {
 }
 const isEnabled = (settings, id) => !settings.games || settings.games[id] !== false;
 
+// ---------- 制限（一括ロック・あそべる時間帯・1日の時間） ----------
+// settings.lockAll : true でぜんぶのゲームをロック
+// settings.hours   : { on, from: "12:30", to: "13:15", days: [1,2,3,4,5] }（0=日曜。日本時間で判定）
+// settings.limitMin: 1日にあそべる分数（0 = 制限なし）。この端末で数える
+const nowJST = () => { const d = new Date(Date.now() + 9 * 3600e3); return { day: d.getUTCDay(), min: d.getUTCHours() * 60 + d.getUTCMinutes() }; };
+const hm = s => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ""); return m ? +m[1] * 60 + +m[2] : null; };
+function inHours(h) {
+  if (!h || !h.on) return true;
+  const n = nowJST(), from = hm(h.from), to = hm(h.to);
+  if (Array.isArray(h.days) && !h.days.includes(n.day)) return false;
+  if (from == null || to == null) return true;
+  return from <= to ? n.min >= from && n.min < to : n.min >= from || n.min < to; // 夜またぎにも対応
+}
+const PLAY_KEY = "cgc-play";
+const playedSec = () => { const p = ls.get(PLAY_KEY, {}); return p.date === todayJST() ? p.sec || 0 : 0; };
+const addPlayed = sec => ls.set(PLAY_KEY, { date: todayJST(), sec: playedSec() + sec });
+const leftSec = s => s.limitMin > 0 ? Math.max(0, s.limitMin * 60 - playedSec()) : Infinity;
+// あそべないときは理由を返す: "off" | "lock" | "hours" | "limit"。あそべるなら null
+function lockReason(s, id) {
+  if (s.lockAll) return "lock";
+  if (id && !isEnabled(s, id)) return "off";
+  if (!inHours(s.hours)) return "hours";
+  if (leftSec(s) <= 0) return "limit";
+  return null;
+}
+const DAYS = ["日", "月", "火", "水", "木", "金", "土"];
+function hoursText(h) {
+  if (!h || !h.on) return "";
+  const d = Array.isArray(h.days) && h.days.length < 7 ? h.days.slice().sort().map(i => DAYS[i]).join("・") + "の " : "";
+  return d + (h.from || "") + "〜" + (h.to || "");
+}
+
 function submit(o) {
   const g = gameById(o.game), nick = getNick();
   if (!g || !nick || !isFinite(o.score)) return Promise.resolve({ ok: false, error: !nick ? "nick" : "bad" });
@@ -276,5 +323,5 @@ const adminLogout = () => backend.logout();
 const admin = (op, args = {}) => backend.admin(op, args);
 
 global.CGC = { CONF, GAMES, gameById, isShared, todayJST, esc, checkNick, getNick, setNick, hasAgreed, setAgreed,
-  getSettings, isEnabled, submit, ranking, adminMode, adminLogin, adminRestore, adminLogout, admin, rankRows };
+  getSettings, isEnabled, lockReason, inHours, hoursText, playedSec, addPlayed, leftSec, submit, ranking, adminMode, adminLogin, adminRestore, adminLogout, admin, rankRows };
 })(window);
